@@ -1,0 +1,166 @@
+.book-footer-actions {
+    display: contents;
+}
+
+.book-footer-stamps {
+    position: absolute;
+    bottom: 20px;
+    left: 40px;
+}
+
+.sign-button {
+    background-color: white;
+    color: white;
+    height: 80px;
+    width: 150px;
+    min-width: auto;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: solid 1px gray;
+    border-radius: 12px;
+
+    &:focus, &:hover {
+        border: solid 2px #4f4f4f;
+    }
+}
+
+.sign-button-container {
+    height: 80px;
+    width: 144px;
+    display: flex;
+    align-items: center;
+}
+
+.open-sign-list-button {
+    color: black;
+    font-size: 19px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 60px;
+    margin-left: 6px;
+    min-width: auto;
+
+    &:hover, &:focus {
+        background-color: #d0d0d0;
+    }
+}
+
+.action-button {
+    height: 60px;
+    font-size: 20px;
+    padding-top: 3px;
+    padding-bottom: 5px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    transition: all 0.5s;
+
+    outline: none; /* Added for keyboard focus indication */
+
+    &:focus {
+        outline: 2px solid white;
+    }
+
+    &:hover, &:focus {
+        width: 250px;
+        transition: all 0.5s;
+    }
+
+    ::ng-deep .mat-button-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+
+        .action-button-button-label {
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            line-height: 25px;
+            font-size: 24px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding-left: 5px;
+
+            span {
+                width: 180px;
+                overflow: hidden;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                text-overflow: ellipsis;
+                white-space: normal;
+                display: -webkit-box;
+                letter-spacing: 2px;
+                font-size: 17px;
+                line-height: normal;
+            }
+        }
+    }
+
+    &-reject {
+        color: white;
+        border-radius: 40px;
+        background-color: var(--maarch-color-danger);
+        border: 1px solid white;
+        position: absolute;
+        right: 40px;
+        bottom: 20px;
+    }
+
+    &-valid {
+        color: white;
+        background-color: var(--maarch-color-success);
+        border: 1px solid white;
+        border-radius: 40px;
+        position: absolute;
+        right: 40px;
+        bottom: 103px;
+    }
+}
+
+.more-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    font-size: 18px;
+    border: 1px solid white;
+    color: white;
+    width: 32px;
+    height: 36px;
+    z-index: 1;
+
+    &-valid {
+        bottom: 140px;
+        right: 30px;
+        background-color: var(--maarch-color-success);
+    }
+
+    &-reject {
+        bottom: 50px;
+        right: 30px;
+        background-color: var(--maarch-color-danger);
+    }
+}
+
+.action-button-button-label span {
+   display: flex;
+}
+
+.no-stamp {
+    font-size: 20px;
+    width: 100px;
+    text-align: center;
+    font-weight: bold;
+    opacity: 0.5;
+    border: solid 2px;
+    padding: 5px;
+}

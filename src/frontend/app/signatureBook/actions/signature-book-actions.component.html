@@ -1,0 +1,122 @@
+<div class="book-footer-actions">
+    <div *ngIf="loading">
+        <mat-spinner class="spinner-white" diameter="50" aria-hidden="true"></mat-spinner>
+    </div>
+    <ng-container *ngIf="!loading">
+        <button *ngIf="!functions.empty(selectedValidationAction)"
+            tabindex="1"
+            mat-stroked-button
+            class="action-button action-button-valid"
+            [attr.aria-label]="selectedValidationAction.label"
+            [title]="selectedValidationAction.label"
+            (click)="$event.stopPropagation(); processAction(selectedValidationAction)"
+        >
+            <div class="action-button-button-label" [title]="selectedValidationAction.label">
+                <mat-icon class="fa fa-thumbs-up" aria-hidden="true"></mat-icon>
+                <span>
+                        {{ selectedValidationAction.label | shorten: 45: '...' }}
+                    </span>
+            </div>
+        </button>
+        <ng-container *ngIf="validationActions.length > 1">
+            <button
+                #menuTrigger="matMenuTrigger"
+                aria-haspopup="menu"
+                tabindex="2"
+                mat-icon-button
+                class="more-actions more-actions-valid"
+                [matMenuTriggerFor]="menuValidationActions"
+                [title]="'lang.moreActions' | translate"
+                [attr.aria-label]="'lang.moreActions' | translate"
+                (click)="$event.stopPropagation()"
+                (mousedown)="$event.preventDefault()"
+            >
+                <mat-icon class="fa fa-chevron-up" aria-hidden="true"></mat-icon>
+            </button>
+            <mat-menu #menuValidationActions="matMenu" yPosition="above">
+                <ng-container *ngFor="let action of validationActions; let i = index">
+                    <button *ngIf="action.id !== selectedValidationAction.id"
+                        class="more-actions-valid-item"
+                        mat-menu-item
+                        [title]="action.label"
+                        [attr.aria-label]="action.label"
+                        (click)="$event.stopPropagation(); selectedValidationAction = action; menuTrigger.closeMenu()">
+                        {{ action.label }}
+                    </button>
+                </ng-container>
+            </mat-menu>
+        </ng-container>
+
+
+        <button *ngIf="!functions.empty(selectedRefusalAction)"
+            tabindex="3"
+            class="action-button action-button-reject"
+            mat-stroked-button
+            [attr.aria-label]="selectedRefusalAction.label"
+            [title]="selectedRefusalAction.label"
+            (click)="processAction(selectedRefusalAction)"
+        >
+            <div class="action-button-button-label" [title]="selectedRefusalAction.label">
+                <mat-icon class="fa fa-thumbs-down" aria-hidden="true"></mat-icon>
+                <span>
+                        {{ selectedRefusalAction.label | shorten: 45: '...' }}
+                    </span>
+            </div>
+        </button>
+        <ng-container *ngIf="refusalActions.length > 1">
+            <button
+                #menuTrigger="matMenuTrigger"
+                aria-haspopup="menu"
+                tabindex="4"
+                mat-icon-button
+                class="more-actions more-actions-reject"
+                [matMenuTriggerFor]="menuRefusalActions"
+                [title]="'lang.moreActions' | translate"
+                [attr.aria-label]="'lang.moreActions' | translate"
+                (click)="$event.stopPropagation()"
+                (mousedown)="$event.preventDefault()"
+            >
+                <mat-icon class="fa fa-chevron-up" aria-hidden="true"></mat-icon>
+            </button>
+            <mat-menu #menuRefusalActions="matMenu" yPosition="above">
+                <ng-container *ngFor="let action of refusalActions; let i = index">
+                    <button *ngIf="action.id !== selectedRefusalAction.id"
+                            mat-menu-item
+                            class="more-actions-reject-item"
+                            [title]="action.label"
+                            [attr.aria-label]="action.label"
+                            (click)="$event.stopPropagation(); selectedRefusalAction = action; menuTrigger.closeMenu()">
+                            {{ action.label }}
+                        </button>
+                </ng-container>
+            </mat-menu>
+        </ng-container>
+    </ng-container>
+</div>
+<div *ngIf="signatureBookService.selectedDocToSign.attachment !== undefined" class="book-footer-stamps">
+    <div *ngIf="userStamp === undefined">
+        <mat-spinner class="spinner-white" diameter="50" aria-hidden="true"></mat-spinner>
+    </div>
+    <div *ngIf="userStamp !== undefined" class="sign-button-container">
+        <button
+                tabindex="5"
+                mat-button
+                class="sign-button"
+                [title]="'lang.applyStamp' | translate"
+                *ngIf="userStamp?.contentUrl"
+                [disabled]="userStamp === null"
+                [style.backgroundImage]="'url(' + (userStamp?.contentUrl | secureUrl | async) + ')'"
+                (click)="signWithStamp(userStamp)"
+        ></button>
+        <button *ngIf="userStamp !== undefined" mat-button
+                tabindex="6"
+                class="open-sign-list-button"
+                [title]="'lang.displayStampsList' | translate"
+                (click)="openSignaturesList()">
+            <mat-icon class="fa fa-angle-right" aria-hidden="true"></mat-icon>
+        </button>
+        <div *ngIf="!userStamp?.contentUrl" class="no-stamp">
+            {{ 'lang.noStamp' | translate }}
+        </div>
+    </div>
+</div>

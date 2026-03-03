@@ -1,0 +1,51 @@
+
+.tile-title {
+    padding: 10px 12px;
+    color: var(--maarch-color-primary);
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.2;
+    white-space: normal;
+    word-break: break-word;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    letter-spacing: 0.1px;
+    font-size: 13px;
+}
+
+.tile-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 90px;
+    opacity: 0.1;
+    z-index: 1;
+}
+
+.tile-icon-error {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 150px;
+    opacity: 0.1;
+    z-index: 1;
+}
+
+.loader {
+    position: absolute;
+    bottom: 0px;
+    height: 6px;
+    opacity: 0.85;
+}
+
+.onError {
+    cursor: help;
+}

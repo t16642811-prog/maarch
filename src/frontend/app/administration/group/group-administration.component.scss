@@ -1,0 +1,21 @@
+
+textarea.mat-input-element {
+    padding: 0;
+    margin: 0;
+}
+
+.active {
+    color: var(--maarch-color-secondary);
+}
+
+.emptyExpansionPanel {
+    height: 0px
+}
+
+.dynamicWithSelect {
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}

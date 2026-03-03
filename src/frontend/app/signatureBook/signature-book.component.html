@@ -1,0 +1,80 @@
+<div *ngIf="loading" class="loading" style="display:flex;height:100%;">
+    <mat-spinner style="margin:auto;"></mat-spinner>
+</div>
+<div class="signatorybook-container">
+    <app-signature-book-header
+    [canGoToPrevious]="canGoToPrevious"
+    [canGoToNext]="canGoToNext"
+    [resId]="resId"
+    [userId]="userId"
+    [groupId]="groupId"
+    [basketId]="basketId"
+    (setNextPrevEvent)="setNextPrev()"
+    (toggleResListDrawer)="drawerResList?.toggle()"
+    ></app-signature-book-header>
+    <mat-drawer-container style="flex: 1" [hasBackdrop]="false">
+        <mat-drawer #drawerResList class="drawer-res-list" autoFocus="false" mode="over" [ngStyle]="{'width': '500px'}" (openedChange)="showPanelContent()">
+            <app-resources-list
+                #resourcesList
+                [resId]="resId"
+                [userId]="userId"
+                [groupId]="groupId"
+                [basketId]="basketId"
+                [basketLabel]="signatureBookService.basketLabel"
+                (afterInit)="setNextPrev()"
+                (afterGoToResource)="openResListPanel();"
+                (closeDrawerResList)="drawerResList?.close()">
+            </app-resources-list>
+        </mat-drawer>
+        <mat-drawer-content style="display: flex; flex: 1">
+            <div class="signatorybook-contents">
+                <div class="signatorybook-content" [class.signatorybook-small-content]="signatureBookService.toolBarActive">
+                    <ng-scrollbar class="book-mark" autoHeightDisabled="false">
+                        <app-maarch-sb-tabs *ngIf="!loadingAttachments" position="left" [documents]="attachments"></app-maarch-sb-tabs>
+                    </ng-scrollbar>
+                    <div class="book-content" *ngIf="!loadingAttachments">
+                        <app-resource-toolbar
+                                *ngIf="signatureBookService.toolBarActive"
+                                [resId]="resId"
+                                [groupId]="groupId"
+                                [basketId]="basketId"
+                                [userId]="userId"
+                        ></app-resource-toolbar>
+                        <app-maarch-sb-content *ngIf="!signatureBookService.toolBarActive"
+                            position="left"
+                            style="display: contents;"
+                        ></app-maarch-sb-content>
+                    </div>
+                </div>
+                <div class="signatorybook-content">
+                    <div class="book-content">
+                        <mat-drawer-container style="flex: 1;background: none;">
+                            <mat-drawer class="drawer-stamps-list" mode="over" #drawerStamps>
+                                <app-maarch-sb-stamps [userId]="userId" (stampsLoaded)="defaultUserStamp = $event"></app-maarch-sb-stamps>
+                            </mat-drawer>
+                            <mat-drawer-content style="display: flex; flex-direction: column">
+                                <app-maarch-sb-content *ngIf="!loadingDocsToSign"
+                                    position="right"
+                                    style="display: contents;"
+                                ></app-maarch-sb-content>
+                                <app-maarch-sb-actions
+                                    *ngIf="!loadingDocsToSign"
+                                    [resId]="resId"
+                                    [userId]="userId"
+                                    [basketId]="basketId"
+                                    [groupId]="groupId"
+                                    [userStamp]="defaultUserStamp"
+                                    (openPanelSignatures)="drawerStamps.toggle()"
+                                    (docsToSignUpdated)="docsToSignUpdated($event)"
+                                ></app-maarch-sb-actions>
+                            </mat-drawer-content>
+                        </mat-drawer-container>
+                    </div>
+                    <ng-scrollbar class="book-mark" autoHeightDisabled="false">
+                        <app-maarch-sb-tabs *ngIf="!loadingDocsToSign" position="right" [documents]="signatureBookService.docsToSign"></app-maarch-sb-tabs>
+                    </ng-scrollbar>
+                </div>
+            </div>
+        </mat-drawer-content>
+    </mat-drawer-container>
+</div>

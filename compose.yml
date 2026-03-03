@@ -1,0 +1,46 @@
+services:
+
+  db:
+    image: postgres:13-alpine
+    container_name: maarch-db
+    restart: unless-stopped
+    command: ["-c", "datestyle=iso,dmy"]
+    volumes:
+      - ${DB_PATH}:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DATABASE}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+    networks:
+      - maarch_net
+
+  app:
+    image: maarch:latest
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    volumes:
+      - ${DOCSERVERS_ROOT_PATH}:/opt/maarch/docservers:rw
+      - ${CUSTOM_PATH}:/var/www/html/MaarchCourrier/custom:rw
+      - ${CONFIG_PATH}:/var/www/html/MaarchCourrier/config:rw
+      - ${MODULES_PATH}:/var/www/html/MaarchCourrier/modules:rw
+      - ${LIBRAIRIES_PATH}:/app/librairies
+      - ${CRON_CONFIGURATION_PATH}:/etc/cron.d
+    ports:
+      - ${APP_PORT}:80
+    environment:
+      LIBRARIES_DIR: /app/librairies
+      MAARCH_TMP_DIR: ${MAARCH_TMP_DIR}
+      APACHE_RUN_DIR: /var/lock/apache2
+    networks:
+      - maarch_net
+
+networks:
+  maarch_net:
+    name: maarch_net
+    driver: bridge

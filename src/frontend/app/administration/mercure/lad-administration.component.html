@@ -1,0 +1,49 @@
+<mat-sidenav-container autosize class="maarch-container">
+    <ng-template #adminMenuTemplate>
+        <app-admin-menu-mercure #ladMenuContent (setLadEnabledEv)="setLadEnabled($event)"></app-admin-menu-mercure>
+    </ng-template>
+    <mat-sidenav-content>
+        <div class="bg-head">
+            <div class="bg-head-title" [class.customContainerRight]="appService.getViewMode()">
+                <div class="bg-head-title-label">
+                    <app-header-left></app-header-left>
+                </div>
+                <div class="bg-head-title-tool">
+                    <app-header-right></app-header-right>
+                </div>
+            </div>
+            <div class="bg-head-content" [class.fullContainer]="appService.getViewMode()">
+            </div>
+        </div>
+        <div class="container" [class.fullContainer]="appService.getViewMode()">
+            <div class="container-content">
+                <div *ngIf="loading" style="display:flex;height:100%;">
+                    <mat-spinner style="margin:auto;"></mat-spinner>
+                </div>
+                <mat-card *ngIf="!loading" class="card-app-content">
+                    <app-maarch-message mode="success" *ngIf="ladEnabled" style="text-align: center;">
+                        <i style="font-size: 140px;" class="fa-phabricator fab"></i>
+                        <div>
+                            <b>{{'lang.mercureLad' | translate}}</b> {{'lang.enabled' | translate | lowercase}} !
+                        </div>
+                    </app-maarch-message>
+                    <app-maarch-message mode="danger" *ngIf="!ladEnabled" style="text-align: center;">
+                        <i style="font-size: 140px;" class="fa-phabricator fab"></i>
+                        <div>
+                            <b>{{'lang.mercureLad' | translate}}</b> {{'lang.disabled' | translate | lowercase}} !
+                        </div>
+                    </app-maarch-message>
+                    <app-maarch-message *ngIf="!ladEnabled">
+                        <h3>{{'lang.whatIsMercure' | translate}}</h3>
+                        <p [innerHTML]="'lang.mercureDesc1' | translate"></p>
+                        <p [innerHTML]="'lang.mercureDesc2' | translate"></p>
+                        <h3>{{'lang.howMercureWorks' | translate}}</h3>
+                        <p [innerHTML]="'lang.mercureDesc3' | translate"></p>
+                        <p [innerHTML]="'lang.mercureDesc4' | translate"></p>
+                    </app-maarch-message>
+                    <div style="text-align: center;font-style: italic;" [innerHTML]="'lang.mercureContactInfo' | translate"></div>
+                </mat-card>
+            </div>
+        </div>
+    </mat-sidenav-content>
+</mat-sidenav-container>

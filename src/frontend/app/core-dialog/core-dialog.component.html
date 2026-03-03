@@ -1,0 +1,7 @@
+<div class="core-dialog" *ngIf="!loadIcon" mat-dialog-content>
+    <mat-icon class="logo" svgIcon="maarchLogoFull"></mat-icon>
+    <div class="loading-msg" *ngIf="!onError">{{ msg }}</div>
+    <app-maarch-message *ngIf="onError" mode="danger">
+        <div [innerHTML]="onErrorMsg.idLang | translate :{errorContent:onErrorMsg.varContent}"></div>
+    </app-maarch-message>
+</div>

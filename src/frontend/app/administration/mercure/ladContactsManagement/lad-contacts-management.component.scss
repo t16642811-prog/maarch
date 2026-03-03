@@ -1,0 +1,83 @@
+.card-stats{
+  padding: 0 0 10px 0;
+  margin: 1vh 0 1vh 1vw;
+  box-shadow: 2px 2px 2px grey;
+
+  position: relative;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  min-width: 0;
+  word-wrap: break-word;
+  background-color: #fff;
+  background-clip: border-box;
+  border: 1px solid rgba(0,0,0,.125);
+  border-radius: .25rem;
+}
+
+.card-stats legend{
+  width: 60%;
+}
+
+.card-stats .card-header .card-title{
+  font-size: 18px;
+}
+
+.card-stats .card-header{
+  padding: .15rem 1.25rem .15rem 1.25rem;
+  color: var(--maarch-color-primary);;
+
+  margin-bottom: 0;
+  background-color: rgba(0,0,0,.03);
+  border-bottom: 1px solid rgba(0,0,0,.125);
+  border-radius: calc(.25rem - 1px) calc(.25rem - 1px) 0 0;
+}
+
+.card-stats .card-body {
+  padding: 15px 15px;
+
+}
+
+.card-stats .card-body .numbers {
+  text-align: left;
+  font-size: 1.5vw;
+}
+
+#content .card-stats .card-body .numbers p {
+  padding-bottom: 0px;
+
+}
+
+.card-stats .card-body .numbers p {
+  margin-bottom: 0;
+  color: var(--maarch-color-primary);
+}
+
+.card-stats .card-body .numbers .card-category {
+  color: #135f7f;
+  font-size: 0.9vw;
+  line-height: 1.4em;
+}
+
+.card-stats .card-footer {
+  padding: 0px 15px 15px;
+}
+
+.card-stats .card-footer .stats {
+  color: var(--maarch-color-primary);;
+}
+
+.card-stats .card-footer hr {
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+.card-stats .iconStat {
+  font-size: 2.4vw;
+  min-height: 50px;
+  text-align: right;
+  color: var(--maarch-color-primary);;
+}

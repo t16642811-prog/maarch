@@ -1,0 +1,124 @@
+ARG ALPINE_VERSION=3.20
+ARG WK_VERSION=3.20.3-0.12.6-small
+
+FROM php:8.2.26-apache
+
+# Install ANAM Root CA
+COPY anam_ca.crt /usr/local/share/ca-certificates/anam.crt
+RUN chmod 644 /usr/local/share/ca-certificates/anam.crt
+RUN update-ca-certificates
+
+RUN apt update \
+  && apt install --no-install-recommends -y  \
+  imagemagick \
+  ghostscript \
+  wkhtmltopdf \
+  openjdk-17-jre-headless \
+  poppler-utils \
+  libreoffice-nogui \
+  unoconv \
+  p7zip-full \
+  nmap \
+  netcat-openbsd \
+  cron \
+  locales \
+  postgresql-client \
+  libxerces-c-dev \
+  libxerces-c3.2 \
+  liblucene++0v5 \
+  liblucene++-contrib0v5 \
+  libpoppler-cpp-dev \
+  tesseract-ocr \
+  tesseract-ocr-fra \
+  uchardet \
+  libxml2-dev \
+  zlib1g-dev \
+  libpng-dev \
+  libpq-dev \
+  libonig-dev \
+  libldap-dev \
+  libzip-dev \
+  libcurl4-openssl-dev \
+  libmagickwand-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions
+RUN docker-php-ext-install xml gd pgsql mbstring ldap curl zip soap pdo_pgsql gettext bcmath
+RUN pecl install imagick xdebug && docker-php-ext-enable imagick xdebug
+
+
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x -o /tmp/nodesource_setup.sh && bash /tmp/nodesource_setup.sh
+RUN apt update && apt install --no-install-recommends  -y nodejs
+# Apache mods, ImageMagick
+RUN a2enmod rewrite headers \
+    && sed -i 's/^ServerTokens.*/ServerTokens Prod/' /etc/apache2/conf-available/security.conf \
+    && sed -i 's/^ServerSignature.*/ServerSignature Off/' /etc/apache2/conf-available/security.conf \
+    && sed -i 's/rights="none" pattern="PDF"/rights="read" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
+
+## Application files
+# Create the MaarchCourrier dirs
+RUN mkdir -p --mode=700 /var/www/html/MaarchCourrier /opt/maarch/docservers \
+  && chown www-data:www-data /var/www/html/MaarchCourrier /opt/maarch/docservers
+
+# Set locales
+RUN echo "fr_FR.UTF-8 UTF-8" > /etc/locale.gen \
+    && locale-gen \
+    && echo "LC_ALL=fr_FR.UTF-8" > /etc/environment
+
+WORKDIR /var/www/html/MaarchCourrier
+
+## Openssl config
+COPY --chmod=644 container/openssl.cnf /etc/ssl/openssl.cnf
+
+# Apache vhost
+COPY container/default-vhost.conf /etc/apache2/sites-available/000-default.conf
+
+# PHP Configuration
+COPY container/php.ini /usr/local/etc/php/php.ini
+
+# Set default healthcheck
+COPY --chown=root:root --chmod=500 container/healthcheck.sh /bin/healthcheck.sh
+
+# run cron in the background
+RUN sed -i 's/^exec /service cron start\n\nexec /' /usr/local/bin/apache2-foreground
+
+# Copy the app files inside the container
+# ordered from least likely to change, to most likely (to optimize build cache)
+COPY --chown=www-data:www-data . /var/www/html/MaarchCourrier/
+
+# Correct permissions
+RUN find /var/www/html/MaarchCourrier -type d -exec chmod 770 {} + \
+    && find /var/www/html/MaarchCourrier -type f -exec chmod 660 {} + \
+    && chmod 770 /opt/maarch/docservers \
+    && chmod 440 /usr/local/etc/php/php.ini
+
+
+WORKDIR /var/www/html/MaarchCourrier
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN composer install --ignore-platform-reqs --no-scripts --no-dev && rm -rf /usr/local/bin/composer
+
+RUN NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/anam.crt npm ci --legacy-peer-deps \
+    && npm run build-prod \
+    && rm -rf src/frontend && rm -rf node_modules
+
+COPY --chown=root:www-data container/entrypoint.sh /bin/entrypoint.sh
+
+# Correct permissions
+RUN find /var/www/html/MaarchCourrier -type d -exec chmod 700 {} + \
+    & find /var/www/html/MaarchCourrier -type f -exec chmod 600 {} + \
+    & chmod 700 /opt/maarch/docservers \
+    & chmod 444 /usr/local/etc/php/php.ini \
+    & chmod 500 /bin/entrypoint.sh &
+
+COPY container/php-dev.ini /usr/local/etc/php/conf.d/
+ENV APACHE_RUN_USER www-data
+ENV APACHE_RUN_GROUP www-data
+ENV APACHE_PID_FILE /var/run/apache2/apache2.pid
+ENV APACHE_RUN_DIR /var/run/apache2
+ENV APACHE_LOCK_DIR /var/lock/apache2
+ENV APACHE_LOG_DIR /var/log/apache2
+#COPY --chown=www-data:www-data .htaccess ./
+RUN chown -R www-data: . && chown -R www-data /opt/maarch
+
+
+CMD ["apache2", "-D", "FOREGROUND"]

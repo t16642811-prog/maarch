@@ -1,0 +1,71 @@
+<mat-sidenav-container autosize class="maarch-container">
+    <ng-template #adminMenuTemplate>
+        <app-admin-menu-mercure></app-admin-menu-mercure>
+    </ng-template>
+    <mat-sidenav-content>
+        <div class="bg-head">
+            <div class="bg-head-title" [class.customContainerRight]="appService.getViewMode()">
+                <div class="bg-head-title-label">
+                    <app-header-left></app-header-left>
+                </div>
+                <div class="bg-head-title-tool">
+                    <app-header-right></app-header-right>
+                </div>
+            </div>
+            <div class="bg-head-content" [class.fullContainer]="appService.getViewMode()">
+            </div>
+        </div>
+        <div class="container" [class.fullContainer]="appService.getViewMode()">
+            <div class="container-content">
+                <div *ngIf="loading" style="display:flex;height:100%;">
+                    <mat-spinner style="margin:auto;"></mat-spinner>
+                </div>
+                <mat-card *ngIf="!loading" class="card-app-content">
+                    <div class="row" style="margin:0;">
+                        <div class="col-md-12 col-xs-12">
+                            <mat-card class="card-stats">
+                                <mat-card-header class="card-header">
+                                    <mat-card-title class="card-title">{{'lang.stateIndexation' | translate}}</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content class="card-body" style="height:10vh;text-align: center">
+                                    <div class="row">
+                                        <div class="col-md-3 col-xs-3 iconStat">
+                                            <i class="far fa-clock"></i>
+                                        </div>
+                                        <div class="col-md-3 col-xs-3">
+                                            <div class="numbers">
+                                                <p class="card-category">
+                                                    {{'lang.lastIndexation' | translate}}
+                                                </p>
+                                                <mat-card-title *ngIf="indexationState.dateIndexation !== ''" class="card-title">
+                                                    {{ indexationState.dateIndexation }}
+                                                </mat-card-title>
+                                                <mat-card-title *ngIf="indexationState.dateIndexation === ''" class="card-title">
+                                                    {{'lang.never' | translate}}
+                                                </mat-card-title>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 col-xs-3 iconStat">
+                                            <i class="far fa-copy"></i>
+                                        </div>
+                                        <div class="col-md-3 col-xs-3">
+                                            <div class="numbers">
+                                                <p class="card-category">
+                                                    {{'lang.pctIndexation' | translate}}
+                                                </p>
+                                                <mat-card-title class="card-title">
+                                                    {{ indexationState.pctIndexationContacts | number: '1.0-1'}} ({{ indexationState.countIndexedContacts }} / {{ indexationState.countAllContacts }})
+                                                </mat-card-title>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </mat-card-content>
+                            </mat-card>
+                        </div>
+                    </div>
+
+                </mat-card>
+            </div>
+        </div>
+    </mat-sidenav-content>
+</mat-sidenav-container>

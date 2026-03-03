@@ -1,0 +1,91 @@
+:host {
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 10px;
+}
+.process-tool {
+  align-self: center;
+  max-width: 550px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 20% 20% 20% 20% 20%;
+  background-color: #fff;
+  color: #b3b3b3;
+  border: solid 1px #dedede;
+  padding: 5px;
+  border-radius: 15px;
+  text-align: center;
+
+  &-module {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    padding: 5px;
+    border-right: solid 1px #dedede;
+    cursor: pointer;
+
+    transition: all 0.3s;
+
+    &:nth-child(-n + 5) {
+      border-bottom: solid 1px #dedede;
+    }
+
+    &:nth-child(5n) {
+      border-right: none;
+    }
+
+    i {
+      font-size: 30px;
+    }
+
+    span {
+      white-space: pre;
+      font-size: 10px;
+    }
+
+    &-active {
+      font-weight: bold;
+      color: var(--maarch-color-primary);
+    }
+
+    &:hover:not(.tool-disabled) {
+      transition: all 0.3s;
+      color: var(--maarch-color-primary);
+    }
+  }
+}
+
+.tool-disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+
+.has-content {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  font-size: 10px !important;
+  color: var(--maarch-color-secondary);
+}
+
+.toolbar-container {
+  overflow: auto;
+  padding: 0 20px;
+  background: white;
+  flex: 1;
+  position: relative;
+}
+
+.toolbar-container-no-padding {
+  padding: 0;
+}
+
+.save-modifications {
+  position: sticky;
+  bottom: 0;
+  text-align:right;
+  margin-right: 35px;
+}

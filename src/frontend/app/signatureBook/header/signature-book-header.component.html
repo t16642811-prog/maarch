@@ -1,0 +1,45 @@
+<div class="signatorybook-header">
+    <div class="signatorybook-header-left">
+        <div class="signatorybook-header-left-stream" [attr.aria-label]="'lang.toggleResListDrawer' | translate">
+            <button tabindex="1"
+                mat-icon-button
+                [title]="'lang.toggleResListDrawer' | translate"
+                (click)="toggleResListDrawer.emit()">
+                <mat-icon class="fa fa-stream material-icons" aria-hidden="true"></mat-icon>
+            </button>
+        </div>
+        <div class="signatorybook-header-left-label" [attr.aria-label]="signatureBookService.basketLabel">
+            <button tabindex="2"
+                mat-button
+                class="maarch-logo"
+                [title]="'lang.home' | translate"
+                (click)="goToHome()">
+                <mat-icon class="maarchLogo" svgIcon="maarchLogoFull" aria-hidden="true"></mat-icon>
+            </button>
+            <span class="basket-label" [title]="signatureBookService.basketLabel">{{ signatureBookService.basketLabel }}</span>
+        </div>
+    </div>
+    <div class="signatorybook-header-right">
+        <div class="prev-next-container">
+            <button mat-button class="prev-button" tabindex="3"
+                    [title]="'lang.prevParaph' | translate"
+                    [disabled]="!canGoToPrevious"
+                    (click)="$event.stopPropagation(); goToResource('previous')">
+                <mat-icon class="fa fa-angle-left" style="height: auto" aria-hidden="true"></mat-icon>
+                <span style="margin-left: 18px;">{{ 'lang.prevParaph' | translate }}</span>
+            </button>
+            <button mat-button class="next-button" tabindex="4"
+                    [title]="'lang.nextParaph' | translate"
+                    [disabled]="!canGoToNext"
+                    (click)="$event.stopPropagation(); goToResource('next')">
+                <span style="margin-right: 18px;">{{ 'lang.nextParaph' | translate }}</span>
+                <mat-icon class="fa fa-angle-right" style="height: auto;" aria-hidden="true"></mat-icon>
+            </button>
+        </div>
+        <button mat-icon-button tabindex="5"
+                [title]="'lang.backBasket' | translate"
+                (click)="backToBasket()">
+            <mat-icon class="fa-regular fa-circle-xmark" color="primary" style="color:white;font-size: 30px" aria-hidden="true"></mat-icon>
+        </button>
+    </div>
+</div>

@@ -1,0 +1,23 @@
+<mat-toolbar color="primary" class="stamps-header" [title]="'lang.myStamps' | translate" [attr.aria-label]="'lang.myStamps' | translate">
+    <mat-icon class="fa fa-pen-nib material-icons" aria-hidden="true"></mat-icon>
+    <span role="heading">{{'lang.myStamps' | translate}}</span>
+</mat-toolbar>
+<div class="component-container">
+    <div *ngIf="userStamps.length > 0" class="stamps-container">
+        <button
+            *ngFor="let stamp of userStamps"
+            mat-raised-button
+            class="stamp-button"
+            [title]="'lang.applyStamp' | translate"
+            [style.backgroundImage]="'url(' + (stamp.contentUrl | secureUrl | async) + ')'"
+            (click)="signWithStamp(stamp)"
+        ></button>
+    </div>
+    <div *ngIf="userStamps.length === 0"
+        class="no-stamp"
+        [title]="'lang.noStamp' | translate"
+        [attr.aria-label]="'lang.noStamp' | translate">
+        <mat-icon class="fa fa-ban" aria-hidden="true"></mat-icon>
+        <span>{{'lang.noStamp' | translate}}</span>
+    </div>
+</div>

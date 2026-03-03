@@ -1,0 +1,12 @@
+<mat-spinner *ngIf="loading"></mat-spinner>
+<div class="tuto-title">Le plugin doit se connecter à votre application Maarch Courrier.</div>
+<div class="tuto-msg">
+  <div *ngIf="!loading" [innerHTML]="'lang.tutoStep1' | translate : { url: urlProfile } | safeHtml"></div>
+  <div *ngIf="!loading" [innerHTML]="'lang.tutoStep2' | translate"></div>
+  <div *ngIf="!loading" [innerHTML]="'lang.tutoStep3' | translate"></div>
+</div>
+
+<mat-form-field *ngIf="!loading" appearance="fill" style="width: 100%">
+  <mat-label>{{ "lang.authTokens" | translate }}</mat-label>
+  <input matInput (paste)="setToken($event)" />
+</mat-form-field>

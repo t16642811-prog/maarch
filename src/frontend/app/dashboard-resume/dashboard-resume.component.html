@@ -1,0 +1,44 @@
+<div class="banner">
+    <div class="title" (click)="goTo('history')">
+        {{ 'lang.history' | translate }}
+        <div class="title-divider"></div>
+    </div>
+    <div class="content">
+        <app-history-workflow-resume [resId]="resId"
+                                     (goTo)="goTo('history')">
+        </app-history-workflow-resume>
+    </div>
+</div>
+<div class="banner">
+    <div class="title" (click)="goTo('notes')">
+        {{ 'lang.notesAlt' | translate }}
+        <div class="title-divider"></div>
+    </div>
+    <div class="content">
+        <app-note-resume [resId]="resId"
+                         (goTo)="goTo('notes')">
+        </app-note-resume>
+    </div>
+</div>
+<div class="banner">
+    <div class="title" (click)="goTo('attachments')">
+        {{ 'lang.attachments' | translate }}
+        <div class="title-divider"></div>
+    </div>
+    <div class="content">
+        <app-attachments-resume [resId]="resId"
+                                (goTo)="goTo('attachments')">
+        </app-attachments-resume>
+    </div>
+</div>
+<div class="banner">
+    <div class="title" (click)="goTo('emails')">
+        {{ 'lang.mailsSentAlt' | translate }}
+        <div class="title-divider"></div>
+    </div>
+    <div class="content">
+        <app-mail-resume [resId]="resId"
+                         (goTo)="goTo('emails')">
+        </app-mail-resume>
+    </div>
+</div>
