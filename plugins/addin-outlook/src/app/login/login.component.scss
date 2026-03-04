@@ -1,0 +1,19 @@
+.tuto-title {
+    text-align: justify;
+    color: var(--maarch-color-danger);
+    font-weight: bold;
+}
+
+.tuto-msg {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: solid 1px var(--maarch-color-secondary);
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.tuto-label {
+    font-weight: bold;
+    color: var(--maarch-color-primary);
+}

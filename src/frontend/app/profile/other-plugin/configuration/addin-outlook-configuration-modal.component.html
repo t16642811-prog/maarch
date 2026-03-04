@@ -1,0 +1,59 @@
+<div class="mat-dialog-content-container">
+    <h1 mat-dialog-title>{{'lang.configurePlugin' | translate}}</h1>
+    <div mat-dialog-content>
+        <mat-horizontal-stepper linear="true" #stepper>
+            <mat-step [label]="'lang.downloadManifest' | translate">
+                <app-maarch-message [content]="'lang.downloadManifestMsg' | translate"></app-maarch-message>
+                <div style="text-align: center;">
+                    <button mat-raised-button color="primary" (click)="getManifest();stepper.next();">{{ 'lang.downloadManifest' | translate }}</button>
+                </div>
+            </mat-step>
+            <mat-step>
+                <ng-template matStepLabel>{{'lang.configuration' | translate}}</ng-template>
+                <div style="padding-left: 100px;padding-right: 100px;">
+                    <app-maarch-message [content]="'lang.addingOutlookWebMsg1' | translate"></app-maarch-message>
+                    <mat-card>
+                        <img style="width:100%" src="assets/addin_outlook_1.png" />
+                    </mat-card>
+                    <app-maarch-message [content]="'lang.addingOutlookWebMsg2' | translate"></app-maarch-message>
+                    <mat-card>
+                        <img style="width:100%" src="assets/addin_outlook_2.png" />
+                    </mat-card>
+                    <app-maarch-message [content]="'lang.addingOutlookWebMsg3' | translate"></app-maarch-message>
+                    <mat-card>
+                        <img style="width:100%" src="assets/addin_outlook_3.png" />
+                    </mat-card>
+                    <app-maarch-message [content]="'lang.addingOutlookWebMsg4' | translate"></app-maarch-message>
+                    <mat-card>
+                        <img style="width:100%" src="assets/addin_outlook_4.png" />
+                        <img style="width:100%" src="assets/addin_outlook_5.png" />
+                    </mat-card>
+                    <app-maarch-message [content]="'lang.addingOutlookWebMsg5' | translate"></app-maarch-message>
+                    <mat-card>
+                        <img style="width:100%" src="assets/addin_outlook_6.png" />
+                    </mat-card>
+                    <app-maarch-message [content]="'lang.addingOutlookWebMsg6' | translate"></app-maarch-message>
+                    <mat-card>
+                        <img style="width:100%" src="assets/addin_outlook_7.png" />
+                    </mat-card>
+                    <app-maarch-message [content]="'lang.addingOutlookWebMsg7' | translate"></app-maarch-message>
+                    <mat-card>
+                        <img style="width:100%" src="assets/addin_outlook_8.png" />
+                    </mat-card>
+                </div>
+            </mat-step>
+            <ng-template matStepperIcon="edit">
+                <mat-icon class="fa fa-check stepIcon"></mat-icon>
+            </ng-template>
+            <ng-template matStepperIcon="done">
+                <mat-icon class="fa fa-check stepIcon"></mat-icon>
+            </ng-template>
+        </mat-horizontal-stepper>
+    </div>
+    <span class="divider-modal"></span>
+    <div mat-dialog-actions class="actions">
+        <button *ngIf="stepper.selectedIndex === 1" mat-raised-button mat-button color="primary" (click)="stepper.previous()">{{'lang.previous' | translate}}</button>
+        <button mat-raised-button mat-button [mat-dialog-close]="">{{'lang.close' | translate}}</button>
+        <button *ngIf="stepper.selectedIndex === 0" mat-raised-button mat-button color="primary" (click)="stepper.next()">{{'lang.next' | translate}}</button>
+    </div>
+</div>

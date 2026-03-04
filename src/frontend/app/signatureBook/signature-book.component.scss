@@ -1,0 +1,126 @@
+.signatorybook-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.signatorybook-contents {
+    display: flex;
+    flex: 1;
+    gap: 10px;
+    overflow: hidden;
+    background: white;
+}
+
+.signatorybook-content {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+}
+
+.signatorybook-small-content {
+    width: 700px;
+    flex: none;
+}
+
+.book-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.signatorybook-content-with-book-mark-left {
+    flex-direction: row-reverse;
+}
+
+.book-mark {
+    background-color: var(--maarch-color-primary);
+    width: 70px;
+    min-height: 100%;
+}
+
+.fix-bg {
+    height: 95%;
+    width: 20px;
+    position: absolute;
+    right: 0;
+    background: white;
+}
+
+.maarchLogo {
+    height: 60px;
+    width: auto;
+    padding: 10px;
+}
+
+.panelHeader-backHome {
+    i {
+        height: auto;
+        color: var(--maarch-color-primary);
+        background: white;
+        padding: 10px;
+        border-radius: 20px;
+        font-size: 18px;
+    }
+
+    span {
+        font-size: 13px;
+        color: white;
+    }
+}
+
+.subSubject {
+    color: var(--maarch-color-secondary);
+    align-self: flex-end;
+}
+
+.checkbox-mass-sign ::ng-deep .mat-checkbox-frame {
+    transform: scale(2.2);
+}
+
+.checkbox-mass-sign ::ng-deep .mat-checkbox-background {
+    transform: scale(2);
+}
+
+.checkbox-mass-sign ::ng-deep .mat-checkbox-layout {
+    display: flex;
+    gap: 10px;
+}
+
+.checkbox-mass-sign ::ng-deep .mat-checkbox-frame {
+    border-color: white;
+    background: white;
+}
+
+.checkbox-mass-sign ::ng-deep .mat-checkbox-label {
+    color: white;
+}
+
+.mass-action-count {
+    background: var(--maarch-color-secondary);
+    border-radius: 5px;
+    padding: 2px 5px;
+    font-weight: bold;
+}
+
+.drawer-res-list, .drawer-stamps-list {
+    ::ng-deep .mat-drawer-inner-container {
+        overflow: hidden !important;
+    }
+}
+
+.loading {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #ffffffb3;
+    z-index: 2;
+    overflow: hidden;
+}
+
+.hide {
+    display: none;
+}

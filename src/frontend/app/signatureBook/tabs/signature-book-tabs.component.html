@@ -1,0 +1,32 @@
+<div class="book-mark-container">
+    <button
+            *ngIf="position === 'left'"
+            mat-button
+            class="book-mark-toolbar"
+            [title]="'lang.resourceOverview' | translate"
+            [class.book-mark-item-to-left]="position === 'left'"
+            [ngClass]="{
+            'book-mark-toolbar-selected': signatureBookService.toolBarActive,
+            'book-mark-item-selected-to-left': signatureBookService.toolBarActive
+        }"
+            (click)="signatureBookService.toolBarActive = true;selectedId=null"
+    >
+        <i class="fa-solid fa-layer-group"></i>
+    </button>
+    <button
+        *ngFor="let document of documents;let i=index"
+        mat-button
+        class="book-mark-item"
+        [title]="document.typeLabel + ' : ' + document.title"
+        [class.book-mark-item-to-left]="position === 'left'"
+        [class.book-mark-item-to-right]="position === 'right'"
+        [ngClass]="{
+            'book-mark-item-selected': selectedId === i,
+            'book-mark-item-selected-to-left': selectedId === i && position === 'left',
+            'book-mark-item-selected-to-right': selectedId === i && position === 'right'
+        }"
+        (click)="selectDocument(i, document)"
+        >
+        {{document.title}}
+    </button>
+</div>

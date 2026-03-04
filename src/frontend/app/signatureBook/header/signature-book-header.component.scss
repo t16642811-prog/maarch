@@ -1,0 +1,75 @@
+.signatorybook-header {
+    font-size: 30px;
+    background: var(--maarch-color-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 20px;
+
+    &-left {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        gap: 20px;
+
+        &-stream, &-label {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+
+            .mat-icon-button {
+                font-size: 30px;
+            }
+        }
+    }
+    &-right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex: 1;
+        gap: 50px;
+    }
+}
+
+.prev-next-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    color: var(--maarch-color-primary);
+
+    .prev-button, .next-button {
+        background-color: white;
+        border-radius: 25px;
+        font-size: 20px;
+        max-width: 100%;
+        outline: none; /* Added for keyboard focus indication */
+    }
+
+    .mat-button-disabled {
+        cursor: not-allowed;
+    }
+}
+
+.maarchLogo {
+    height: 60px;
+    width: auto;
+    padding: 10px;
+}
+
+.basket-label {
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    text-overflow: ellipsis;
+    font-size: 20px;
+}
+
+.maarch-logo {
+    height: 100%;
+    width: 130px;
+    padding: 0;
+}
+

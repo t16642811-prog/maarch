@@ -1,0 +1,97 @@
+:host {
+    display: contents;
+}
+
+.active,
+.active:hover,
+.active:active,
+.active:focus {
+    color: var(--maarch-color-primary);
+    border-left: solid 5px var(--maarch-color-primary);
+    background: var(--maarch-color-primary-opacity-10);
+}
+
+
+.paginatorResultList {
+    ::ng-deep.mat-paginator-range-label {
+        justify-content: flex-end;
+        display: flex;
+    }
+}
+
+.filterList {
+    ::ng-deep.mat-optgroup-label {
+        color: var(--maarch-color-primary);
+        position: sticky;
+        top: 0;
+        background: white !important;
+        z-index: 1;
+    }
+}
+
+.label {
+    cursor: pointer;
+    margin: 5px;
+}
+
+.bg-head-content {
+    ::ng-deep .mat-focused .mat-form-field-label {
+        /*change color of label*/
+        color: white !important;
+    }
+
+    ::ng-deep.mat-form-field-underline {
+        /*change color of underline*/
+        background-color: white !important;
+    }
+
+    ::ng-deep.mat-form-field-ripple {
+        /*change color of underline when focused*/
+        background-color: white !important;
+    }
+
+    .mat-icon,
+    .mat-datepicker-toggle {
+        color: white;
+    }
+}
+
+.table-admin {
+    flex: 1;
+    overflow: auto;
+}
+
+.table-head-result {
+    ::ng-deep .mat-form-field-wrapper{
+        margin-bottom: -1.25em;
+    }
+}
+
+
+
+.smallText {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    opacity: 0.5;
+    width: 150px;
+    flex: initial;
+}
+
+.resultLength {
+    min-height:48px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    position: sticky;
+    background-color: white;
+    bottom: 0;
+    padding-right: 20px;
+}
+
+.pageInput {
+    ::ng-deep .mat-paginator-range-actions {
+        margin-left: -60px;
+    }
+}

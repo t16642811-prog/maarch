@@ -1,0 +1,119 @@
+<mat-sidenav-container autosize class="maarch-container" joyrideStep="welcome" stepPosition="center">
+    <mat-sidenav-content>
+        <div class="bg-head">
+            <div class="bg-head-title" [class.customContainerRight]="appService.getViewMode()">
+                <div class="bg-head-title-label">
+                    <app-header-left></app-header-left>
+                </div>
+                <div class="bg-head-title-tool">
+                    <app-header-right></app-header-right>
+                </div>
+            </div>
+            <div class="bg-head-content" [class.fullContainer]="appService.getViewMode()">
+                <mat-card *ngIf="homeMessage"
+                    style="background: #135F7F;color: white;box-shadow: none;border: solid 2px white;width: 100%;border-radius: 20px;padding-bottom: 40px;">
+                    <div style="display: flex;max-height: 250px;overflow: auto;">
+                        <div style="padding-left: 10px;">
+                            <span [innerHTML]="homeMessage"></span>
+                        </div>
+                    </div>
+                </mat-card>
+            </div>
+        </div>
+        <div class="container" [class.fullContainer]="appService.getViewMode()">
+            <div class="container-content">
+                <div class="home-stats" *ngIf="homeStats.totalBaskets > 0">
+                    <div class="stats-cards">
+                        <div class="stats-card">
+                            <div class="stats-card-label">Bannettes</div>
+                            <div class="stats-card-value">{{ homeStats.totalBaskets }}</div>
+                        </div>
+                        <div class="stats-card">
+                            <div class="stats-card-label">Bannettes actives</div>
+                            <div class="stats-card-value">{{ homeStats.nonEmptyBaskets }}</div>
+                        </div>
+                        <div class="stats-card">
+                            <div class="stats-card-label">Courriers (total)</div>
+                            <div class="stats-card-value">{{ homeStats.totalResources }}</div>
+                        </div>
+                    </div>
+
+                    <div class="stats-chart-card" *ngIf="homeStats.topBaskets.length > 0">
+                        <div class="stats-chart-title">Top bannettes (volume)</div>
+                        <div class="stats-bars">
+                            <div class="stats-bar-row" *ngFor="let basket of homeStats.topBaskets">
+                                <div class="stats-bar-label" [title]="basket.name">{{ basket.name }}</div>
+                                <div class="stats-bar-track">
+                                    <div class="stats-bar-fill" [style.width]="getBarWidth(basket.count)" [style.background]="basket.color || '#135F7F'"></div>
+                                </div>
+                                <div class="stats-bar-value">{{ basket.count }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-chart-card" *ngIf="statsLoading && !(chartPriorityData.length || chartDoctypeData.length || getCurrentEvolutionSeries()[0]?.series?.length)">
+                    <div class="stats-chart-title">Chargement des statistiques...</div>
+                </div>
+
+                <div class="stats-chart-card" *ngIf="!statsLoading && !statsLoaded">
+                    <div class="stats-chart-title">Statistiques avancées</div>
+                    <button mat-stroked-button color="primary" (click)="loadHomeStatistics()">
+                        Charger les graphes
+                    </button>
+                </div>
+
+                <div class="home-graphs" *ngIf="chartPriorityData.length || chartDoctypeData.length || getCurrentEvolutionSeries()[0]?.series?.length">
+                    <div class="graph-card graph-card-pie" *ngIf="chartPriorityData.length > 0">
+                        <div class="graph-title">Statistiques par priorité</div>
+                        <ngx-charts-pie-chart
+                            [results]="chartPriorityData"
+                            [legend]="false"
+                            [labels]="false"
+                            [doughnut]="true"
+                            [trimLabels]="true">
+                        </ngx-charts-pie-chart>
+                    </div>
+
+                    <div class="graph-card graph-card-bar" *ngIf="chartDoctypeData.length > 0">
+                        <div class="graph-title">Statistiques par type de courrier</div>
+                        <ngx-charts-bar-vertical
+                            [results]="chartDoctypeData"
+                            [legend]="false"
+                            [xAxis]="true"
+                            [yAxis]="true"
+                            [showXAxisLabel]="false"
+                            [showYAxisLabel]="false"
+                            [trimXAxisTicks]="true"
+                            [rotateXAxisTicks]="false"
+                            [maxXAxisTickLength]="8">
+                        </ngx-charts-bar-vertical>
+                    </div>
+
+                    <div class="graph-card graph-card-wide" *ngIf="getCurrentEvolutionSeries()[0]?.series?.length">
+                        <div class="graph-head">
+                            <div class="graph-title">Évolution des courriers</div>
+                            <div class="graph-mode-switch">
+                                <button type="button" [class.active]="evolutionMode === 'day'" (click)="evolutionMode = 'day'">Jour</button>
+                                <button type="button" [class.active]="evolutionMode === 'week'" (click)="evolutionMode = 'week'">Semaine</button>
+                            </div>
+                        </div>
+                        <ngx-charts-line-chart
+                            [results]="getCurrentEvolutionSeries()"
+                            [legend]="false"
+                            [xAxis]="true"
+                            [yAxis]="true"
+                            [showXAxisLabel]="false"
+                            [showYAxisLabel]="false"
+                            [autoScale]="true"
+                            [timeline]="false"
+                            [trimXAxisTicks]="true"
+                            [rotateXAxisTicks]="true">
+                        </ngx-charts-line-chart>
+                    </div>
+                </div>
+                <app-dashboard></app-dashboard>
+            </div>
+        </div>
+    </mat-sidenav-content>
+</mat-sidenav-container>

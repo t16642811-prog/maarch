@@ -1,0 +1,37 @@
+<div *ngIf="documentData" class="title-container"
+    [title]="getTitle()">
+    <i
+        class="far fa-plus-square"
+        [title]="'lang.showInformationsBlock' | translate"
+        style="cursor: pointer"
+    ></i>
+    <span class="subject">{{getLabel()}}</span>
+    <small class="subSubject">{{documentData?.typeLabel}}</small>
+</div>
+<div class="sbContent-container">
+    <div *ngIf="loading" class="loading">
+        <mat-spinner style="margin:auto;"></mat-spinner>
+    </div>
+    <ng-container #myPlugin></ng-container>
+
+    <app-document-viewer
+        *ngIf="!pluginInstance && documentData && position === 'left' && !loading"
+        class="doc-viewer-class"
+        [editMode]="false"
+        [resId]="documentData.resId"
+        [mode]="documentType === 'attachments' ? 'attachment' : 'mainDocument'"
+        [title]="documentData?.chrono ? documentData.chrono + ' - ' + documentData.title : documentData.title">
+    </app-document-viewer>
+
+    <div class="empty-doc" *ngIf="!documentData && !loading">
+        <ng-container *ngIf="position === 'right'">
+            <i class="fa-solid fa-file-signature"></i>
+            <div>{{ 'lang.noDocumentToSign' | translate }}</div>
+        </ng-container>
+        <ng-container *ngIf="position === 'left'">
+            <i class="far fa-times-circle"></i>
+            <div>{{'lang.noAnnex' | translate}}
+            </div>
+        </ng-container>
+    </div>
+</div>

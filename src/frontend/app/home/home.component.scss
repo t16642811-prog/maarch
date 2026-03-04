@@ -1,0 +1,362 @@
+
+.container-content {
+    background: none;
+    box-shadow: none;
+    padding-top: 6px;
+}
+
+.home-stats {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.home-graphs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.graph-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fcfe 100%);
+    border: 1px solid rgba(19, 95, 127, 0.16);
+    border-radius: 16px;
+    box-shadow: 0 10px 22px rgba(8, 40, 56, 0.06);
+    padding: 12px 14px;
+    min-height: 340px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow: visible;
+}
+
+.graph-card-wide {
+    grid-column: 1 / -1;
+    min-height: 400px;
+    overflow: hidden !important;
+    display: grid !important;
+    grid-template-rows: auto 1fr;
+    align-items: stretch;
+}
+
+.graph-card-pie {
+    min-height: 450px;
+    overflow: hidden;
+    align-items: center;
+}
+
+.graph-card-bar {
+    min-height: 410px;
+    overflow: hidden;
+}
+
+.graph-title {
+    color: #135f7f;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 10px;
+    line-height: 1.2;
+}
+
+.graph-card-pie .graph-title,
+.graph-card-wide .graph-head {
+    align-self: stretch;
+}
+
+.graph-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    z-index: 2;
+}
+
+.graph-mode-switch {
+    display: inline-flex;
+    background: #edf4f8;
+    border: 1px solid rgba(19, 95, 127, 0.14);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 4px;
+}
+
+.graph-mode-switch button {
+    border: none;
+    background: transparent;
+    color: #4d6877;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 4px 10px;
+    cursor: pointer;
+}
+
+.graph-mode-switch button.active {
+    background: #135f7f;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(19, 95, 127, 0.2);
+}
+
+::ng-deep .home-graphs ngx-charts-pie-chart,
+::ng-deep .home-graphs ngx-charts-bar-vertical,
+::ng-deep .home-graphs ngx-charts-line-chart {
+    display: block;
+    width: 100%;
+    height: 240px;
+    min-height: 240px;
+    overflow: visible;
+    margin: 0;
+    flex: 1 1 auto;
+}
+
+::ng-deep .home-graphs .graph-card-pie ngx-charts-pie-chart {
+    height: 330px;
+    min-height: 330px;
+    overflow: hidden;
+    width: 100%;
+}
+
+::ng-deep .home-graphs .graph-card-pie .ngx-charts-outer,
+::ng-deep .home-graphs .graph-card-pie .ngx-charts,
+::ng-deep .home-graphs .graph-card-pie .ngx-charts svg {
+    overflow: visible !important;
+}
+
+::ng-deep .home-graphs .graph-card-bar ngx-charts-bar-vertical {
+    height: 330px;
+    min-height: 330px;
+    overflow: hidden;
+}
+
+::ng-deep .home-graphs .graph-card-wide ngx-charts-line-chart {
+    display: block;
+    width: 100%;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+::ng-deep .home-graphs .ngx-charts-outer {
+    width: 100% !important;
+    height: 100% !important;
+    overflow: visible;
+}
+
+::ng-deep .home-graphs .ngx-charts {
+    float: none !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 auto !important;
+    display: block !important;
+}
+
+::ng-deep .home-graphs .graph-card-pie .ngx-charts {
+    transform: scale(0.80);
+    transform-origin: center center;
+}
+
+::ng-deep .home-graphs .graph-card-pie .ngx-charts-outer {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+::ng-deep .home-graphs .ngx-charts svg {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    overflow: visible;
+}
+
+::ng-deep .home-graphs .graph-card-wide .ngx-charts-outer,
+::ng-deep .home-graphs .graph-card-wide .ngx-charts,
+::ng-deep .home-graphs .graph-card-wide .ngx-charts svg {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    transform: none !important;
+}
+
+::ng-deep .home-graphs .graph-card-bar .ngx-charts-outer,
+::ng-deep .home-graphs .graph-card-bar .ngx-charts,
+::ng-deep .home-graphs .graph-card-bar .ngx-charts svg {
+    overflow: hidden !important;
+}
+
+::ng-deep .home-graphs text {
+    fill: #516775;
+    font-weight: 500;
+}
+
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.stats-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f5fbff 100%);
+    border: 1px solid rgba(19, 95, 127, 0.18);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 18px rgba(8, 40, 56, 0.06);
+}
+
+.stats-card-label {
+    color: #5e7583;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.stats-card-value {
+    color: #0f5f80;
+    font-size: 28px;
+    line-height: 1;
+    font-weight: 800;
+}
+
+.stats-chart-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fcfe 100%);
+    border: 1px solid rgba(19, 95, 127, 0.16);
+    border-radius: 16px;
+    box-shadow: 0 10px 22px rgba(8, 40, 56, 0.06);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stats-chart-title {
+    color: #135f7f;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.stats-bars {
+    display: grid;
+    gap: 10px;
+}
+
+.stats-bar-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 220px) minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.stats-bar-label {
+    color: #2f3c46;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stats-bar-track {
+    height: 10px;
+    border-radius: 999px;
+    background: #e6eef3;
+    overflow: hidden;
+    border: 1px solid rgba(19, 95, 127, 0.08);
+}
+
+.stats-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    min-width: 4px;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.stats-bar-value {
+    color: #135f7f;
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 24px;
+    text-align: right;
+}
+
+.first_col {
+    position:relative;
+    text-align:center;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 5px;
+    vertical-align: middle;
+}
+.noDoc {
+    .mat-badge-content {
+        color: #666;
+        opacity: 0.5;
+    }
+}
+
+.watermark {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%) rotate(-20deg);
+    color: red;
+    font-weight: bold;
+    opacity: 0.6;
+  }
+
+::ng-deep app-dashboard {
+    display: block;
+}
+
+@media (max-width: 900px) {
+    .stats-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-bar-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .stats-bar-value {
+        text-align: left;
+    }
+
+    .home-graphs {
+        grid-template-columns: 1fr;
+    }
+
+    .graph-head {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 6px;
+    }
+
+    ::ng-deep .home-graphs ngx-charts-pie-chart,
+    ::ng-deep .home-graphs ngx-charts-bar-vertical,
+    ::ng-deep .home-graphs ngx-charts-line-chart {
+        height: 220px;
+        min-height: 220px;
+    }
+
+    .graph-card,
+    .graph-card-pie,
+    .graph-card-bar,
+    .graph-card-wide {
+        min-height: 300px;
+    }
+
+    .graph-card-pie {
+        min-height: 380px;
+    }
+
+    .graph-card-bar {
+        min-height: 360px;
+    }
+
+    .graph-card-wide {
+        min-height: 340px;
+    }
+}

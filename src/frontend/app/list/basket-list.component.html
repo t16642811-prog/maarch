@@ -1,0 +1,163 @@
+    <mat-sidenav-container class="maarch-container">
+        <mat-sidenav-content>
+            <mat-card id="viewThumbnail" style="display:none;position: fixed;z-index: 2;margin-left: 1px;"><img style="max-height: 100vh;" *ngIf="thumbnailUrl !== ''" [src]="thumbnailUrl | secureUrl | async" /></mat-card>
+            <div class="bg-head">
+                <div class="bg-head-title" [class.customContainerRight]="appService.getViewMode()">
+                    <div class="bg-head-title-label">
+                        <app-header-left></app-header-left>
+                    </div>
+                    <div class="bg-head-title-tool">
+                       <app-header-right></app-header-right>
+                    </div>
+                </div>
+                <div class="bg-head-content" [class.fullContainer]="appService.getViewMode()">
+                    <app-filters-tool style="flex:1;overflow-x: auto;overflow-y: hidden;" #filtersTool
+                        [listProperties]="this.listProperties" [totalRes]="allResInBasket.length"
+                        [selectedRes]="selectedRes" [routeDatas]="'/rest/resourcesList/users/' + this.currentBasketInfo.ownerId + '/groups/' + currentBasketInfo.groupId + '/baskets/' + currentBasketInfo.basketId + '/filters'" (toggleAllRes)="toggleAllRes($event)"
+                        (refreshEventAfterAction)="refreshDaoAfterAction()" (refreshEvent)="refreshDao()" [title]="'lang.searchMailInBasket' | translate">
+                    </app-filters-tool>
+                </div>
+            </div>
+            <div class="container" [class.fullContainer]="appService.getViewMode()">
+                <div class="container-content">
+                    <div class="example-loading-shade" *ngIf="isLoadingResults">
+                        <mat-spinner *ngIf="isLoadingResults"></mat-spinner>
+                    </div>
+                    <div class="table-head">
+                        <div class="table-head-result">
+                            <mat-checkbox color="primary"
+                                [checked]="selectedRes.length == allResInBasket.length && selectedRes.length > 0"
+                                [indeterminate]="selectedRes.length > 0 && selectedRes.length < allResInBasket.length"
+                                style="margin: 10px;padding-right: 10px;" title="{{'lang.selectAllResInBasket' | translate}}"
+                                (change)="toggleAllRes($event)"></mat-checkbox>&nbsp;{{allResInBasket.length}}
+                            {{'lang.records' | translate | ucfirst}}&nbsp;<small
+                                *ngIf="selectedRes.length > 0">- {{selectedRes.length}}
+                                {{'lang.selected' | translate}}</small>
+                        </div>
+                        <div class="table-head-tool">
+                            <span style="position: relative;">
+                                <mat-paginator #paginatorResultList [length]="resultsLength" [pageSizeOptions]="[10, 25, 50, 100, 150]"
+                                    class="paginatorResultList"></mat-paginator>
+                                <app-select-page [paginator]="paginatorResultList"></app-select-page>
+                            </span>
+                            <span>
+                                <app-tools-list #actionsList [selectedRes]="selectedRes"
+                                    [currentBasketInfo]="currentBasketInfo" [from]="'basket'"></app-tools-list>
+                            </span>
+                            <span>
+                                <app-actions-list #actionsList (refreshEvent)="refreshDao()"
+                                    [contextMode]="false" [totalRes]="allResInBasket.length" [selectedRes]="selectedRes"
+                                    [currentBasketInfo]="currentBasketInfo" [currentResource]="currentResource" (refreshPanelFolders)="foldersService.getFolders()"></app-actions-list>
+                            </span>
+                        </div>
+                    </div>
+                    <div style="flex:1;overflow:auto;">
+                        <table cdkDropList id="document-list" [cdkDropListConnectedTo]="listTodrag()" [cdkDropListData]="data" #tableBasketListSort="matSort" mat-table [dataSource]="data" matSort
+                            matSortActive="resId" matSortDisableClear matSortDirection="asc" style="width:100%;" [cdkDropListDisabled]="dragInit || appService.getViewMode()">
+
+                            <ng-container matColumnDef="resId">
+                                <td mat-cell *matCellDef="let row; let rowIndex = index"
+                                    style="padding:0;border-top: solid 1px rgba(0, 0, 0, 0.12);"
+                                    [class.selected-data]="row.checked">
+                                    <div class="main-info">
+                                        <span style="width:50px;height: 16px;">
+                                            <mat-checkbox color="primary" [checked]="row.checked"
+                                                (change)="toggleRes($event,row)" (click)="$event.stopPropagation();">
+                                            </mat-checkbox>
+                                        </span>
+                                        <span class="row-index" title="{{(paginator.pageIndex * paginator.pageSize) + rowIndex + 1}}">
+                                            {{(paginator.pageIndex * paginator.pageSize) + rowIndex + 1}}-
+                                        </span>
+                                        <button mat-icon-button (click)="$event.stopPropagation();toggleMailTracking(row)" style="margin-left: -25px;"
+                                            class="followIcon"
+                                            [title]="row.mailTracking === true ? ('lang.untrackThisMail' | translate) : ('lang.trackThisMail' | translate)">
+                                            <mat-icon [ngClass]="[row.mailTracking === true ? 'fas fa-star' : 'far fa-star']"></mat-icon>
+                                        </button>
+                                        <span *ngIf="!appService.getViewMode()" style="cursor:pointer;" class="main-info-status" (click)="launch(defaultAction,row);">
+                                            <mat-icon *ngIf="row.isLocked !== true" title="{{row.statusLabel}}"
+                                                [ngStyle]="{'color': row.anamTreated ? '#17a85d' : row.priorityColor}"
+                                                [class.anam-treated-icon]="row.anamTreated"
+                                                color="primary"
+                                                class="{{row.statusImage.charAt(0)}}{{row.statusImage.charAt(1)}} {{row.statusImage}} {{row.statusImage.charAt(0)}}{{row.statusImage.charAt(1)}}-2x">
+                                            </mat-icon>
+                                            <span *ngIf="row.confidentiality === 'Y'" class="watermark">{{'lang.confidential' | translate}}</span>
+                                            <mat-icon *ngIf="row.isLocked === true" title="{{'lang.warnLockResInProgress' | translate}} : {{row.locker}}" style="color: red;" class="fa fa-lock fa-2x">
+                                            </mat-icon>
+                                        </span>
+                                        <span *ngIf="!appService.getViewMode()" class="main-info-data" style="width:200px;text-align:center;cursor:pointer;" (click)="launch(defaultAction,row);">
+                                            <ng-container
+                                                *ngIf="row.chrono == ('lang.undefined' | translate) && row.barcode != ('lang.undefined' | translate)">
+                                                <span style="color: rgba(0,0,0,0.4);font-size: 90%;"><i
+                                                        title="{{'lang.barcode' | translate}}" class="fas fa-barcode"></i>
+                                                    {{row.barcode}}</span>
+                                            </ng-container>
+                                            <ng-container *ngIf="row.chrono != ('lang.undefined' | translate)">
+                                                {{row.chrono}}
+                                            </ng-container>
+                                        </span>
+                                        <span class="main-info-data" style="font-weight:bold;flex:1;cursor:pointer;"
+                                            [class.undefined]="row.subject == ('lang.undefined' | translate)"
+                                            title="{{row.subject}}" (click)="launch(defaultAction,row);">{{row.subject | shorten: 150: '...'}}</span>
+                                        <span class="main-info-data" style="flex:1;color:#6f8391;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:2px;"
+                                            (click)="launch(defaultAction,row);">
+                                            <span>Exp�diteur: {{ getRowSender(row) }}</span>
+                                            <span>Date du courrier:
+                                                <ng-container *ngIf="getRowDocumentDate(row); else noDocDate">
+                                                    {{ getRowDocumentDate(row) | date:'dd/MM/yyyy HH:mm' }}
+                                                </ng-container>
+                                                <ng-template #noDocDate>{{'lang.undefined' | translate}}</ng-template>
+                                            </span>
+                                        </span>
+                                        <span *ngIf="row.anamTreated" class="anam-treated-badge" title="Courrier traité">Courrier traité</span>
+                                        <span class="main-info-action">
+    <button mat-icon-button title="{{row.hasDocument ? ('lang.viewResource' | translate) : ('lang.noDocument' | translate)}}" (click)="$event.stopPropagation();viewDocument(row)"
+        (mouseenter)="viewThumbnail(row);" (mouseleave)="closeThumbnail();"
+        [disabled]="!row.hasDocument">
+        <mat-icon class="fa" [ngClass]="[row.hasDocument ? 'fa-eye' : 'fa-eye-slash']"></mat-icon>
+    </button>
+</span>
+                                    </div>
+                                    <div *ngIf="displayFolderTags && row.folders !== undefined && row.folders.length > 0" class="folder-info">
+                                        <span class="badge badge-folder" *ngFor="let folder of row.folders | sortBy : 'label'" (click)="$event.stopPropagation();goToFolder(folder);" title="{{'lang.goToFolder' | translate}} : {{folder.label}}"><i class="fa fa-folder"></i> {{folder.label}}</span>
+                                    </div>
+                                </td>
+                            </ng-container>
+                            <tr mat-row *matRowDef="let row; columns: displayedColumnsBasket;"
+                                (contextmenu)="open($event,row);" class="rowData" [class.locked]="row.isLocked == true"
+                                [class.unread]="row.is_read !== 1 && row.is_read !== '1'"
+                                cdkDrag (cdkDragStarted)="selectSpecificRes(row);" [cdkDragData]="row" >
+                                <div class="example-custom-placeholder" *cdkDragPlaceholder></div>
+                                <div class="dragPreview" *cdkDragPreview><i class="fas fa-envelope-open-text fa-2x"></i><br/>{{'lang.classifyInFolder' | translate}} : <b>{{row.chrono}}</b></div>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="table-head">
+                    </div>
+                </div>
+            </div>
+        </mat-sidenav-content>
+        <mat-sidenav #snav2 [fixedInViewport]="appService.getViewMode()" position='end'
+            [opened]="appService.getViewMode() ? false : false" [mode]="appService.getViewMode() ? 'over' : 'side'" class="panel-right" style="overflow-x:hidden;"
+            [class.docView]="!filtersListService.filterMode" [ngStyle]="{'width': appService.getViewMode() ? '80%' : '30%'}"
+            autoFocus="false">
+            <div *ngIf="innerHtml && !filtersListService.filterMode" [matTooltip]="currentChrono"
+                [innerHTML]="innerHtml" style="height: 100%;overflow: hidden;"></div>
+
+                <div style="display:flex;position: sticky;top: 0;z-index: 2;">
+                    <button mat-icon-button (click)="snav2.close()" style="font-size: 20px;color:#666;">
+                    <mat-icon class="fa fa-arrow-right"></mat-icon>
+                </button>
+            </div>
+            <app-panel-list #appPanelList
+                (refreshBadgeNotes)="refreshBadgeNotes($event)"
+                (refreshBadgeAttachments)="refreshBadgeAttachments($event)"
+                (refreshBadgeSentResource)="refreshBadgeSentResource($event)">
+            </app-panel-list>
+            <mat-divider></mat-divider>
+        </mat-sidenav>
+    </mat-sidenav-container>
+    <app-actions-list (refreshEvent)="refreshDao()" (refreshEventAfterAction)="refreshDaoAfterAction()" #actionsListContext [contextMode]="true"
+        [totalRes]="allResInBasket.length" [selectedRes]="selectedRes" [currentBasketInfo]="currentBasketInfo" (refreshPanelFolders)="foldersService.getFolders()">
+    </app-actions-list>
+
+

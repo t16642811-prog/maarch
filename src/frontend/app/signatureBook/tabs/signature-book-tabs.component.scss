@@ -1,0 +1,128 @@
+.book-mark-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.book-mark-toolbar {
+    position: sticky;
+    top: 0px;
+    height: 70px;
+    width: 60px;
+    min-width: 60px;
+    border-top: solid 1px var(--maarch-color-primary);
+    border-bottom: solid 1px var(--maarch-color-primary);
+    background: white;
+    overflow: hidden;
+    white-space: nowrap;
+    z-index: 0;
+    box-shadow: 0px 0px 4px 2px rgba(0, 0, 0, 0.46);
+}
+
+.book-mark-toolbar ::ng-deep .mat-button-wrapper {
+    text-align: center;
+    position: absolute;
+    rotate: 90deg;
+    width: 70px;
+    left: -3px;
+    top: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: var(--maarch-color-primary);
+    font-size: 20px;
+}
+
+.book-mark-toolbar-selected {
+    height: 70px;
+    background: var(--maarch-color-secondary);
+    border: none;
+    z-index: 1;
+    box-shadow: 0px 0px 4px 2px rgba(0, 0, 0, 0.46);
+}
+
+.book-mark-item {
+    position: sticky;
+    top: 0px;
+    height: 200px;
+    width: 60px;
+    min-width: 60px;
+    border-top: solid 1px var(--maarch-color-primary);
+    border-bottom: solid 1px var(--maarch-color-primary);
+    background: white;
+    overflow: hidden;
+    white-space: nowrap;
+    z-index: 0;
+    box-shadow: 0px 0px 4px 2px rgba(0, 0, 0, 0.46);
+}
+
+.book-mark-item ::ng-deep .mat-button-wrapper {
+    text-align: center;
+    position: absolute;
+    rotate: 90deg;
+    width: 200px;
+    left: -70px;
+    top: 85px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: var(--maarch-color-primary);
+    font-size: 20px;
+}
+
+.book-mark-item-to-left {
+    align-self: flex-start;
+    rotate: -180deg;
+    border-left: solid 1px var(--maarch-color-primary);
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 0px;
+    border-top-right-radius: 0px;
+}
+
+.book-mark-item-to-right {
+    align-self: flex-end;
+    rotate: 180deg;
+    border-right: solid 1px var(--maarch-color-primary);
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: 0px;
+    border-top-left-radius: 0px;
+}
+
+.book-mark-item-selected {
+    height: 200px;
+    background: var(--maarch-color-secondary);
+    border: none;
+    z-index: 1;
+    box-shadow: 0px 0px 4px 2px rgba(0, 0, 0, 0.46);
+}
+
+.book-mark-item-selected-to-left {
+    align-self: flex-end;
+    rotate: 180deg;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+}
+
+.book-mark-item-selected-to-right {
+    align-self: flex-start;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+
+.book-mark-item-to-right ::ng-deep .mat-button-wrapper {
+    rotate: -90deg;
+}
+
+.book-mark-item-selected-to-left ::ng-deep .mat-button-wrapper,
+.book-mark-item-selected-to-right ::ng-deep .mat-button-wrapper {
+    color: white;
+}

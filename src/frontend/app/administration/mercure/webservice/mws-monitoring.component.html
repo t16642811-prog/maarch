@@ -1,0 +1,171 @@
+<mat-sidenav-container autosize class="maarch-container">
+    <ng-template #adminMenuTemplate>
+        <app-admin-menu-mercure></app-admin-menu-mercure>
+    </ng-template>
+
+    <mat-sidenav-content>
+        <div class="bg-head">
+            <div class="bg-head-title" [class.customContainerRight]="appService.getViewMode()">
+                <div class="bg-head-title-label">
+                    <app-header-left></app-header-left>
+                </div>
+                <div class="bg-head-title-tool">
+                    <app-header-right></app-header-right>
+                </div>
+            </div>
+        </div>
+        <div class="bg-head-content" [class.fullContainer]="appService.getViewMode()">
+        </div>
+
+
+        <div class="container" [class.fullContainer]="appService.getViewMode()">
+            <div class="container-content">
+                <div *ngIf="loading" style="display:flex;height:100%;">
+                    <mat-spinner style="margin:auto;"></mat-spinner>
+                </div>
+                <mat-card *ngIf="!loading" class="card-app-content">
+                    <div class="row" style="margin:0px;">
+                        <div class="col-md-12 col-xs-12">
+                            <mat-card class="card-stats">
+                                <mat-card-header class="card-header">
+                                    <mat-card-title class="card-title">{{ config.mws.login }}</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content class="card-body" style="height:10vh;text-align: center">
+                                    <div class="row">
+                                        <div class="col-md-2 col-xs-2 iconStat">
+                                            <i class="far fa-copy"></i>
+                                        </div>
+                                        <div class="col-md-2 col-xs-2">
+                                            <div class="numbers">
+                                                <p class="card-category">
+                                                    {{'lang.mwsCountPages' | translate}}
+                                                </p>
+                                                <mat-card-title class="card-title">
+                                                    {{ statusSubscription.nbPagesMax }}
+                                                </mat-card-title>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 col-xs-2 iconStat">
+                                            <i class="far fa-clock"></i>
+                                        </div>
+                                        <div class="col-md-2 col-xs-2">
+                                            <div class="numbers">
+                                                <p class="card-category">
+                                                    {{'lang.mwsSouscriptionDate' | translate}}
+                                                </p>
+                                                <mat-card-title class="card-title" *ngIf="statusSubscription.startDate != 'NA'">
+                                                    {{ statusSubscription.startDate | date: 'dd/MM/y' }}
+                                                </mat-card-title>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 col-xs-2 iconStat">
+                                            <i class="fas fa-hourglass"></i>
+                                        </div>
+                                        <div class="col-md-2 col-xs-2">
+                                            <div class="numbers">
+                                                <p class="card-category">
+                                                    {{'lang.mwsExpirationDate' | translate}}
+                                                </p>
+                                                <mat-card-title class="card-title" *ngIf="statusSubscription.endDate != 'NA' ">
+                                                    {{ statusSubscription.endDate | date: 'dd/MM/y' }}
+                                                </mat-card-title>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </mat-card-content>
+                            </mat-card>
+                        </div>
+
+                        <!-- Pages restantes -->
+                        <div class="col-md-4 col-xs-4">
+                            <mat-card class="card-stats">
+                                <mat-card-header class="card-header">
+                                    <mat-card-title class="card-title">{{'lang.pageS' | translate}}</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content class="card-body" style="height:20vh;">
+                                    <ngx-charts-pie-chart id="chartNbDocs"
+                                                          [results]="chartPages"
+                                                          [legend]="false"
+                                                          [doughnut]="true"
+                                                          [labels]="false" >
+                                    </ngx-charts-pie-chart>
+                                </mat-card-content>
+                            </mat-card>
+                        </div>
+
+                        <!-- Jours restants -->
+                        <div class="col-md-4 col-xs-4">
+                            <mat-card class="card-stats">
+                                <mat-card-header class="card-header">
+                                    <mat-card-title class="card-title">{{'lang.dayS' | translate}}</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content class="card-body" style="height:20vh;">
+                                    <ngx-charts-number-card id="chartNbDays"
+                                                            [results]="chartDays"
+                                                            [scheme]="colorScheme" [cardColor]="cardColor" >
+                                    </ngx-charts-number-card>
+                                </mat-card-content>
+                            </mat-card>
+                        </div>
+
+                        <!-- Répartition status -->
+                        <div class="col-md-4 col-xs-4">
+                            <mat-card class="card-stats">
+                                <mat-card-header class="card-header">
+                                    <mat-card-title class="card-title">{{'lang.status' | translate}}</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content class="card-body" style="height:20vh;">
+                                    <ngx-charts-pie-chart id="chartStatus"
+                                                          [results]="chartStatus"
+                                                          [legend]="false"
+                                                          [labels]="false" [scheme]="colorScheme"
+                                    >
+                                    </ngx-charts-pie-chart>
+                                </mat-card-content>
+                            </mat-card>
+                        </div>
+
+                        <!-- Evolution des dépôts LAD -->
+                        <div class="col-md-12 col-xs-12" >
+                            <mat-card class="card-stats">
+                                <mat-card-header class="card-header">
+                                    <mat-card-title class="card-title">{{'lang.evolutionLad' | translate}}</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content class="card-body" style="height:36vh;">
+                                    <ngx-charts-line-chart id="chartEvolDocsLAD"
+                                                           [results]="chartEvolLad"
+                                                           [xAxis]="true"
+                                                           [yAxis]="true"
+                                                           [legend]="true"
+                                                           [showXAxisLabel]="true"
+                                                           [showYAxisLabel]="true">
+                                    </ngx-charts-line-chart>
+                                </mat-card-content>
+                            </mat-card>
+                        </div>
+
+                        <!-- Evolution des dépôts OCR -->
+                        <div class="col-md-12 col-xs-12" >
+                            <mat-card class="card-stats">
+                                <mat-card-header class="card-header">
+                                    <mat-card-title class="card-title">{{'lang.evolutionOcr' | translate}}</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content class="card-body" style="height:36vh;">
+                                    <ngx-charts-line-chart id="chartEvolDocsOCR"
+                                                           [results]="chartEvolOcr"
+                                                           [xAxis]="true"
+                                                           [yAxis]="true"
+                                                           [legend]="true"
+                                                           [showXAxisLabel]="true"
+                                                           [showYAxisLabel]="true">
+                                    </ngx-charts-line-chart>
+                                </mat-card-content>
+                            </mat-card>
+                        </div>
+                    </div>
+                </mat-card>
+            </div>
+        </div>
+
+    </mat-sidenav-content>
+</mat-sidenav-container>

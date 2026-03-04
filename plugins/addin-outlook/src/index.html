@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AddinOutlook</title>
+  <base href=".">
+  <script>
+    // this late load is required due to bug in office-js causing a routing loop
+    // https://github.com/OfficeDev/office-js/issues/1198
+    // https://github.com/OfficeDev/office-js/issues/1344
+    // https://github.com/OfficeDev/office-js/issues/429
+    let replaceState = window.history.replaceState;
+    let pushState = window.history.pushState;
+    var head = document.getElementsByTagName("head")[0];
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.onload = function () {
+      Office.onReady().then(() => {
+        window.history.replaceState = replaceState;
+        window.history.pushState = pushState;
+      });
+    };
+    script.src = "assets/office-js/office.js";
+    head.appendChild(script);
+  </script>
+  <!-- <script type="text/javascript" src="assets/office-js/office.js"></script> -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>

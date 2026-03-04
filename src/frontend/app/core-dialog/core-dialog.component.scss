@@ -1,0 +1,17 @@
+.core-dialog {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo {
+    width: 200px;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+.loading-msg {
+    font-weight: bold;
+    color: var(--maarch-color-secondary-600);
+}

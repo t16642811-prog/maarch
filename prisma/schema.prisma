@@ -1,0 +1,1154 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model acknowledgement_receipts {
+  id            Int       @id @default(autoincrement())
+  res_id        Int
+  type          String    @db.VarChar(16)
+  format        String    @db.VarChar(8)
+  user_id       Int
+  contact_id    Int
+  creation_date DateTime  @db.Timestamp(6)
+  send_date     DateTime? @db.Timestamp(6)
+  docserver_id  String    @db.VarChar(128)
+  path          String    @db.VarChar(256)
+  filename      String    @db.VarChar(256)
+  fingerprint   String    @db.VarChar(256)
+  cc            Json?     @default("[]")
+  cci           Json?     @default("[]")
+}
+
+model actions {
+  id           Int     @id @default(autoincrement())
+  keyword      String  @default("") @db.VarChar(32)
+  label_action String? @db.VarChar(255)
+  id_status    String? @db.VarChar(10)
+  is_system    String  @default("N") @db.Char(1)
+  action_page  String? @db.VarChar(255)
+  component    String? @db.VarChar(128)
+  history      String  @default("N") @db.Char(1)
+  parameters   Json    @default("{}")
+}
+
+model actions_categories {
+  action_id   BigInt
+  category_id String @db.VarChar(255)
+
+  @@id([action_id, category_id])
+}
+
+model actions_groupbaskets {
+  id_action           BigInt
+  where_clause        String?
+  group_id            String  @db.VarChar(32)
+  basket_id           String  @db.VarChar(32)
+  used_in_basketlist  String  @default("Y") @db.Char(1)
+  used_in_action_page String  @default("Y") @db.Char(1)
+  default_action_list String  @default("N") @db.Char(1)
+
+  @@id([id_action, group_id, basket_id])
+}
+
+model address_sectors {
+  id               Int     @id @default(autoincrement())
+  address_number   String? @db.VarChar(256)
+  address_street   String? @db.VarChar(256)
+  address_postcode String? @db.VarChar(256)
+  address_town     String? @db.VarChar(256)
+  label            String? @db.VarChar(256)
+  ban_id           String? @db.VarChar(256)
+
+  @@unique([address_number, address_street, address_postcode, address_town], map: "address_sectors_key")
+}
+
+model adr_attachments {
+  id           Int     @id @default(autoincrement())
+  res_id       BigInt
+  type         String  @db.VarChar(32)
+  docserver_id String  @db.VarChar(32)
+  path         String  @db.VarChar(255)
+  filename     String  @db.VarChar(255)
+  fingerprint  String? @db.VarChar(255)
+
+  @@unique([res_id, type], map: "adr_attachments_unique_key")
+}
+
+model adr_letterbox {
+  id           Int     @id @default(autoincrement())
+  res_id       BigInt
+  type         String  @db.VarChar(32)
+  version      Int
+  docserver_id String  @db.VarChar(32)
+  path         String  @db.VarChar(255)
+  filename     String  @db.VarChar(255)
+  fingerprint  String? @db.VarChar(255)
+
+  @@unique([res_id, type, version], map: "adr_letterbox_unique_key")
+}
+
+model attachment_types {
+  id                  Int     @id @default(autoincrement())
+  type_id             String  @unique(map: "attachment_types_unique_key")
+  label               String
+  visible             Boolean
+  email_link          Boolean
+  signable            Boolean
+  signed_by_default   Boolean
+  icon                String?
+  chrono              Boolean
+  version_enabled     Boolean
+  new_version_default Boolean
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model basket_persistent_mode {
+  res_id        BigInt?
+  user_id       Int
+  is_persistent String? @db.VarChar(1)
+
+  @@ignore
+}
+
+model baskets {
+  id               Int     @unique(map: "baskets_unique_key") @default(autoincrement())
+  coll_id          String  @db.VarChar(32)
+  basket_id        String  @db.VarChar(32)
+  basket_name      String  @db.VarChar(255)
+  basket_desc      String  @db.VarChar(255)
+  basket_clause    String
+  is_visible       String  @default("Y") @db.Char(1)
+  enabled          String  @default("Y") @db.Char(1)
+  basket_order     Int?
+  color            String? @db.VarChar(16)
+  basket_res_order String  @default("res_id desc") @db.VarChar(255)
+  flag_notif       String? @db.VarChar(1)
+
+  @@id([coll_id, basket_id])
+}
+
+model blacklist {
+  id   Int    @id @default(autoincrement())
+  term String @unique @db.VarChar(128)
+}
+
+model configurations {
+  id        Int    @id(map: "configuration_pkey") @default(autoincrement())
+  privilege String @unique(map: "configuration_unique_key") @db.VarChar(64)
+  value     Json   @default("{}")
+}
+
+model contacts {
+  id                  Int       @id @default(autoincrement())
+  civility            Int?
+  firstname           String?   @db.VarChar(256)
+  lastname            String?   @db.VarChar(256)
+  company             String?   @db.VarChar(256)
+  department          String?   @db.VarChar(256)
+  function            String?   @db.VarChar(256)
+  address_number      String?   @db.VarChar(256)
+  address_street      String?   @db.VarChar(256)
+  address_additional1 String?   @db.VarChar(256)
+  address_additional2 String?   @db.VarChar(256)
+  address_postcode    String?   @db.VarChar(256)
+  address_town        String?   @db.VarChar(256)
+  address_country     String?   @db.VarChar(256)
+  email               String?   @db.VarChar(256)
+  phone               String?   @db.VarChar(256)
+  communication_means Json?
+  notes               String?
+  creator             Int
+  creation_date       DateTime  @default(now()) @db.Timestamp(6)
+  modification_date   DateTime? @db.Timestamp(6)
+  enabled             Boolean   @default(true)
+  custom_fields       Json?     @default("{}")
+  external_id         Json?     @default("{}")
+  sector              String?   @db.VarChar(256)
+  lad_indexation      Boolean   @default(false)
+
+  @@index([company], map: "company_idx")
+  @@index([firstname], map: "firstname_idx")
+  @@index([lastname], map: "lastname_idx")
+}
+
+model contacts_civilities {
+  id           Int    @id @default(autoincrement())
+  label        String
+  abbreviation String @db.VarChar(16)
+}
+
+model contacts_custom_fields_list {
+  id     Int    @id @default(autoincrement())
+  label  String @unique(map: "contacts_custom_fields_list_unique_key") @db.VarChar(256)
+  type   String @db.VarChar(256)
+  values Json?
+}
+
+model contacts_filling {
+  id               Int     @id @default(autoincrement())
+  enable           Boolean
+  first_threshold  Int
+  second_threshold Int
+}
+
+model contacts_groups {
+  id          Int    @id @default(autoincrement())
+  label       String
+  description String
+  owner       Int
+  entities    Json   @default("{}")
+}
+
+model contacts_groups_lists {
+  id                 Int    @id @default(autoincrement())
+  contacts_groups_id Int
+  correspondent_id   Int
+  correspondent_type String @db.VarChar(256)
+}
+
+model contacts_parameters {
+  id          Int     @id @default(autoincrement())
+  identifier  String
+  mandatory   Boolean @default(false)
+  filling     Boolean @default(false)
+  searchable  Boolean @default(false)
+  displayable Boolean @default(false)
+}
+
+model convert_stack {
+  coll_id        String  @db.VarChar(32)
+  res_id         BigInt
+  convert_format String  @default("pdf") @db.VarChar(32)
+  cnt_retry      Int?
+  status         String  @db.Char(1)
+  work_batch     BigInt?
+  regex          String? @db.VarChar(32)
+
+  @@id([coll_id, res_id, convert_format])
+}
+
+model custom_fields {
+  id     Int                 @id @default(autoincrement())
+  label  String              @unique(map: "custom_fields_unique_key") @db.VarChar(256)
+  type   String              @db.VarChar(256)
+  mode   custom_fields_modes @default(form)
+  values Json?
+}
+
+model difflist_roles {
+  id                    Int     @id(map: "roles_id_pkey") @default(autoincrement())
+  role_id               String  @unique @db.VarChar(32)
+  label                 String  @db.VarChar(255)
+  keep_in_list_instance Boolean @default(false)
+}
+
+model difflist_types {
+  difflist_type_id    String  @id @db.VarChar(50)
+  difflist_type_label String  @db.VarChar(100)
+  difflist_type_roles String?
+  allow_entities      String  @default("N") @db.VarChar(1)
+  is_system           String  @default("N") @db.VarChar(1)
+}
+
+model docserver_types {
+  docserver_type_id    String  @id @db.VarChar(32)
+  docserver_type_label String? @db.VarChar(255)
+  enabled              String  @default("Y") @db.Char(1)
+  fingerprint_mode     String? @db.VarChar(32)
+}
+
+model docservers {
+  id                 Int      @unique @default(autoincrement())
+  docserver_id       String   @id @default("1") @db.VarChar(32)
+  docserver_type_id  String   @db.VarChar(32)
+  device_label       String?  @db.VarChar(255)
+  is_readonly        String   @default("N") @db.Char(1)
+  is_encrypted       Boolean  @default(false)
+  size_limit_number  BigInt   @default(dbgenerated("(0)::bigint"))
+  actual_size_number BigInt   @default(dbgenerated("(0)::bigint"))
+  path_template      String   @db.VarChar(255)
+  creation_date      DateTime @db.Timestamp(6)
+  coll_id            String   @default("coll_1") @db.VarChar(32)
+}
+
+model doctypes {
+  coll_id                     String  @default("") @db.VarChar(32)
+  type_id                     Int     @id @default(autoincrement())
+  description                 String  @default("") @db.VarChar(255)
+  enabled                     String  @default("Y") @db.Char(1)
+  doctypes_first_level_id     Int?
+  doctypes_second_level_id    Int?
+  retention_final_disposition String? @db.VarChar(255)
+  retention_rule              String? @db.VarChar(15)
+  action_current_use          String? @db.VarChar(255)
+  duration_current_use        Int?
+  process_delay               Int
+  delay1                      Int
+  delay2                      Int
+  process_mode                String  @db.VarChar(256)
+
+  @@index([description], map: "description_idx")
+}
+
+model doctypes_first_level {
+  doctypes_first_level_id    Int     @id @default(autoincrement())
+  doctypes_first_level_label String  @db.VarChar(255)
+  css_style                  String? @db.VarChar(255)
+  enabled                    String  @default("Y") @db.Char(1)
+
+  @@index([doctypes_first_level_label], map: "doctypes_first_level_label_idx")
+}
+
+model doctypes_indexes {
+  type_id    BigInt
+  coll_id    String @db.VarChar(32)
+  field_name String @db.VarChar(255)
+  mandatory  String @default("N") @db.Char(1)
+
+  @@id([type_id, coll_id, field_name])
+}
+
+model doctypes_second_level {
+  doctypes_second_level_id    Int     @id @default(autoincrement())
+  doctypes_second_level_label String  @db.VarChar(255)
+  doctypes_first_level_id     Int
+  css_style                   String? @db.VarChar(255)
+  enabled                     String  @default("Y") @db.Char(1)
+
+  @@index([doctypes_second_level_label], map: "doctypes_second_level_label_idx")
+}
+
+model emails {
+  id                  Int       @id @default(autoincrement())
+  user_id             Int
+  sender              Json      @default("{}") @db.Json
+  recipients          Json      @default("[]") @db.Json
+  cc                  Json      @default("[]") @db.Json
+  cci                 Json      @default("[]") @db.Json
+  object              String?   @db.VarChar(256)
+  body                String?
+  document            Json?     @db.Json
+  is_html             Boolean   @default(true)
+  status              String    @db.VarChar(16)
+  message_exchange_id String?
+  creation_date       DateTime  @db.Timestamp(6)
+  send_date           DateTime? @db.Timestamp(6)
+}
+
+model entities {
+  id                  Int     @default(autoincrement())
+  entity_id           String  @id @db.VarChar(32)
+  entity_label        String? @db.VarChar(255)
+  short_label         String? @db.VarChar(50)
+  entity_full_name    String?
+  enabled             String  @default("Y") @db.Char(1)
+  address_number      String? @db.VarChar(255)
+  address_street      String? @db.VarChar(255)
+  address_additional1 String? @db.VarChar(255)
+  address_additional2 String? @db.VarChar(256)
+  address_postcode    String? @db.VarChar(32)
+  address_town        String? @db.VarChar(255)
+  address_country     String? @db.VarChar(255)
+  email               String? @db.VarChar(255)
+  business_id         String? @db.VarChar(32)
+  parent_entity_id    String? @db.VarChar(32)
+  entity_type         String? @db.VarChar(64)
+  ldap_id             String? @db.VarChar(255)
+  producer_service    String? @db.VarChar(255)
+  folder_import       String? @unique(map: "entities_folder_import_unique_key") @db.VarChar(64)
+  external_id         Json?   @default("{}")
+
+  @@index([folder_import], map: "entity_folder_import_idx")
+  @@index([entity_id], map: "entity_id_idx")
+  @@index([entity_label], map: "entity_label_idx")
+}
+
+model entities_folders {
+  id        Int     @id @default(autoincrement())
+  folder_id Int
+  entity_id Int?
+  edition   Boolean
+  keyword   String? @db.VarChar(255)
+
+  @@unique([folder_id, entity_id, keyword], map: "entities_folders_unique_key")
+}
+
+model exports_templates {
+  id        Int     @id @default(autoincrement())
+  user_id   Int
+  delimiter String? @db.VarChar(3)
+  format    String  @db.VarChar(3)
+  data      Json    @default("[]") @db.Json
+
+  @@unique([user_id, format], map: "exports_templates_unique_key")
+}
+
+model folders {
+  id        Int     @id @default(autoincrement())
+  label     String  @db.VarChar(255)
+  public    Boolean
+  user_id   Int
+  parent_id Int?
+  level     Int
+
+  @@index([parent_id], map: "parent_id_idx")
+  @@index([user_id], map: "user_id_folders_idx")
+}
+
+model groupbasket {
+  id              Int    @unique(map: "groupbasket_unique_key") @default(autoincrement())
+  group_id        String @db.VarChar(32)
+  basket_id       String @db.VarChar(32)
+  list_display    Json?  @default("[]") @db.Json
+  list_event      String @default("documentDetails") @db.VarChar(255)
+  list_event_data Json?
+
+  @@id([group_id, basket_id])
+}
+
+model groupbasket_redirect {
+  system_id     Int     @id @default(autoincrement())
+  group_id      String  @db.VarChar(32)
+  basket_id     String  @db.VarChar(32)
+  action_id     Int
+  entity_id     String? @db.VarChar(32)
+  keyword       String? @db.VarChar(255)
+  redirect_mode String  @db.VarChar(32)
+
+  @@index([action_id])
+  @@index([basket_id])
+  @@index([entity_id])
+  @@index([group_id])
+}
+
+model history {
+  id         BigInt   @id @default(autoincrement())
+  table_name String?  @db.VarChar(32)
+  record_id  String?  @db.VarChar(255)
+  event_type String   @db.VarChar(32)
+  user_id    Int?
+  event_date DateTime @db.Timestamp(6)
+  info       String?
+  id_module  String   @default("admin") @db.VarChar(50)
+  remote_ip  String?  @db.VarChar(32)
+  event_id   String?  @db.VarChar(50)
+
+  @@index([event_type], map: "event_type_idx")
+  @@index([record_id], map: "record_id_idx")
+  @@index([table_name], map: "table_name_idx")
+  @@index([user_id], map: "user_id_idx")
+}
+
+model history_batch {
+  id              BigInt   @id @default(autoincrement())
+  module_name     String?  @db.VarChar(32)
+  batch_id        BigInt?
+  event_date      DateTime @db.Timestamp(6)
+  total_processed BigInt?
+  total_errors    BigInt?
+  info            String?
+}
+
+model indexing_models {
+  id             Int     @id @default(autoincrement())
+  label          String  @db.VarChar(256)
+  category       String  @db.VarChar(256)
+  default        Boolean
+  owner          Int
+  private        Boolean
+  master         Int?
+  enabled        Boolean @default(true)
+  mandatory_file Boolean @default(false)
+  lad_processing Boolean @default(false)
+}
+
+model indexing_models_entities {
+  id        Int     @id @default(autoincrement())
+  model_id  Int
+  entity_id String? @db.VarChar(32)
+  keyword   String? @db.VarChar(255)
+}
+
+model indexing_models_fields {
+  id             Int     @id @default(autoincrement())
+  model_id       Int
+  identifier     String
+  mandatory      Boolean
+  enabled        Boolean @default(true)
+  default_value  Json?   @db.Json
+  unit           String
+  allowed_values Json?
+}
+
+model lc_cycle_steps {
+  policy_id          String  @db.VarChar(32)
+  cycle_id           String  @db.VarChar(32)
+  cycle_step_id      String  @db.VarChar(32)
+  cycle_step_desc    String  @db.VarChar(255)
+  docserver_type_id  String  @db.VarChar(32)
+  is_allow_failure   String  @default("N") @db.Char(1)
+  step_operation     String  @db.VarChar(32)
+  sequence_number    Int
+  is_must_complete   String  @default("N") @db.Char(1)
+  preprocess_script  String? @db.VarChar(255)
+  postprocess_script String? @db.VarChar(255)
+
+  @@id([policy_id, cycle_id, cycle_step_id, docserver_type_id])
+}
+
+model lc_cycles {
+  policy_id       String  @db.VarChar(32)
+  cycle_id        String  @db.VarChar(32)
+  cycle_desc      String  @db.VarChar(255)
+  sequence_number Int
+  where_clause    String?
+  break_key       String? @db.VarChar(255)
+  validation_mode String  @db.VarChar(32)
+
+  @@id([policy_id, cycle_id], map: "lc_cycle_pkey")
+}
+
+model lc_policies {
+  policy_id   String @id @db.VarChar(32)
+  policy_name String @db.VarChar(255)
+  policy_desc String @db.VarChar(255)
+}
+
+model lc_stack {
+  policy_id     String  @db.VarChar(32)
+  cycle_id      String  @db.VarChar(32)
+  cycle_step_id String  @db.VarChar(32)
+  coll_id       String  @db.VarChar(32)
+  res_id        BigInt
+  cnt_retry     Int?
+  status        String  @db.Char(1)
+  work_batch    BigInt?
+  regex         String? @db.VarChar(32)
+
+  @@id([policy_id, cycle_id, cycle_step_id, res_id])
+}
+
+model list_templates {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String?
+  type        String  @db.VarChar(32)
+  entity_id   Int?
+  owner       Int?
+}
+
+model list_templates_items {
+  id               Int    @id @default(autoincrement())
+  list_template_id Int
+  item_id          Int
+  item_type        String @db.VarChar(32)
+  item_mode        String @db.VarChar(64)
+  sequence         Int
+}
+
+model listinstance {
+  listinstance_id     BigInt    @id @default(autoincrement())
+  res_id              BigInt
+  sequence            BigInt
+  item_id             Int?
+  item_type           String    @db.VarChar(255)
+  item_mode           String    @db.VarChar(50)
+  added_by_user       Int?
+  viewed              BigInt?
+  difflist_type       String?   @db.VarChar(50)
+  process_date        DateTime? @db.Timestamp(6)
+  process_comment     String?   @db.VarChar(255)
+  signatory           Boolean?  @default(false)
+  requested_signature Boolean?  @default(false)
+  delegate            Int?
+
+  @@index([item_id], map: "item_id_idx")
+  @@index([item_mode], map: "item_mode_idx")
+  @@index([item_type], map: "item_type_idx")
+  @@index([difflist_type])
+  @@index([res_id], map: "res_id_listinstance_idx")
+  @@index([sequence], map: "sequence_idx")
+}
+
+model listinstance_history {
+  listinstance_history_id BigInt   @id @default(autoincrement())
+  coll_id                 String   @db.VarChar(50)
+  res_id                  BigInt
+  user_id                 Int
+  updated_date            DateTime @db.Timestamp(6)
+}
+
+model listinstance_history_details {
+  listinstance_history_details_id BigInt    @id @default(autoincrement())
+  listinstance_history_id         BigInt
+  coll_id                         String    @db.VarChar(50)
+  res_id                          BigInt
+  listinstance_type               String?   @default("DOC") @db.VarChar(50)
+  sequence                        BigInt
+  item_id                         Int?
+  item_type                       String    @db.VarChar(255)
+  item_mode                       String    @db.VarChar(50)
+  added_by_user                   Int?
+  visible                         String    @default("Y") @db.VarChar(1)
+  viewed                          BigInt?
+  difflist_type                   String?   @db.VarChar(50)
+  process_date                    DateTime? @db.Timestamp(6)
+  process_comment                 String?   @db.VarChar(255)
+  requested_signature             Boolean?  @default(false)
+  signatory                       Boolean?  @default(false)
+
+  @@index([listinstance_history_id], map: "listinstance_history_id_idx")
+}
+
+model message_exchange {
+  message_id                   String    @id
+  schema                       String?
+  type                         String
+  status                       String
+  date                         DateTime  @db.Timestamp(6)
+  reference                    String
+  account_id                   Int?
+  sender_org_identifier        String
+  sender_org_name              String?
+  recipient_org_identifier     String
+  recipient_org_name           String?
+  archival_agreement_reference String?
+  reply_code                   String?
+  operation_date               DateTime? @db.Timestamp(6)
+  reception_date               DateTime? @db.Timestamp(6)
+  related_reference            String?
+  request_reference            String?
+  reply_reference              String?
+  derogation                   Boolean?
+  data_object_count            Int?
+  size                         Decimal?  @db.Decimal
+  data                         String?
+  active                       Boolean?
+  archived                     Boolean?
+  res_id_master                Decimal?  @db.Decimal
+  docserver_id                 String?   @db.VarChar(32)
+  path                         String?   @db.VarChar(255)
+  filename                     String?   @db.VarChar(255)
+  fingerprint                  String?   @db.VarChar(255)
+  filesize                     BigInt?
+  file_path                    String?
+}
+
+model note_entities {
+  id      BigInt  @id @default(autoincrement())
+  note_id BigInt
+  item_id String? @db.VarChar(50)
+}
+
+model notes {
+  id            Int      @id @default(autoincrement())
+  identifier    BigInt
+  user_id       BigInt
+  creation_date DateTime @db.Timestamp(6)
+  note_text     String
+
+  @@index([identifier], map: "identifier_idx")
+  @@index([user_id])
+}
+
+model notif_email_stack {
+  email_stack_sid BigInt    @id @default(autoincrement())
+  reply_to        String?   @db.VarChar(255)
+  recipient       String
+  cc              String?
+  bcc             String?
+  subject         String?   @db.VarChar(255)
+  html_body       String?
+  attachments     String?
+  exec_date       DateTime? @db.Timestamp(6)
+  exec_result     String?   @db.VarChar(50)
+}
+
+model notif_event_stack {
+  event_stack_sid  BigInt    @id @default(autoincrement())
+  notification_sid BigInt
+  table_name       String    @db.VarChar(50)
+  record_id        String    @db.VarChar(128)
+  user_id          Int
+  event_info       String    @db.VarChar(255)
+  event_date       DateTime  @db.Timestamp(6)
+  exec_date        DateTime? @db.Timestamp(6)
+  exec_result      String?   @db.VarChar(50)
+}
+
+model notifications {
+  notification_sid     BigInt   @id @default(autoincrement())
+  notification_id      String   @db.VarChar(50)
+  description          String?  @db.VarChar(255)
+  is_enabled           String   @default("Y") @db.VarChar(1)
+  event_id             String   @db.VarChar(255)
+  notification_mode    String   @db.VarChar(30)
+  template_id          BigInt?
+  diffusion_type       String   @db.VarChar(50)
+  diffusion_properties String?
+  attachfor_type       String?  @db.VarChar(50)
+  attachfor_properties String?  @db.VarChar(2048)
+  send_as_recap        Boolean? @default(false)
+}
+
+model parameters {
+  id                 String    @id @db.VarChar(255)
+  description        String?
+  param_value_string String?
+  param_value_int    Int?
+  param_value_date   DateTime? @db.Timestamp(6)
+}
+
+model password_history {
+  id             Int    @id @default(autoincrement())
+  user_serial_id Int
+  password       String @db.VarChar(255)
+}
+
+model password_rules {
+  id      Int     @id @default(autoincrement())
+  label   String  @unique @db.VarChar(64)
+  value   Int
+  enabled Boolean @default(false)
+}
+
+model priorities {
+  id     String @id @db.VarChar(16)
+  label  String @db.VarChar(128)
+  color  String @db.VarChar(128)
+  delays Int
+  order  Int?
+}
+
+model redirected_baskets {
+  id             Int    @id @default(autoincrement())
+  actual_user_id Int
+  owner_user_id  Int
+  basket_id      String @db.VarChar(255)
+  group_id       Int
+
+  @@unique([owner_user_id, basket_id, group_id], map: "redirected_baskets_unique_key")
+}
+
+model registered_mail_issuing_sites {
+  id                  Int     @id @default(autoincrement())
+  label               String  @db.VarChar(256)
+  post_office_label   String? @db.VarChar(256)
+  account_number      Int?
+  address_number      String  @db.VarChar(256)
+  address_street      String  @db.VarChar(256)
+  address_additional1 String? @db.VarChar(256)
+  address_additional2 String? @db.VarChar(256)
+  address_postcode    String  @db.VarChar(256)
+  address_town        String  @db.VarChar(256)
+  address_country     String? @db.VarChar(256)
+}
+
+model registered_mail_issuing_sites_entities {
+  id        Int @id @default(autoincrement())
+  site_id   Int
+  entity_id Int
+
+  @@unique([site_id, entity_id], map: "registered_mail_issuing_sites_entities_unique_key")
+}
+
+model registered_mail_number_range {
+  id                      Int      @id @default(autoincrement())
+  type                    String   @db.VarChar(15)
+  tracking_account_number String   @unique(map: "registered_mail_number_range_unique_key") @db.VarChar(256)
+  range_start             Int
+  range_end               Int
+  creator                 Int
+  creation_date           DateTime @default(now()) @db.Timestamp(6)
+  status                  String   @db.VarChar(10)
+  current_number          Int?
+}
+
+model registered_mail_resources {
+  id            Int       @id @default(autoincrement())
+  res_id        Int       @unique(map: "registered_mail_resources_unique_key")
+  type          String    @db.VarChar(2)
+  issuing_site  Int
+  warranty      String    @db.VarChar(2)
+  letter        Boolean   @default(false)
+  recipient     Json
+  number        Int
+  reference     String?
+  generated     Boolean   @default(false)
+  deposit_id    Int?
+  received_date DateTime? @db.Timestamp(6)
+  return_reason String?   @db.VarChar(256)
+}
+
+model res_attachments {
+  res_id                   BigInt    @id @default(autoincrement())
+  title                    String?   @db.VarChar(255)
+  format                   String    @db.VarChar(50)
+  typist                   Int?
+  creation_date            DateTime  @db.Timestamp(6)
+  modification_date        DateTime? @default(now()) @db.Timestamp(6)
+  modified_by              Int?
+  identifier               String?   @db.VarChar(255)
+  relation                 BigInt?
+  docserver_id             String    @db.VarChar(32)
+  path                     String?   @db.VarChar(255)
+  filename                 String?   @db.VarChar(255)
+  fingerprint              String?   @db.VarChar(255)
+  filesize                 BigInt?
+  status                   String?   @db.VarChar(10)
+  validation_date          DateTime? @db.Timestamp(6)
+  effective_date           DateTime? @db.Timestamp(6)
+  work_batch               BigInt?
+  origin                   String?   @db.VarChar(50)
+  res_id_master            BigInt?
+  origin_id                Int?
+  attachment_type          String?   @db.VarChar(255)
+  recipient_id             Int?
+  recipient_type           String?   @db.VarChar(256)
+  in_signature_book        Boolean?  @default(false)
+  in_send_attach           Boolean?  @default(false)
+  signatory_user_serial_id Int?
+  fulltext_result          String?   @db.VarChar(10)
+  external_id              Json?     @default("{}")
+  external_state           Json?     @default("{}")
+
+  @@index([attachment_type], map: "attachment_type_idx")
+  @@index([docserver_id], map: "docserver_id_idx")
+  @@index([identifier], map: "identifier_attachments_idx")
+  @@index([external_id], map: "res_att_external_id_idx")
+  @@index([res_id], map: "res_id_idx")
+  @@index([res_id_master], map: "res_id_master_idx")
+  @@index([status], map: "status_attachments_idx")
+}
+
+model res_letterbox {
+  res_id             BigInt    @id @default(autoincrement())
+  subject            String?
+  type_id            BigInt
+  format             String?   @db.VarChar(50)
+  typist             Int?
+  creation_date      DateTime  @db.Timestamp(6)
+  modification_date  DateTime? @default(now()) @db.Timestamp(6)
+  doc_date           DateTime? @db.Timestamp(6)
+  docserver_id       String?   @db.VarChar(32)
+  path               String?   @db.VarChar(255)
+  filename           String?   @db.VarChar(255)
+  fingerprint        String?   @db.VarChar(255)
+  filesize           BigInt?
+  status             String?   @db.VarChar(10)
+  destination        String?   @db.VarChar(50)
+  work_batch         BigInt?
+  origin             String?   @db.VarChar(50)
+  priority           String?   @db.VarChar(16)
+  policy_id          String?   @db.VarChar(32)
+  cycle_id           String?   @db.VarChar(32)
+  initiator          String?   @db.VarChar(50)
+  dest_user          Int?
+  locker_user_id     Int?
+  locker_time        DateTime? @db.Timestamp(6)
+  confidentiality    String?   @db.Char(1)
+  fulltext_result    String?   @db.VarChar(10)
+  external_id        Json?     @default("{}")
+  external_state     Json?     @default("{}")
+  departure_date     DateTime? @db.Timestamp(6)
+  opinion_limit_date DateTime? @db.Timestamp(6)
+  barcode            String?
+  category_id        String    @db.VarChar(32)
+  alt_identifier     String?   @db.VarChar(255)
+  admission_date     DateTime? @db.Timestamp(6)
+  process_limit_date DateTime? @db.Timestamp(6)
+  closing_date       DateTime? @db.Timestamp(6)
+  alarm1_date        DateTime? @db.Timestamp(6)
+  alarm2_date        DateTime? @db.Timestamp(6)
+  flag_alarm1        String?   @default("N") @db.Char(1)
+  flag_alarm2        String?   @default("N") @db.Char(1)
+  model_id           Int
+  version            Int
+  integrations       Json      @default("{}")
+  custom_fields      Json?
+  linked_resources   Json      @default("[]")
+  retention_frozen   Boolean   @default(false)
+  binding            Boolean?
+
+  @@index([alt_identifier], map: "alt_identifier_idx")
+  @@index([category_id], map: "category_id_idx")
+  @@index([dest_user], map: "dest_user_idx")
+  @@index([destination], map: "destination_idx")
+  @@index([doc_date], map: "doc_date_idx")
+  @@index([initiator], map: "initiator_idx")
+  @@index([barcode], map: "res_barcode_idx")
+  @@index([departure_date], map: "res_departure_date_idx")
+  @@index([docserver_id])
+  @@index([filename])
+  @@index([status], map: "status_idx")
+  @@index([type_id], map: "type_id_idx")
+  @@index([typist], map: "typist_idx")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model res_mark_as_read {
+  res_id    BigInt?
+  user_id   Int
+  basket_id String? @db.VarChar(32)
+
+  @@index([user_id], map: "user_id_res_mark_as_read_idx")
+  @@ignore
+}
+
+model resource_contacts {
+  id      Int    @id @default(autoincrement())
+  res_id  Int
+  item_id Int
+  type    String @db.VarChar(32)
+  mode    String @db.VarChar(32)
+
+  @@index([res_id])
+}
+
+model resources_folders {
+  id        Int @id @default(autoincrement())
+  folder_id Int
+  res_id    Int
+
+  @@unique([folder_id, res_id], map: "resources_folders_unique_key")
+  @@index([folder_id], map: "folder_id_idx")
+  @@index([res_id], map: "res_id_folders_idx")
+}
+
+model resources_tags {
+  id     Int @id(map: "resources_tags_id_pkey") @default(autoincrement())
+  res_id Int
+  tag_id Int
+
+  @@unique([res_id, tag_id], map: "resources_tags_unique_key")
+}
+
+model search_templates {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  label         String   @db.VarChar(255)
+  creation_date DateTime @db.Timestamp(6)
+  query         Json     @db.Json
+}
+
+model security {
+  security_id    BigInt  @id @default(autoincrement())
+  group_id       String  @db.VarChar(32)
+  coll_id        String  @db.VarChar(32)
+  where_clause   String?
+  maarch_comment String?
+}
+
+model shipping_templates {
+  id            Int       @id @default(autoincrement())
+  label         String    @db.VarChar(64)
+  description   String    @db.VarChar(255)
+  options       Json?     @default("{}") @db.Json
+  fee           Json?     @default("{}") @db.Json
+  entities      Json?     @default("{}")
+  account       Json?     @default("{}")
+  subscriptions Json?     @default("[]")
+  token_min_iat DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model shippings {
+  id                  Int      @id @default(autoincrement())
+  user_id             Int
+  document_id         Int
+  document_type       String   @db.VarChar(255)
+  options             Json?    @default("{}") @db.Json
+  fee                 Float
+  recipient_entity_id Int
+  recipients          Json?    @default("[]")
+  account_id          String   @db.VarChar(64)
+  creation_date       DateTime @db.Timestamp(6)
+  history             Json?    @default("[]")
+  attachments         Json?    @default("[]")
+  sending_id          String?  @db.VarChar(64)
+  action_id           Int?
+}
+
+model status {
+  identifier      Int     @default(autoincrement())
+  id              String  @id @db.VarChar(10)
+  label_status    String  @db.VarChar(50)
+  is_system       String  @default("Y") @db.Char(1)
+  img_filename    String? @db.VarChar(255)
+  maarch_module   String  @default("apps") @db.VarChar(255)
+  can_be_searched String  @default("Y") @db.Char(1)
+  can_be_modified String  @default("Y") @db.Char(1)
+}
+
+model status_images {
+  id         Int    @id @default(autoincrement())
+  image_name String @db.VarChar(128)
+}
+
+model tags {
+  id            Int       @id(map: "tags_id_pkey") @default(autoincrement())
+  label         String    @db.VarChar(128)
+  description   String?
+  parent_id     Int?
+  creation_date DateTime? @default(now()) @db.Timestamp(6)
+  links         Json?     @default("[]")
+  usage         String?
+}
+
+model templates {
+  template_id              BigInt  @id @default(autoincrement())
+  template_label           String? @db.VarChar(255)
+  template_comment         String? @db.VarChar(255)
+  template_content         String?
+  template_type            String  @default("HTML") @db.VarChar(32)
+  template_path            String? @db.VarChar(255)
+  template_file_name       String? @db.VarChar(255)
+  template_style           String? @db.VarChar(255)
+  template_datasource      String? @db.VarChar(32)
+  template_target          String? @db.VarChar(255)
+  template_attachment_type String? @db.VarChar(255)
+  subject                  String? @db.VarChar(255)
+  options                  Json?   @default("{}")
+}
+
+model templates_association {
+  id          Int    @id @default(autoincrement())
+  template_id BigInt
+  value_field String @db.VarChar(255)
+}
+
+model tiles {
+  id         Int     @id @default(autoincrement())
+  user_id    Int
+  type       String
+  view       String
+  position   Int
+  color      String?
+  parameters Json    @default("{}")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model unit_identifier {
+  message_id  String
+  tablename   String
+  res_id      String
+  disposition String?
+
+  @@ignore
+}
+
+model user_signatures {
+  id                  Int     @id @default(autoincrement())
+  user_serial_id      Int
+  signature_label     String? @db.VarChar(255)
+  signature_path      String? @db.VarChar(255)
+  signature_file_name String? @db.VarChar(255)
+  fingerprint         String? @db.VarChar(255)
+}
+
+model usergroup_content {
+  user_id  Int
+  group_id Int
+  role     String? @db.VarChar(255)
+
+  @@id([user_id, group_id])
+}
+
+model usergroups {
+  id                    Int     @unique @default(autoincrement())
+  group_id              String  @id @db.VarChar(32)
+  group_desc            String? @db.VarChar(255)
+  can_index             Boolean @default(false)
+  indexation_parameters Json    @default("{\"actions\": [], \"entities\": [], \"keywords\": []}")
+  external_id           Json?   @default("{}")
+}
+
+model usergroups_services {
+  group_id   String @db.VarChar
+  service_id String @db.VarChar
+  parameters Json?
+
+  @@id([group_id, service_id])
+}
+
+model users {
+  id                         Int         @unique @default(autoincrement())
+  user_id                    String      @id @db.VarChar(128)
+  password                   String?     @db.VarChar(255)
+  firstname                  String?     @db.VarChar(255)
+  lastname                   String?     @db.VarChar(255)
+  phone                      String?     @db.VarChar(32)
+  mail                       String?     @db.VarChar(255)
+  initials                   String?     @db.VarChar(32)
+  preferences                Json        @default("{\"documentEdition\": \"java\"}")
+  status                     String      @default("OK") @db.VarChar(10)
+  password_modification_date DateTime?   @default(now()) @db.Timestamp(6)
+  mode                       users_modes @default(standard)
+  refresh_token              Json        @default("[]")
+  reset_token                String?
+  failed_authentication      Int?        @default(0)
+  locked_until               DateTime?   @db.Timestamp(6)
+  authorized_api             Json        @default("[]")
+  external_id                Json?       @default("{}")
+  feature_tour               Json        @default("[]")
+  absence                    Json?
+
+  @@index([lastname], map: "lastname_users_idx")
+}
+
+model users_baskets_preferences {
+  id              Int     @id @default(autoincrement())
+  user_serial_id  Int
+  group_serial_id Int
+  basket_id       String  @db.VarChar(32)
+  display         Boolean
+  color           String? @db.VarChar(16)
+
+  @@unique([user_serial_id, group_serial_id, basket_id], map: "users_baskets_preferences_key")
+}
+
+model users_email_signatures {
+  id        Int    @id(map: "email_signatures_pkey") @default(autoincrement())
+  user_id   Int
+  html_body String
+  title     String @db.VarChar
+}
+
+model users_entities {
+  user_id        Int
+  entity_id      String  @db.VarChar(32)
+  user_role      String? @db.VarChar(255)
+  primary_entity String  @default("N") @db.Char(1)
+
+  @@id([user_id, entity_id])
+}
+
+model users_followed_resources {
+  id      Int @id @default(autoincrement())
+  res_id  Int
+  user_id Int
+}
+
+model users_pinned_folders {
+  id        Int @id @default(autoincrement())
+  folder_id Int
+  user_id   Int
+
+  @@unique([folder_id, user_id], map: "users_pinned_folders_unique_key")
+}
+
+enum custom_fields_modes {
+  form
+  technical
+}
+
+enum users_modes {
+  standard
+  rest
+  root_visible
+  root_invisible
+}

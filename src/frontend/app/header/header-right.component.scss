@@ -1,0 +1,219 @@
+.bg-head-title-tool {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    ::ng-deep.mat-form-field-label-wrapper {
+        font-style: italic;
+    }
+
+    ::ng-deep .mat-form-field-label {
+        // color: white;
+        font-size: 12px;
+        opacity: 0.5;
+    }
+}
+
+.notification-bell {
+    color: white;
+    margin-right: 2px;
+}
+
+.notification-bell ::ng-deep .mat-badge-content {
+    font-size: 10px;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.notifications-panel {
+    width: 340px;
+    max-width: 92vw;
+    max-height: 420px;
+    overflow: auto;
+    padding: 8px 0;
+}
+
+.notifications-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 14px 10px 14px;
+    border-bottom: 1px solid rgba(19, 95, 127, 0.12);
+    margin-bottom: 4px;
+
+    span {
+        color: var(--maarch-color-primary);
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    small {
+        color: #b14b4b;
+        font-weight: 700;
+    }
+}
+
+.notifications-empty {
+    padding: 16px 14px;
+    color: #7a8d98;
+    font-style: italic;
+    text-align: center;
+}
+
+.notification-item {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(19, 95, 127, 0.06);
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border-left: 4px solid transparent;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item:hover {
+    background: rgba(19, 95, 127, 0.06);
+}
+
+.notification-item.notif-tres-urgent {
+    border-left-color: #d32f2f;
+    background: rgba(211, 47, 47, 0.04);
+}
+
+.notification-item.notif-urgent {
+    border-left-color: #f57c00;
+    background: rgba(245, 124, 0, 0.04);
+}
+
+.notification-item.notif-normal {
+    border-left-color: #1e88e5;
+    background: rgba(30, 136, 229, 0.03);
+}
+
+.notification-item.notif-tres-urgent .notification-item-icon {
+    color: #d32f2f;
+}
+
+.notification-item.notif-urgent .notification-item-icon {
+    color: #f57c00;
+}
+
+.notification-item.notif-normal .notification-item-icon {
+    color: #1e88e5;
+}
+
+.notification-item-icon {
+    color: #b14b4b;
+    margin-top: 2px;
+
+    mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+    }
+}
+
+.notification-item-content {
+    min-width: 0;
+}
+
+.notification-item-title {
+    color: #1f3340;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+.notification-item-message {
+    color: #607785;
+    font-size: 11px;
+    margin-top: 2px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.notification-item-submessage {
+    color: #8aa0ad;
+    font-size: 10px;
+    margin-top: 3px;
+    line-height: 1.2;
+}
+
+.notification-item-date {
+    color: #8ea0ab;
+    font-size: 10px;
+    margin-top: 4px;
+}
+
+.noAvailableMenu {
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.5;
+    font-style: italic;
+    padding: 22px;
+}
+
+.basket-search {
+    color: #666;
+    width: 500px;
+    padding-right: 10px;
+    font-size: 12px;
+    height: 35px;
+
+    button {
+        font-size: 20px;
+
+    }
+
+    ::ng-deep.mat-form-field-infix {
+        padding-bottom: 15px;
+    }
+
+    ::ng-deep.mat-form-field-flex {
+        align-items: center;
+        background: white;
+        height: 35px;
+        border-radius: 30px;
+    }
+
+    ::ng-deep.mat-form-field-label-wrapper {
+        font-style: italic;
+    }
+
+    ::ng-deep .mat-form-field-underline {
+        display: none;
+    }
+}
+
+.action-header-profile {
+    background:white;
+    color: var(--maarch-color-primary);
+}
+
+.aboutUsIcon {
+    z-index: 2;
+    right: 7%;
+    bottom: 84%;
+    height: 45px;
+    font-size: 25px;
+    position: absolute;
+    cursor: pointer;
+}
+
+.isSelected {
+    color: var(--maarch-color-secondary-dark);
+}
