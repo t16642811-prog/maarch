@@ -1,7 +1,7 @@
 <mat-sidenav-container *ngIf="appService.coreLoaded" class="maarch-container" autosize>
     <mat-sidenav #snavLeft class="panel-left" [mode]="appService.getViewMode() ? 'over' : 'side'"
         [fixedInViewport]="appService.getViewMode()" [opened]="appService.getViewMode() || headerService.hideSideBar ? false : true"
-        autoFocus="false" style="overflow-x:hidden;" [class.sideBarForm]="headerService.sideBarForm && !appService.getViewMode()" [class.sideBarFormMobile]="appService.getViewMode() && headerService.sideBarForm" [ngStyle]="{'width': appService.getViewMode() ? '80%' : '320px'}">
+        autoFocus="false" style="overflow-x:hidden;" [class.sideBarForm]="headerService.sideBarForm && !appService.getViewMode()" [class.sideBarFormMobile]="appService.getViewMode() && headerService.sideBarForm" [ngStyle]="{'width': appService.getViewMode() ? '80%' : '300px'}">
         <app-header-panel *ngIf="headerService.showhHeaderPanel && !headerService.hideSideBar"></app-header-panel>
         <app-menu-shortcut *ngIf="headerService.showMenuShortcut && !headerService.hideSideBar"></app-menu-shortcut>
         <app-menu-nav *ngIf="headerService.showMenuShortcut && !headerService.hideSideBar"></app-menu-nav>

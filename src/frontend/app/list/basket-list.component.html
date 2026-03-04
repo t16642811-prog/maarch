@@ -52,6 +52,14 @@
                         </div>
                     </div>
                     <div style="flex:1;overflow:auto;">
+                        <div class="courrier-list-header" *ngIf="!appService.getViewMode()">
+                            <span class="courrier-list-header__spacer"></span>
+                            <span class="courrier-list-header__chrono">N° chrono</span>
+                            <span class="courrier-list-header__objet">Objet</span>
+                            <span class="courrier-list-header__sender">Expéditeur</span>
+                            <span class="courrier-list-header__date">Date du courrier</span>
+                            <span class="courrier-list-header__action">Action</span>
+                        </div>
                         <table cdkDropList id="document-list" [cdkDropListConnectedTo]="listTodrag()" [cdkDropListData]="data" #tableBasketListSort="matSort" mat-table [dataSource]="data" matSort
                             matSortActive="resId" matSortDisableClear matSortDirection="asc" style="width:100%;" [cdkDropListDisabled]="dragInit || appService.getViewMode()">
 
@@ -59,69 +67,11 @@
                                 <td mat-cell *matCellDef="let row; let rowIndex = index"
                                     style="padding:0;border-top: solid 1px rgba(0, 0, 0, 0.12);"
                                     [class.selected-data]="row.checked">
-                                    <div *ngIf="!snav2.opened && !appService.getViewMode() && row.display.length > 0" class="sub-info column-{{templateColumns}}-list">
-                                        <span class="sub-info-data" [class]="data.cssClasses.join(' ')"
-                                            *ngFor="let data of row.display" style="flex:1;white-space: pre;
-                                    overflow: hidden;
-                                    text-overflow: ellipsis;
-                                    padding-left: 5px;
-                                    padding-right: 5px;" [class.hasEvent]="data.event && data.displayValue !== ('lang.undefined' | translate)" (click)="launchEventSubData(data, row)">
-                                            <ng-container *ngIf="['getCreationDate', 'getProcessLimitDate', 'getCreationAndProcessLimitDates'].indexOf(data.value) > -1">
-                                                <ng-container *ngIf="data.value === 'getCreationAndProcessLimitDates' && row.closing_date != ('lang.undefined' | translate)">
-                                                    <i class="fa fa-calendar"
-                                                        title="{{'lang.creationDate' | translate}}"></i>&nbsp;<span
-                                                        [innerHTML]="data.displayValue.creationDate | timeAgo"
-                                                        title='{{data.displayValue.creationDate | fullDate}}'></span>
-                                                    - <i class="fa fa-lock" title="{{'lang.closingDate' | translate}}"></i>&nbsp;<span
-                                                        [innerHTML]="row.closing_date | timeAgo"
-                                                        title='{{row.closing_date | fullDate}}'></span>
-                                                </ng-container>
-                                                <ng-container *ngIf="row.closing_date == ('lang.undefined' | translate) || data.value === 'getProcessLimitDate'">
-                                                    <ng-container *ngIf="data.value === 'getCreationAndProcessLimitDates'">
-                                                        <i class="fa fa-calendar"
-                                                        title="{{'lang.creationDate' | translate}}"></i>&nbsp;<span
-                                                        [innerHTML]="data.displayValue.creationDate | timeAgo"
-                                                        title='{{data.displayValue.creationDate | fullDate}}'></span>
-                                                    - <i class="fa fa-stopwatch"
-                                                        title="{{'lang.processLimitDate' | translate}}"></i>&nbsp;<span
-                                                        [innerHTML]="data.displayValue.processLimitDate | timeLimit"
-                                                        title='{{data.displayValue.processLimitDate | fullDate}}'></span>
-                                                    </ng-container>
-                                                    <ng-container *ngIf="data.value === 'getProcessLimitDate'">
-                                                        <i class="fa {{data.icon}}"
-                                                            title="{{'lang.getProcessLimitDate' | translate}}"></i>&nbsp;<span
-                                                            [innerHTML]="data.displayValue | timeLimit" style="margin-left: 3px;"
-                                                            title='{{data.displayValue | fullDate}}'></span>
-                                                    </ng-container>
-                                                </ng-container>
-                                            </ng-container>
-                                            <ng-container *ngIf="data.icon != '' && data.value !== 'getProcessLimitDate'">
-                                                <i class="fa {{data.icon}}" title="{{data.label}}"></i>
-                                                &nbsp;
-                                            </ng-container>
-                                            <ng-container *ngIf="data.value == 'getCategory'">
-                                                <span *ngIf="!('lang.' + data.displayValue | translate)" style="opacity: 0.5"
-                                                    title="id: {{data.displayValue}}">{{'lang.undefined' | translate}}</span>
-                                                <span *ngIf="('lang.' + data.displayValue | translate)"
-                                                    title="{{'lang.' + data.displayValue | translate}}">{{'lang.' + data.displayValue | translate}}</span>
-                                            </ng-container>
-                                            <ng-container
-                                                *ngIf="data.value != 'getCategory' && data.value !== 'getProcessLimitDate' && data.value != 'getCreationAndProcessLimitDates'">
-                                                <span *ngIf="!data.value.includes('Date')" title="{{data.displayTitle}}"
-                                                    [innerHTML]="data.displayValue"></span>
-                                                <span *ngIf="data.value.includes('Date')"
-                                                    [innerHTML]="data.displayValue | timeAgo"></span>
-                                            </ng-container>
-                                        </span>
-                                    </div>
-                                    <div class="main-info">
+<div class="main-info">
                                         <span style="width:50px;height: 16px;">
                                             <mat-checkbox color="primary" [checked]="row.checked"
                                                 (change)="toggleRes($event,row)" (click)="$event.stopPropagation();">
                                             </mat-checkbox>
-                                        </span>
-                                        <span class="row-index" title="{{(paginator.pageIndex * paginator.pageSize) + rowIndex + 1}}">
-                                            {{(paginator.pageIndex * paginator.pageSize) + rowIndex + 1}}-
                                         </span>
                                         <button mat-icon-button (click)="$event.stopPropagation();toggleMailTracking(row)" style="margin-left: -25px;"
                                             class="followIcon"
@@ -150,20 +100,22 @@
                                                 {{row.chrono}}
                                             </ng-container>
                                         </span>
-                                        <span class="main-info-data" style="font-weight:bold;flex:1;cursor:pointer;"
+                                        <span class="main-info-data" style="font-weight:bold;min-width:260px;flex:1;cursor:pointer;"
                                             [class.undefined]="row.subject == ('lang.undefined' | translate)"
                                             title="{{row.subject}}" (click)="launch(defaultAction,row);">{{row.subject | shorten: 150: '...'}}</span>
-                                        <span class="main-info-data" style="flex:1;color:#6f8391;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:2px;"
-                                            (click)="launch(defaultAction,row);">
-                                            <span>Exp�diteur: {{ getRowSender(row) }}</span>
-                                            <span>Date du courrier:
-                                                <ng-container *ngIf="getRowDocumentDate(row); else noDocDate">
-                                                    {{ getRowDocumentDate(row) | date:'dd/MM/yyyy HH:mm' }}
-                                                </ng-container>
-                                                <ng-template #noDocDate>{{'lang.undefined' | translate}}</ng-template>
-                                            </span>
+                                        <span class="main-info-data" style="width:330px;cursor:pointer;"
+                                            title="{{ getRowSender(row) }}" (click)="launch(defaultAction,row);">
+                                             {{ getRowSender(row) }}
                                         </span>
-                                        <span *ngIf="row.anamTreated" class="anam-treated-badge" title="Courrier traité">Courrier traité</span>
+                                        <span class="main-info-data" style="width:230px;cursor:pointer;"
+                                            (click)="launch(defaultAction,row);">
+                                            
+                                            <ng-container *ngIf="getRowDocumentDate(row); else noDocDate">
+                                                {{ getRowDocumentDate(row) | date:'dd/MM/yyyy HH:mm' }}
+                                            </ng-container>
+                                            <ng-template #noDocDate>{{'lang.undefined' | translate}}</ng-template>
+                                        </span>
+                                        <span *ngIf="row.anamTreated" class="anam-treated-badge" title="Courrier traitÃ©">Courrier traitÃ©</span>
                                         <span class="main-info-action">
     <button mat-icon-button title="{{row.hasDocument ? ('lang.viewResource' | translate) : ('lang.noDocument' | translate)}}" (click)="$event.stopPropagation();viewDocument(row)"
         (mouseenter)="viewThumbnail(row);" (mouseleave)="closeThumbnail();"
@@ -214,5 +166,4 @@
     <app-actions-list (refreshEvent)="refreshDao()" (refreshEventAfterAction)="refreshDaoAfterAction()" #actionsListContext [contextMode]="true"
         [totalRes]="allResInBasket.length" [selectedRes]="selectedRes" [currentBasketInfo]="currentBasketInfo" (refreshPanelFolders)="foldersService.getFolders()">
     </app-actions-list>
-
 
