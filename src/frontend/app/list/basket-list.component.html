@@ -10,20 +10,14 @@
                        <app-header-right></app-header-right>
                     </div>
                 </div>
-                <div class="bg-head-content" [class.fullContainer]="appService.getViewMode()">
-                    <app-filters-tool style="flex:1;overflow-x: auto;overflow-y: hidden;" #filtersTool
-                        [listProperties]="this.listProperties" [totalRes]="allResInBasket.length"
-                        [selectedRes]="selectedRes" [routeDatas]="'/rest/resourcesList/users/' + this.currentBasketInfo.ownerId + '/groups/' + currentBasketInfo.groupId + '/baskets/' + currentBasketInfo.basketId + '/filters'" (toggleAllRes)="toggleAllRes($event)"
-                        (refreshEventAfterAction)="refreshDaoAfterAction()" (refreshEvent)="refreshDao()" [title]="'lang.searchMailInBasket' | translate">
-                    </app-filters-tool>
-                </div>
+                <div class="bg-head-content basket-head-spacer" [class.fullContainer]="appService.getViewMode()"></div>
             </div>
             <div class="container" [class.fullContainer]="appService.getViewMode()">
                 <div class="container-content">
                     <div class="example-loading-shade" *ngIf="isLoadingResults">
                         <mat-spinner *ngIf="isLoadingResults"></mat-spinner>
                     </div>
-                    <div class="table-head">
+                    <div class="table-head table-head-main">
                         <div class="table-head-result">
                             <mat-checkbox color="primary"
                                 [checked]="selectedRes.length == allResInBasket.length && selectedRes.length > 0"
@@ -33,6 +27,13 @@
                             {{'lang.records' | translate | ucfirst}}&nbsp;<small
                                 *ngIf="selectedRes.length > 0">- {{selectedRes.length}}
                                 {{'lang.selected' | translate}}</small>
+                        </div>
+                        <div class="table-head-filters">
+                            <app-filters-tool #filtersTool
+                                [listProperties]="this.listProperties" [totalRes]="allResInBasket.length"
+                                [selectedRes]="selectedRes" [routeDatas]="'/rest/resourcesList/users/' + this.currentBasketInfo.ownerId + '/groups/' + currentBasketInfo.groupId + '/baskets/' + currentBasketInfo.basketId + '/filters'" (toggleAllRes)="toggleAllRes($event)"
+                                (refreshEventAfterAction)="refreshDaoAfterAction()" (refreshEvent)="refreshDao()" [title]="'lang.searchMailInBasket' | translate">
+                            </app-filters-tool>
                         </div>
                         <div class="table-head-tool">
                             <span style="position: relative;">
@@ -68,17 +69,17 @@
                                     style="padding:0;border-top: solid 1px rgba(0, 0, 0, 0.12);"
                                     [class.selected-data]="row.checked">
 <div class="main-info">
-                                        <span style="width:50px;height: 16px;">
+                                        <span class="mail-col-check">
                                             <mat-checkbox color="primary" [checked]="row.checked"
                                                 (change)="toggleRes($event,row)" (click)="$event.stopPropagation();">
                                             </mat-checkbox>
                                         </span>
-                                        <button mat-icon-button (click)="$event.stopPropagation();toggleMailTracking(row)" style="margin-left: -25px;"
+                                        <button mat-icon-button (click)="$event.stopPropagation();toggleMailTracking(row)"
                                             class="followIcon"
                                             [title]="row.mailTracking === true ? ('lang.untrackThisMail' | translate) : ('lang.trackThisMail' | translate)">
                                             <mat-icon [ngClass]="[row.mailTracking === true ? 'fas fa-star' : 'far fa-star']"></mat-icon>
                                         </button>
-                                        <span *ngIf="!appService.getViewMode()" style="cursor:pointer;" class="main-info-status" (click)="launch(defaultAction,row);">
+                                        <span *ngIf="!appService.getViewMode()" class="main-info-status" (click)="launch(defaultAction,row);">
                                             <mat-icon *ngIf="row.isLocked !== true" title="{{row.statusLabel}}"
                                                 [ngStyle]="{'color': row.anamTreated ? '#17a85d' : row.priorityColor}"
                                                 [class.anam-treated-icon]="row.anamTreated"
@@ -89,7 +90,7 @@
                                             <mat-icon *ngIf="row.isLocked === true" title="{{'lang.warnLockResInProgress' | translate}} : {{row.locker}}" style="color: red;" class="fa fa-lock fa-2x">
                                             </mat-icon>
                                         </span>
-                                        <span *ngIf="!appService.getViewMode()" class="main-info-data" style="width:200px;text-align:center;cursor:pointer;" (click)="launch(defaultAction,row);">
+                                        <span *ngIf="!appService.getViewMode()" class="main-info-data mail-col-chrono" (click)="launch(defaultAction,row);">
                                             <ng-container
                                                 *ngIf="row.chrono == ('lang.undefined' | translate) && row.barcode != ('lang.undefined' | translate)">
                                                 <span style="color: rgba(0,0,0,0.4);font-size: 90%;"><i
@@ -100,14 +101,14 @@
                                                 {{row.chrono}}
                                             </ng-container>
                                         </span>
-                                        <span class="main-info-data" style="font-weight:bold;min-width:260px;flex:1;cursor:pointer;"
+                                        <span class="main-info-data mail-col-subject"
                                             [class.undefined]="row.subject == ('lang.undefined' | translate)"
-                                            title="{{row.subject}}" (click)="launch(defaultAction,row);">{{row.subject | shorten: 150: '...'}}</span>
-                                        <span class="main-info-data" style="width:330px;cursor:pointer;"
+                                            title="{{row.subject}}" (click)="launch(defaultAction,row);">{{row.subject}}</span>
+                                        <span class="main-info-data mail-col-sender"
                                             title="{{ getRowSender(row) }}" (click)="launch(defaultAction,row);">
                                              {{ getRowSender(row) }}
                                         </span>
-                                        <span class="main-info-data" style="width:230px;cursor:pointer;"
+                                        <span class="main-info-data mail-col-date"
                                             (click)="launch(defaultAction,row);">
                                             
                                             <ng-container *ngIf="getRowDocumentDate(row); else noDocDate">
@@ -131,6 +132,7 @@
                             </ng-container>
                             <tr mat-row *matRowDef="let row; columns: displayedColumnsBasket;"
                                 (contextmenu)="open($event,row);" class="rowData" [class.locked]="row.isLocked == true"
+                                [class.read]="row.is_read === 1 || row.is_read === '1'"
                                 [class.unread]="row.is_read !== 1 && row.is_read !== '1'"
                                 cdkDrag (cdkDragStarted)="selectSpecificRes(row);" [cdkDragData]="row" >
                                 <div class="example-custom-placeholder" *cdkDragPlaceholder></div>
@@ -145,7 +147,7 @@
         </mat-sidenav-content>
         <mat-sidenav #snav2 [fixedInViewport]="appService.getViewMode()" position='end'
             [opened]="appService.getViewMode() ? false : false" [mode]="appService.getViewMode() ? 'over' : 'side'" class="panel-right" style="overflow-x:hidden;"
-            [class.docView]="!filtersListService.filterMode" [ngStyle]="{'width': appService.getViewMode() ? '80%' : '30%'}"
+            [class.docView]="!filtersListService.filterMode" [ngStyle]="{'width': appService.getViewMode() ? '80%' : '26%'}"
             autoFocus="false">
             <div *ngIf="innerHtml && !filtersListService.filterMode" [matTooltip]="currentChrono"
                 [innerHTML]="innerHtml" style="height: 100%;overflow: hidden;"></div>

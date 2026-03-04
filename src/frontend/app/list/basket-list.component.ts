@@ -97,6 +97,9 @@ export class BasketListComponent implements OnInit, OnDestroy {
     private previousBasketResIds = new Set<number>();
     private firstBasketSnapshot: boolean = true;
     private basketPollingTimer: any = null;
+    private markAsReadActionId: number = 114;
+    private markAsReadActionLoaded: boolean = false;
+    private locallyReadResIds = new Set<number>();
 
     private destroy$ = new Subject<boolean>();
 
@@ -153,6 +156,10 @@ export class BasketListComponent implements OnInit, OnDestroy {
                 groupId: params['groupSerialId'],
                 basketId: params['basketId']
             };
+            this.markAsReadActionLoaded = false;
+            this.markAsReadActionId = 114;
+            this.locallyReadResIds = this.loadLocalReadResIds();
+            this.loadMarkAsReadActionId();
             this.headerService.currentBasketInfo = this.currentBasketInfo;
 
             this.filtersListService.filterMode = false;
@@ -422,6 +429,9 @@ export class BasketListComponent implements OnInit, OnDestroy {
             } else {
                 element['checked'] = true;
             }
+            if (this.locallyReadResIds.has(Number(element['resId']))) {
+                element['is_read'] = 1;
+            }
             if (element['is_read'] !== 1 && element['is_read'] !== '1') {
                 unreadIds.push(element['resId']);
             }
@@ -504,18 +514,73 @@ export class BasketListComponent implements OnInit, OnDestroy {
         if (!row || row.is_read === 1 || row.is_read === '1') {
             return;
         }
-        const url = `../rest/resourcesList/users/${this.currentBasketInfo.ownerId}/groups/${this.currentBasketInfo.groupId}/baskets/${this.currentBasketInfo.basketId}/actions/114`;
+        // Update UI immediately so the row leaves the unread style as soon as user opens it.
+        row.is_read = 1;
+        this.locallyReadResIds.add(Number(row.resId));
+        this.saveLocalReadResIds();
+        const basketIdForRead = this.currentBasketInfo.basket_id || this.currentBasketInfo.basketId;
+        const url = `../rest/resourcesList/users/${this.currentBasketInfo.ownerId}/groups/${this.currentBasketInfo.groupId}/baskets/${this.currentBasketInfo.basketId}/actions/${this.markAsReadActionId}`;
         this.http.put(url, {
             resources: [row.resId],
-            data: { basketId: this.currentBasketInfo.basketId }
+            data: { basketId: basketIdForRead }
         }).pipe(
-            tap(() => {
-                row.is_read = 1;
-            }),
+            tap(() => {}),
             catchError((err: any) => {
+                // Keep local read status so UI remains consistent for the current user.
+                this.notify.handleSoftErrors(err);
                 return of(false);
             })
         ).subscribe();
+    }
+
+    private loadMarkAsReadActionId() {
+        if (this.markAsReadActionLoaded) {
+            return;
+        }
+        this.markAsReadActionLoaded = true;
+        const url = `../rest/resourcesList/users/${this.currentBasketInfo.ownerId}/groups/${this.currentBasketInfo.groupId}/baskets/${this.currentBasketInfo.basketId}/actions`;
+        this.http.get(url).pipe(
+            tap((response: any) => {
+                const actions = Array.isArray(response) ? response : response?.actions;
+                if (!Array.isArray(actions)) {
+                    return;
+                }
+                const readAction = actions.find((action: any) => action?.component === 'resMarkAsReadAction');
+                if (readAction?.id) {
+                    this.markAsReadActionId = Number(readAction.id);
+                }
+            }),
+            catchError(() => of(false))
+        ).subscribe();
+    }
+
+    private getLocalReadStorageKey(): string {
+        return `maarch_locally_read_${this.currentBasketInfo.ownerId}_${this.currentBasketInfo.groupId}_${this.currentBasketInfo.basketId}`;
+    }
+
+    private loadLocalReadResIds(): Set<number> {
+        try {
+            const raw = localStorage.getItem(this.getLocalReadStorageKey());
+            if (!raw) {
+                return new Set<number>();
+            }
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) {
+                return new Set<number>();
+            }
+            return new Set<number>(parsed.map((id: any) => Number(id)).filter((id: number) => !Number.isNaN(id)));
+        } catch (e) {
+            return new Set<number>();
+        }
+    }
+
+    private saveLocalReadResIds() {
+        try {
+            const ids = Array.from(this.locallyReadResIds).slice(-5000);
+            localStorage.setItem(this.getLocalReadStorageKey(), JSON.stringify(ids));
+        } catch (e) {
+            // No-op if localStorage is unavailable.
+        }
     }
 
     toggleRes(e: any, row: any) {
@@ -600,6 +665,7 @@ export class BasketListComponent implements OnInit, OnDestroy {
     }
 
     viewDocument(row: any) {
+        this.markAsRead(row);
         this.http.get(`../rest/resources/${row.resId}/content?mode=view`, { responseType: 'blob' }).pipe(
             tap((data: any) => {
                 const file = new Blob([data], { type: 'application/pdf' });
