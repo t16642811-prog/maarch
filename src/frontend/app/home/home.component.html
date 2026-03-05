@@ -9,16 +9,6 @@
                     <app-header-right></app-header-right>
                 </div>
             </div>
-            <div class="bg-head-content" [class.fullContainer]="appService.getViewMode()">
-                <mat-card *ngIf="homeMessage"
-                    style="background: #135F7F;color: white;box-shadow: none;border: solid 2px white;width: 100%;border-radius: 20px;padding-bottom: 40px;">
-                    <div style="display: flex;max-height: 250px;overflow: auto;">
-                        <div style="padding-left: 10px;">
-                            <span [innerHTML]="homeMessage"></span>
-                        </div>
-                    </div>
-                </mat-card>
-            </div>
         </div>
         <div class="container" [class.fullContainer]="appService.getViewMode()">
             <div class="container-content">
@@ -41,10 +31,10 @@
                     <div class="stats-chart-card" *ngIf="homeStats.topBaskets.length > 0">
                         <div class="stats-chart-title">Top bannettes (volume)</div>
                         <div class="stats-bars">
-                            <div class="stats-bar-row" *ngFor="let basket of homeStats.topBaskets">
+                            <div class="stats-bar-row" *ngFor="let basket of homeStats.topBaskets; let i = index">
                                 <div class="stats-bar-label" [title]="basket.name">{{ basket.name }}</div>
                                 <div class="stats-bar-track">
-                                    <div class="stats-bar-fill" [style.width]="getBarWidth(basket.count)" [style.background]="basket.color || '#135F7F'"></div>
+                                    <div class="stats-bar-fill" [style.width]="getBarWidth(basket.count)" [style.background]="getBarColor(i, basket.color)"></div>
                                 </div>
                                 <div class="stats-bar-value">{{ basket.count }}</div>
                             </div>

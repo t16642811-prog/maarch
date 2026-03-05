@@ -188,82 +188,100 @@
 }
 
 .table-head-main {
-    min-height: 58px;
+    min-height: 66px;
     display: grid;
-    grid-template-columns: auto minmax(360px, 1fr) auto;
+    grid-template-columns: auto minmax(440px, 1fr) auto;
     align-items: center;
     overflow: visible;
     white-space: normal;
-    padding: 10px 16px;
-    border-bottom: 1px solid rgba(19, 95, 127, 0.16);
-    background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
-    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(19, 95, 127, 0.12);
+    background: linear-gradient(180deg, #ffffff 0%, #f6fafe 100%);
+    gap: 14px;
     margin-top: 12px;
 }
 
 .table-head-main .table-head-result {
     display: flex;
     align-items: center;
-    gap: 6px;
-    color: #243746;
+    gap: 8px;
+    color: #1f2f3b;
     font-size: 20px;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0.2px;
     flex: 0 0 auto;
     min-width: 250px;
     white-space: nowrap;
 }
 
+.table-head-main__selectall {
+    margin: 0 !important;
+    padding-right: 8px !important;
+}
+
 .table-head-main .table-head-result small {
     font-size: 12px;
-    font-weight: 700;
-    color: #2c7da0;
+    font-weight: 600;
+    color: #3f7d9a;
 }
 
 .table-head-main .table-head-tool {
-    gap: 6px;
+    gap: 10px;
     flex: 0 0 auto;
     justify-content: flex-end;
     align-items: center;
 }
 
 .table-head-main .table-head-tool > span {
-    padding-left: 2px;
-    padding-right: 2px;
+    padding-left: 0;
+    padding-right: 0;
+    display: inline-flex;
+    align-items: center;
 }
 
 .table-head-main .table-head-filters {
     flex: 1 1 auto;
     min-width: 0;
     overflow: visible;
-    margin-top: 2px;
+    margin-top: 0;
 }
 
 .table-head-main .paginatorResultList {
-    border-radius: 10px;
-    background: rgba(19, 95, 127, 0.04);
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(19, 95, 127, 0.05);
+}
+
+.table-head-main ::ng-deep .paginatorResultList .mat-paginator-container {
+    min-height: 40px;
+    padding: 0 10px;
+    align-items: center;
 }
 
 .table-head-main ::ng-deep .filtersContent {
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) 250px 40px;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: nowrap;
+    width: 100%;
 }
 
 .table-head-main ::ng-deep .basket-search {
     width: 100%;
-    max-width: 560px;
-    height: 42px;
+    max-width: none;
+    height: 40px;
     padding-right: 0;
     margin: 0;
 }
 
 .table-head-main ::ng-deep .basket-search .mat-form-field-flex {
-    background: #f7fbff;
-    border: 1px solid rgba(19, 95, 127, 0.18);
-    border-radius: 24px;
+    background: #f4f8fc;
+    border: 1px solid rgba(19, 95, 127, 0.16);
+    border-radius: 20px;
     padding-right: 6px;
     align-items: center;
+    height: 40px;
 }
 
 .table-head-main ::ng-deep .basket-search .mat-form-field-wrapper,
@@ -273,18 +291,44 @@
 
 .table-head-main ::ng-deep .basket-search .mat-form-field-infix,
 .table-head-main ::ng-deep .basket-order .mat-form-field-infix {
-    padding-top: 11px;
-    padding-bottom: 11px;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border-top: 0;
+    height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.table-head-main ::ng-deep .basket-search .metaSearch {
+    line-height: 22px !important;
+    height: 22px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: relative;
+    top: 1px;
+    display: block;
+    width: 100%;
+}
+
+.table-head-main ::ng-deep .basket-search .mat-input-element::placeholder {
+    line-height: 22px !important;
+    opacity: 1;
+}
+
+.table-head-main ::ng-deep .basket-search .mat-form-field-label-wrapper {
+    top: 0;
+    padding-top: 0;
 }
 
 .table-head-main ::ng-deep .basket-search button {
-    font-size: 24px;
+    font-size: 22px;
 }
 
 .table-head-main ::ng-deep .basket-search .mat-form-field-suffix {
     display: inline-flex;
     align-items: center;
     margin: 0;
+    padding-right: 2px;
     transform: none !important;
 }
 
@@ -294,11 +338,11 @@
     left: auto !important;
     right: auto !important;
     bottom: auto !important;
-    margin-left: 8px;
-    width: 34px;
-    height: 34px;
+    margin-left: 6px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    border: 1px solid rgba(19, 95, 127, 0.25);
+    border: 1px solid rgba(19, 95, 127, 0.28);
     background: #ffffff;
     display: inline-flex;
     align-items: center;
@@ -313,17 +357,26 @@
     padding: 0 !important;
 }
 
+.table-head-main ::ng-deep .basket-search .processLimitButton .mat-icon {
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    line-height: 16px !important;
+    overflow: visible !important;
+}
+
 .table-head-main ::ng-deep .basket-order {
-    width: 230px;
-    height: 42px;
+    width: 100%;
+    height: 40px;
     padding-left: 0;
     padding-right: 0;
 }
 
 .table-head-main ::ng-deep .basket-order .mat-form-field-flex {
-    background: #f7fbff;
-    border: solid 1px rgba(19, 95, 127, 0.22);
-    border-radius: 24px;
+    background: #f4f8fc;
+    border: solid 1px rgba(19, 95, 127, 0.18);
+    border-radius: 20px;
+    height: 40px;
 }
 
 .table-head-main ::ng-deep .basket-order .mat-icon,
@@ -332,13 +385,52 @@
     color: #1f5876 !important;
 }
 
+.table-head-main ::ng-deep .basket-order .mat-form-field-infix {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 40px;
+}
+
+.table-head-main ::ng-deep .basket-order .mat-select-trigger {
+    display: flex;
+    align-items: center;
+    height: 40px;
+}
+
+.table-head-main ::ng-deep .basket-order .mat-select-value {
+    text-align: center;
+    display: flex;
+    align-items: center;
+    line-height: 40px;
+}
+
 .table-head-main ::ng-deep .ascDescTool .mat-fab {
     width: 40px;
     height: 40px;
     line-height: 40px;
-    background: #f7fbff;
-    border: 1px solid rgba(19, 95, 127, 0.22);
+    background: #f4f8fc;
+    border: 1px solid rgba(19, 95, 127, 0.18);
     color: #1f5876 !important;
+    box-shadow: none;
+}
+
+.table-head-main ::ng-deep .ascDescTool .mat-fab .mat-button-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    line-height: 1;
+}
+
+.table-head-main ::ng-deep .ascDescTool .mat-fab .mat-icon {
+    margin: 0;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    font-size: 18px;
 }
 
 .courrier-list-header {
@@ -536,6 +628,3 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-
-

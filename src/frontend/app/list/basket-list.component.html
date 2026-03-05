@@ -22,7 +22,7 @@
                             <mat-checkbox color="primary"
                                 [checked]="selectedRes.length == allResInBasket.length && selectedRes.length > 0"
                                 [indeterminate]="selectedRes.length > 0 && selectedRes.length < allResInBasket.length"
-                                style="margin: 10px;padding-right: 10px;" title="{{'lang.selectAllResInBasket' | translate}}"
+                                class="table-head-main__selectall" title="{{'lang.selectAllResInBasket' | translate}}"
                                 (change)="toggleAllRes($event)"></mat-checkbox>&nbsp;{{allResInBasket.length}}
                             {{'lang.records' | translate | ucfirst}}&nbsp;<small
                                 *ngIf="selectedRes.length > 0">- {{selectedRes.length}}
@@ -147,7 +147,7 @@
         </mat-sidenav-content>
         <mat-sidenav #snav2 [fixedInViewport]="appService.getViewMode()" position='end'
             [opened]="appService.getViewMode() ? false : false" [mode]="appService.getViewMode() ? 'over' : 'side'" class="panel-right" style="overflow-x:hidden;"
-            [class.docView]="!filtersListService.filterMode" [ngStyle]="{'width': appService.getViewMode() ? '80%' : '26%'}"
+            [class.docView]="!filtersListService.filterMode" [ngStyle]="{'width': appService.getViewMode() ? '80%' : '24%'}"
             autoFocus="false">
             <div *ngIf="innerHtml && !filtersListService.filterMode" [matTooltip]="currentChrono"
                 [innerHTML]="innerHtml" style="height: 100%;overflow: hidden;"></div>

@@ -511,7 +511,13 @@ export class BasketListComponent implements OnInit, OnDestroy {
     }
 
     private markAsRead(row: any) {
-        if (!row || row.is_read === 1 || row.is_read === '1') {
+        if (!row) {
+            return;
+        }
+
+        this.trackOpenedNotificationResource(row.resId);
+
+        if (row.is_read === 1 || row.is_read === '1') {
             return;
         }
         // Update UI immediately so the row leaves the unread style as soon as user opens it.
@@ -531,6 +537,25 @@ export class BasketListComponent implements OnInit, OnDestroy {
                 return of(false);
             })
         ).subscribe();
+    }
+
+    private trackOpenedNotificationResource(resId: any) {
+        const parsed = Number(resId);
+        if (!parsed || Number.isNaN(parsed)) {
+            return;
+        }
+        try {
+            const key = 'openedNotificationResIds';
+            const raw = localStorage.getItem(key);
+            const values = raw ? JSON.parse(raw) : [];
+            const ids = Array.isArray(values) ? values.map((id: any) => Number(id)).filter((id: number) => id > 0) : [];
+            if (!ids.includes(parsed)) {
+                ids.push(parsed);
+            }
+            localStorage.setItem(key, JSON.stringify(ids.slice(-500)));
+        } catch (e) {
+            // No-op if localStorage is unavailable.
+        }
     }
 
     private loadMarkAsReadActionId() {

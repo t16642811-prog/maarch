@@ -177,6 +177,7 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
     fetchUrgentNotificationsSnapshot(withDeltaNotification: boolean) {
         this.http.get('../rest/home?light=1').subscribe({
             next: (data: any) => {
+                this.pruneOpenedMailNotifications();
                 this.detectNewCourriersNotifications(data, withDeltaNotification);
 
                 const priorityStats = Array.isArray(data?.statistics?.priority) ? data.statistics.priority : [];
@@ -201,6 +202,7 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
                     });
                 }
                 this.lastUrgentTotal = urgentCount;
+                this.pruneOpenedMailNotifications();
             },
             error: () => {
                 // Silent: header polling must not disturb UI
@@ -261,6 +263,7 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
         if (this.loadingNotificationsDetail) {
             return;
         }
+        this.restoreOpenedResourceIds();
         this.loadingNotificationsDetail = true;
         const targetBaskets = baskets
             .filter((basket: any) => Number(basket?.resourceNumber || 0) > 0)
@@ -403,6 +406,28 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
         }
     }
 
+    pruneOpenedMailNotifications() {
+        this.restoreOpenedResourceIds();
+        if (this.openedMailResourceIds.size === 0 || this.notificationItems.length === 0) {
+            return;
+        }
+        const before = this.notificationItems.length;
+        this.notificationItems = this.notificationItems.filter((notif: any) => {
+            if (notif?.type !== 'mail') {
+                return true;
+            }
+            const resId = Number(notif?.resource?.resId ?? notif?.resource?.res_id ?? 0);
+            const keep = !(resId > 0 && this.openedMailResourceIds.has(resId));
+            if (!keep && notif?.id) {
+                this.dismissedMailNotificationIds.add(notif.id);
+            }
+            return keep;
+        });
+        if (this.notificationItems.length !== before) {
+            this.unreadNotificationCount = Math.min(this.notificationItems.length, 99);
+        }
+    }
+
     restoreOpenedResourceIds() {
         const raw = this.localStorage.get('openedNotificationResIds');
         const ids = Array.isArray(raw) ? raw : [];
@@ -512,4 +537,3 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
         this.router.navigate([`/basketList/users/${basket.owner_user_id}/groups/${groupId}/baskets/${basket.id}`]);
     }
 }
-

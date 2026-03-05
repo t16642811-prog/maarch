@@ -29,8 +29,16 @@ class ChronoModel
     public static function getChrono(array $aArgs): string
     {
         ValidatorModel::notEmpty($aArgs, ['id']);
-        ValidatorModel::stringType($aArgs, ['id', 'entityId']);
-        ValidatorModel::intVal($aArgs, ['typeId', 'resId']);
+        ValidatorModel::stringType($aArgs, ['id']);
+        if (!empty($aArgs['entityId'])) {
+            ValidatorModel::stringType($aArgs, ['entityId']);
+        }
+        if (isset($aArgs['typeId']) && $aArgs['typeId'] !== '') {
+            ValidatorModel::intVal($aArgs, ['typeId']);
+        }
+        if (isset($aArgs['resId']) && $aArgs['resId'] !== '') {
+            ValidatorModel::intVal($aArgs, ['resId']);
+        }
 
         $elements = [];
         $chronoNumber = [];

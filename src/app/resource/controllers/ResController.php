@@ -87,12 +87,13 @@ class ResController extends ResourceControlController
         }
 
         $storedResource = StoreController::storeResource($body);
-        $resId = $storedResource['resId'];
+        $resId = $storedResource['resId'] ?? null;
         $body['encodedFile'] = $storedResource['encodedResource'];
 
-        if (empty($resId) || !empty($resId['errors'])) {
+        if (empty($resId) || !empty($storedResource['errors'])) {
+            $errorMessage = $storedResource['errors'] ?? 'Unknown error while storing resource';
             return $response->withStatus(500)->withJson(
-                ['errors' => '[ResController create] ' . $resId['errors']]
+                ['errors' => '[ResController create] ' . $errorMessage]
             );
         }
 

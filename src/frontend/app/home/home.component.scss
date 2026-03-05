@@ -1,31 +1,85 @@
 
+:host {
+    display: block;
+    overflow-x: hidden;
+}
+
+::ng-deep .mat-sidenav-content {
+    overflow-x: hidden !important;
+}
+
+::ng-deep .mat-drawer-inner-container {
+    overflow-x: hidden !important;
+}
+
 .container-content {
     background: none;
     box-shadow: none;
-    padding-top: 6px;
+    padding-top: 4px;
+}
+
+/* Scrollbar legere et moderne pour la page d'accueil */
+.container-content {
+    scrollbar-width: thin;
+    scrollbar-color: #9ab1bf transparent;
+}
+
+.container-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.container-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.container-content::-webkit-scrollbar-thumb {
+    background: #9ab1bf;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.container-content::-webkit-scrollbar-thumb:hover {
+    background: #7f9dad;
+    background-clip: padding-box;
+}
+
+.container-content::-webkit-scrollbar-button {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+.container {
+    margin-top: -10px !important;
+}
+
+.bg-head-content {
+    display: none;
 }
 
 .home-stats {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-    margin-bottom: 14px;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 .home-graphs {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin-bottom: 14px;
 }
 
 .graph-card {
-    background: linear-gradient(180deg, #ffffff 0%, #f8fcfe 100%);
-    border: 1px solid rgba(19, 95, 127, 0.16);
-    border-radius: 16px;
-    box-shadow: 0 10px 22px rgba(8, 40, 56, 0.06);
-    padding: 12px 14px;
-    min-height: 340px;
+    background: #ffffff;
+    border: 1px solid #d7e5ef;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(8, 40, 56, 0.06);
+    padding: 10px 12px;
+    min-height: 320px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -34,7 +88,7 @@
 
 .graph-card-wide {
     grid-column: 1 / -1;
-    min-height: 400px;
+    min-height: 360px;
     overflow: hidden !important;
     display: grid !important;
     grid-template-rows: auto 1fr;
@@ -42,21 +96,21 @@
 }
 
 .graph-card-pie {
-    min-height: 450px;
+    min-height: 400px;
     overflow: hidden;
     align-items: center;
 }
 
 .graph-card-bar {
-    min-height: 410px;
+    min-height: 380px;
     overflow: hidden;
 }
 
 .graph-title {
     color: #135f7f;
     font-weight: 700;
-    font-size: 14px;
-    margin-bottom: 10px;
+    font-size: 13px;
+    margin-bottom: 8px;
     line-height: 1.2;
 }
 
@@ -70,34 +124,34 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     z-index: 2;
 }
 
 .graph-mode-switch {
     display: inline-flex;
-    background: #edf4f8;
-    border: 1px solid rgba(19, 95, 127, 0.14);
+    background: #f4f8fb;
+    border: 1px solid #d8e5ee;
     border-radius: 999px;
-    padding: 3px;
-    gap: 4px;
+    padding: 2px;
+    gap: 2px;
 }
 
 .graph-mode-switch button {
     border: none;
     background: transparent;
     color: #4d6877;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     border-radius: 999px;
-    padding: 4px 10px;
+    padding: 4px 9px;
     cursor: pointer;
 }
 
 .graph-mode-switch button.active {
     background: #135f7f;
     color: #fff;
-    box-shadow: 0 2px 8px rgba(19, 95, 127, 0.2);
+    box-shadow: none;
 }
 
 ::ng-deep .home-graphs ngx-charts-pie-chart,
@@ -105,16 +159,16 @@
 ::ng-deep .home-graphs ngx-charts-line-chart {
     display: block;
     width: 100%;
-    height: 240px;
-    min-height: 240px;
+    height: 220px;
+    min-height: 220px;
     overflow: visible;
     margin: 0;
     flex: 1 1 auto;
 }
 
 ::ng-deep .home-graphs .graph-card-pie ngx-charts-pie-chart {
-    height: 330px;
-    min-height: 330px;
+    height: 300px;
+    min-height: 300px;
     overflow: hidden;
     width: 100%;
 }
@@ -126,8 +180,8 @@
 }
 
 ::ng-deep .home-graphs .graph-card-bar ngx-charts-bar-vertical {
-    height: 330px;
-    min-height: 330px;
+    height: 300px;
+    min-height: 300px;
     overflow: hidden;
 }
 
@@ -194,40 +248,40 @@
 .stats-cards {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
 }
 
 .stats-card {
-    background: linear-gradient(180deg, #ffffff 0%, #f5fbff 100%);
-    border: 1px solid rgba(19, 95, 127, 0.18);
-    border-radius: 14px;
-    padding: 14px 16px;
-    box-shadow: 0 8px 18px rgba(8, 40, 56, 0.06);
+    background: #ffffff;
+    border: 1px solid #d7e5ef;
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 8px rgba(8, 40, 56, 0.06);
 }
 
 .stats-card-label {
-    color: #5e7583;
-    font-size: 12px;
+    color: #5a7382;
+    font-size: 11px;
     font-weight: 600;
     margin-bottom: 6px;
 }
 
 .stats-card-value {
     color: #0f5f80;
-    font-size: 28px;
+    font-size: 36px;
     line-height: 1;
     font-weight: 800;
 }
 
 .stats-chart-card {
-    background: linear-gradient(180deg, #ffffff 0%, #f8fcfe 100%);
-    border: 1px solid rgba(19, 95, 127, 0.16);
-    border-radius: 16px;
-    box-shadow: 0 10px 22px rgba(8, 40, 56, 0.06);
+    background: #ffffff;
+    border: 1px solid #d7e5ef;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(8, 40, 56, 0.06);
     padding: 14px 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .stats-chart-title {
@@ -245,7 +299,7 @@
 .stats-bar-row {
     display: grid;
     grid-template-columns: minmax(140px, 220px) minmax(0, 1fr) auto;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
 }
 
@@ -337,26 +391,26 @@
     ::ng-deep .home-graphs ngx-charts-pie-chart,
     ::ng-deep .home-graphs ngx-charts-bar-vertical,
     ::ng-deep .home-graphs ngx-charts-line-chart {
-        height: 220px;
-        min-height: 220px;
+        height: 200px;
+        min-height: 200px;
     }
 
     .graph-card,
     .graph-card-pie,
     .graph-card-bar,
     .graph-card-wide {
-        min-height: 300px;
+        min-height: 280px;
     }
 
     .graph-card-pie {
-        min-height: 380px;
+        min-height: 340px;
     }
 
     .graph-card-bar {
-        min-height: 360px;
+        min-height: 320px;
     }
 
     .graph-card-wide {
-        min-height: 340px;
+        min-height: 300px;
     }
 }
