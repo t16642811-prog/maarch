@@ -45,12 +45,12 @@
 <div class="example-loading-shade" *ngIf="isLoadingResults">
     <mat-spinner *ngIf="isLoadingResults"></mat-spinner>
 </div>
-<div class="table-head">
+<div class="table-head table-head-main">
     <div class="table-head-result">
         <mat-checkbox *ngIf="!singleSelection" color="primary"
             [checked]="selectedRes.length === resultsLength && selectedRes.length > 0"
             [indeterminate]="selectedRes.length > 0 && selectedRes.length < resultsLength"
-            style="margin: 10px;padding-right: 10px;" title="{{'lang.selectAllResInBasket' | translate}}"
+            class="table-head-main__selectall" title="{{'lang.selectAllResInBasket' | translate}}"
             (change)="toggleAllRes($event)">
         </mat-checkbox>&nbsp;{{resultsLength}}
         {{'lang.records' | translate | ucfirst}}&nbsp;<small *ngIf="selectedRes.length > 0">-

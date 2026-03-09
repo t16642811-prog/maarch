@@ -31,10 +31,10 @@
                     <div class="stats-chart-card" *ngIf="homeStats.topBaskets.length > 0">
                         <div class="stats-chart-title">Top bannettes (volume)</div>
                         <div class="stats-bars">
-                            <div class="stats-bar-row" *ngFor="let basket of homeStats.topBaskets; let i = index">
+                            <div class="stats-bar-row" *ngFor="let basket of homeStats.topBaskets">
                                 <div class="stats-bar-label" [title]="basket.name">{{ basket.name }}</div>
                                 <div class="stats-bar-track">
-                                    <div class="stats-bar-fill" [style.width]="getBarWidth(basket.count)" [style.background]="getBarColor(i, basket.color)"></div>
+                                    <div class="stats-bar-fill" [style.width]="getBarWidth(basket.count)" [style.background]="'#4FC3F7'"></div>
                                 </div>
                                 <div class="stats-bar-value">{{ basket.count }}</div>
                             </div>

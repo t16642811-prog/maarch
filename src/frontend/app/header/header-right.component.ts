@@ -401,9 +401,7 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
             return keep;
         });
 
-        if (this.notificationItems.length < before) {
-            this.unreadNotificationCount = this.notificationItems.length;
-        }
+        this.unreadNotificationCount = Math.min(this.notificationItems.length, 99);
     }
 
     pruneOpenedMailNotifications() {
@@ -429,18 +427,76 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
     }
 
     restoreOpenedResourceIds() {
-        const raw = this.localStorage.get('openedNotificationResIds');
-        const ids = Array.isArray(raw) ? raw : [];
-        ids.forEach((id: any) => {
-            const parsed = Number(id);
-            if (parsed > 0) {
-                this.openedMailResourceIds.add(parsed);
+        try {
+            const ids: number[] = [];
+
+            // Primary storage shared with basket list component.
+            const rawLocal = localStorage.getItem('openedNotificationResIds');
+            if (rawLocal) {
+                const parsedLocal = JSON.parse(rawLocal);
+                if (Array.isArray(parsedLocal)) {
+                    parsedLocal.forEach((id: any) => ids.push(Number(id)));
+                }
             }
-        });
+
+            // Backward-compatibility for session-based localStorage service.
+            const rawSession = this.localStorage.get('openedNotificationResIds');
+            if (rawSession) {
+                const parsedSession = JSON.parse(rawSession);
+                if (Array.isArray(parsedSession)) {
+                    parsedSession.forEach((id: any) => ids.push(Number(id)));
+                }
+            }
+
+            ids.forEach((id: number) => {
+                if (id > 0 && !Number.isNaN(id)) {
+                    this.openedMailResourceIds.add(id);
+                }
+            });
+        } catch (e) {
+            // ignore malformed storage values
+        }
     }
 
     persistOpenedResourceIds() {
-        this.localStorage.save('openedNotificationResIds', Array.from(this.openedMailResourceIds).slice(-500));
+        const values = Array.from(this.openedMailResourceIds).slice(-500);
+        try {
+            const payload = JSON.stringify(values);
+            localStorage.setItem('openedNotificationResIds', payload);
+            this.localStorage.save('openedNotificationResIds', payload);
+        } catch (e) {
+            // No-op if localStorage is unavailable.
+        }
+    }
+
+    private markNotificationResourceAsOpened(resId: any): number {
+        const parsed = Number(resId);
+        if (!parsed || Number.isNaN(parsed)) {
+            return 0;
+        }
+        this.openedMailResourceIds.add(parsed);
+        this.persistOpenedResourceIds();
+        return parsed;
+    }
+
+    private removeMailNotificationByResId(resId: number) {
+        if (!resId) {
+            return;
+        }
+        this.notificationItems = this.notificationItems.filter((notif: any) => {
+            if (notif?.type !== 'mail') {
+                return true;
+            }
+            const notifResId = Number(notif?.resource?.resId ?? notif?.resource?.res_id ?? 0);
+            if (notifResId === resId) {
+                if (notif?.id) {
+                    this.dismissedMailNotificationIds.add(notif.id);
+                }
+                return false;
+            }
+            return true;
+        });
+        this.unreadNotificationCount = Math.min(this.notificationItems.length, 99);
     }
 
     getNotificationPriorityLevel(row: any): 'tres-urgent' | 'urgent' | 'normal' {
@@ -501,17 +557,17 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
     }
 
     openNotification(item: any) {
+        const openedResId = this.markNotificationResourceAsOpened(item?.resource?.resId ?? item?.resource?.res_id);
+        if (openedResId) {
+            this.removeMailNotificationByResId(openedResId);
+        }
+
         if (item?.type === 'mail') {
             if (item?.id) {
                 this.dismissedMailNotificationIds.add(item.id);
             }
-            const previousLength = this.notificationItems.length;
             this.notificationItems = this.notificationItems.filter((notif: any) => notif !== item && (!item?.id || notif.id !== item.id));
-            if (this.notificationItems.length < previousLength) {
-                this.unreadNotificationCount = Math.max(0, this.unreadNotificationCount - 1);
-            } else {
-                this.unreadNotificationCount = Math.min(this.unreadNotificationCount, this.notificationItems.length);
-            }
+            this.unreadNotificationCount = Math.min(this.notificationItems.length, 99);
         }
 
         if (item?.resource?.resId || item?.resource?.res_id) {

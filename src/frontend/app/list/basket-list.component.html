@@ -1,6 +1,8 @@
     <mat-sidenav-container class="maarch-container">
         <mat-sidenav-content>
-            <mat-card id="viewThumbnail" style="display:none;position: fixed;z-index: 2;margin-left: 1px;"><img style="max-height: 100vh;" *ngIf="thumbnailUrl !== ''" [src]="thumbnailUrl | secureUrl | async" /></mat-card>
+            <mat-card class="thumbnail-preview-card" [class.thumbnail-preview-card--visible]="showThumbnail">
+                <img class="thumbnail-preview-image" *ngIf="thumbnailUrl !== ''" [src]="thumbnailUrl | secureUrl | async" />
+            </mat-card>
             <div class="bg-head">
                 <div class="bg-head-title" [class.customContainerRight]="appService.getViewMode()">
                     <div class="bg-head-title-label">

@@ -16,7 +16,7 @@
 
     <mat-menu #menuTemplates="matMenu" [class]="'templateNoteListMenu'">
         <div
-            style="z-index:1;position: sticky;top: 0px;text-align: center;font-size: 10px;color: white;background: #135F7F;padding: 5px;font-weight: bold;">
+            style="z-index:1;position: sticky;top: 0px;text-align: center;font-size: 10px;color: white;background: #0893a9;padding: 5px;font-weight: bold;">
             {{'lang.noteTemplates' | translate}}
         </div>
         <button mat-menu-item *ngFor="let template of templatesNote" matTooltip="{{template.template_content}}"
@@ -29,7 +29,7 @@
     </mat-menu>
     <mat-menu #menuEntities="matMenu" [class]="'templateNoteListMenu fixedWidth'">
         <div
-            style="z-index:1;position: sticky;top: 0px;text-align: center;font-size: 10px;color: white;background: #135F7F;padding: 5px;font-weight: bold;">
+            style="z-index:1;position: sticky;top: 0px;text-align: center;font-size: 10px;color: white;background: #0893a9;padding: 5px;font-weight: bold;">
             {{'lang.entities' | translate}}
         </div>
         <ng-template matMenuContent>

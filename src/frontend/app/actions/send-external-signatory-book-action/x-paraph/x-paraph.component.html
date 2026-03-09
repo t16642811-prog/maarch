@@ -66,7 +66,7 @@
                             <span style="opacity:0.5;flex: 1;">
                                 <button class="currentRoleButton" mat-button [matMenuTriggerFor]="menu" title="{{'lang.' + diffusion.currentRole + 'User' | translate}}">{{'lang.' + diffusion.currentRole + 'User' | translate}}</button>
                                 <mat-menu [class]="'listMenu'" #menu="matMenu">
-                                    <div style="text-align: center;font-size: 10px;color: white;background: #135F7F;padding: 5px;font-weight: bold;">
+                                    <div style="text-align: center;font-size: 10px;color: white;background: #0893a9;padding: 5px;font-weight: bold;">
                                         {{'lang.roles' | translate}}
                                     </div>
                                     <button *ngFor="let role of diffusion.roles" mat-menu-item
@@ -75,7 +75,7 @@
                                 <button class="currentContextButton" mat-button
                                     [matMenuTriggerFor]="menuContext" title="{{'lang.' + diffusion.currentContext | translate}}">{{'lang.' + diffusion.currentContext | translate}}</button>
                                 <mat-menu [class]="'listMenu'" #menuContext="matMenu">
-                                    <div style="text-align: center;font-size: 10px;color: white;background: #135F7F;padding: 5px;font-weight: bold;">
+                                    <div style="text-align: center;font-size: 10px;color: white;background: #0893a9;padding: 5px;font-weight: bold;">
                                         {{'lang.contextParaph' | translate}}
                                     </div>
                                     <button *ngFor="let context of contextList" mat-menu-item

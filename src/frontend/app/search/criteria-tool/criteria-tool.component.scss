@@ -162,7 +162,7 @@
     display: flex;
     padding-left: 20px;
     align-items: center;
-    color: #135f7f;
+    color: #0893a9;
     font-weight: bold;
 }
 
@@ -216,14 +216,14 @@
 
 .addCriteriaButton {
     border-radius: 20px;
-    border-color: #135F7F;
-    color: #135F7F;
+    border-color: #0893a9;
+    color: #0893a9;
 }
 
 .ascDescTool {
     margin-top: 5px;
     .mat-fab {
-        background: #135F7F;
+        background: #0893a9;
         border: solid 2px white;
         color: white !important;
         box-shadow: none;
@@ -258,7 +258,7 @@
     }
 
     ::ng-deep.mat-form-field-flex {
-        background: #135F7F;
+        background: #0893a9;
         border: solid 2px white;
         border-radius: 30px;
         display: flex;

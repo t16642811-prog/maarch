@@ -61,7 +61,7 @@
                             [style.left]="contextMenuPosition.x" [style.top]="contextMenuPosition.y"></span>
                         <mat-menu #menuContact="matMenu">
                             <div
-                                style="text-align: center;font-size: 10px;color: white;background: #135F7F;padding: 5px;font-weight: bold;">
+                                style="text-align: center;font-size: 10px;color: white;background: #0893a9;padding: 5px;font-weight: bold;">
                                 {{selection.selected.length}} {{'lang.selectedContacts' | translate}}
                             </div>
                             <button mat-menu-item (click)="mergeContacts(selection)" [disabled]="selection.selected.length < 2">{{'lang.merge' | translate}}</button>
@@ -70,7 +70,7 @@
                         </mat-menu>
                         <mat-menu #menuContactContext="matMenu">
                             <div
-                                style="text-align: center;font-size: 10px;color: white;background: #135F7F;padding: 5px;font-weight: bold;">
+                                style="text-align: center;font-size: 10px;color: white;background: #0893a9;padding: 5px;font-weight: bold;">
                                 {{selection.selected.length}} {{'lang.selectedContacts' | translate}}
                             </div>
                             <button mat-menu-item (click)="mergeContacts(selection)" [disabled]="selection.selected.length < 2">{{'lang.merge' | translate}}</button>
@@ -79,7 +79,7 @@
                         </mat-menu>
                         <mat-menu #correspondentsGroupMenu="matMenu" [class]="'correspondentsGroupMenuMenu'">
                             <div (click)="$event.stopPropagation();"
-                                style="text-align: center;font-size: 10px;color: white;background: #135F7F;padding: 5px;font-weight: bold;position: sticky;top: 0px;z-index: 1;">
+                                style="text-align: center;font-size: 10px;color: white;background: #0893a9;padding: 5px;font-weight: bold;position: sticky;top: 0px;z-index: 1;">
                                 {{'lang.correspondentsGroups' | translate}}
                             </div>
                             <mat-form-field (click)="$event.stopPropagation();" class="smallInput" appearance="outline" floatLabel="never">

@@ -1179,7 +1179,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
                         title: arrType.label,
                         disabled: true,
                         isTitle: true,
-                        color: '#135f7f'
+                        color: '#0893a9'
                     });
                     data.templates.filter((template: any) => template.attachmentType === arrType.id).forEach((template: any) => {
                         arrValues.push({
@@ -1211,7 +1211,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
                             title: this.translate.instant('lang.indexation'),
                             disabled: true,
                             isTitle: true,
-                            color: '#135f7f'
+                            color: '#0893a9'
                         });
                         data.templates.forEach((template: any) => {
                             arrValues.push({
@@ -1255,7 +1255,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
                                 title: arrType.label,
                                 disabled: true,
                                 isTitle: true,
-                                color: '#135f7f'
+                                color: '#0893a9'
                             });
                             data.templates.filter((template: any) => template.attachmentType === arrType.id).forEach((template: any) => {
                                 arrValues.push({

@@ -1,4 +1,4 @@
-﻿
+
 .align_leftData {
     text-align: left;
 }
@@ -147,7 +147,7 @@
     border-radius: 999px;
     border: 1px solid rgba(19, 95, 127, 0.35);
     background: rgba(19, 95, 127, 0.12);
-    color: #135f7f;
+    color: #0893a9;
     font-size: 12px;
     font-weight: 700;
     line-height: 1;
@@ -627,4 +627,29 @@
     max-width: 140px;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.thumbnail-preview-card {
+    position: fixed;
+    top: 78px;
+    right: 20px;
+    left: auto;
+    z-index: 12000;
+    margin-left: 0;
+    max-width: calc(100vw - 360px);
+    display: none;
+    pointer-events: none;
+}
+
+.thumbnail-preview-card--visible {
+    display: block;
+}
+
+.thumbnail-preview-image {
+    display: block;
+    max-height: calc(100vh - 92px);
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
 }

@@ -1,7 +1,13 @@
 
 .bg-head-content {
     flex-direction: column;
-    padding-bottom: 70px;
+    padding-bottom: 56px;
+    gap: 10px;
+}
+
+#toolTemplate {
+    width: 100%;
+    margin-top: 4px;
 }
 
 .dragPreview {
@@ -169,7 +175,7 @@
     }
 
     ::ng-deep.mat-form-field-flex {
-        background: #135F7F;
+        background: #0893a9;
         border: solid 2px white;
         border-radius: 30px;
         display: flex;
@@ -197,7 +203,7 @@
 
 .ascDescTool {
     .mat-fab {
-        background: #135F7F;
+        background: #0893a9;
         border: solid 2px white;
         color: white !important;
         box-shadow: none;

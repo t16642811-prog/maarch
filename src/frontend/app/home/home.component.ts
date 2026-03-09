@@ -15,17 +15,6 @@ import { catchError, of, tap } from 'rxjs';
     styleUrls: ['home.component.scss']
 })
 export class HomeComponent implements OnInit, AfterViewInit {
-    private readonly barPalette: string[] = [
-        '#1D4ED8',
-        '#0EA5E9',
-        '#10B981',
-        '#F59E0B',
-        '#EF4444',
-        '#8B5CF6',
-        '#14B8A6',
-        '#F97316'
-    ];
-
     @ViewChild('remotePlugin2', { read: ViewContainerRef, static: true }) remotePlugin2: ViewContainerRef;
 
     loading: boolean = false;
@@ -105,7 +94,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         const normalized = allBaskets.map((basket: any) => ({
             name: basket.basket_name || this.translate.instant('lang.undefined'),
             count: Number(basket.resourceNumber || 0),
-            color: basket.color || '#135F7F',
+            color: basket.color || '#0893a9',
             groupDesc: basket.groupDesc || basket.group_desc || ''
         }));
 
@@ -128,13 +117,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
     getBarWidth(count: number) {
         const max = this.homeStats.maxBasketCount || 1;
         return `${Math.max((count / max) * 100, count > 0 ? 8 : 4)}%`;
-    }
-
-    getBarColor(index: number, color?: string): string {
-        if (color && !['#666666', '#676d73', '#808080', '#999999', '#a0a0a0'].includes(color.toLowerCase())) {
-            return color;
-        }
-        return this.barPalette[index % this.barPalette.length];
     }
 
     prepareHomeCharts(statistics: any) {

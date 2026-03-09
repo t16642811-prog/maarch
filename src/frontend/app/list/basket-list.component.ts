@@ -21,8 +21,6 @@ import { ActionsService } from '../actions/actions.service';
 import { ContactResourceModalComponent } from '../contact/contact-resource/modal/contact-resource-modal.component';
 import { merge, Observable, of, Subject, Subscription } from 'rxjs';
 
-declare let $: any;
-
 @Component({
     templateUrl: 'basket-list.component.html',
     styleUrls: ['basket-list.component.scss'],
@@ -86,6 +84,7 @@ export class BasketListComponent implements OnInit, OnDestroy {
         component: 'processAction'
     };
     thumbnailUrl: string = '';
+    showThumbnail: boolean = false;
 
     selectedRes: number[] = [];
     allResInBasket: number[] = [];
@@ -307,14 +306,12 @@ export class BasketListComponent implements OnInit, OnDestroy {
         if (row.hasDocument) {
             const timeStamp = +new Date();
             this.thumbnailUrl = '../rest/resources/' + row.resId + '/thumbnail?tsp=' + timeStamp;
-            $('#viewThumbnail').show();
-            $('#listContent').css({ 'overflow': 'hidden' });
+            this.showThumbnail = true;
         }
     }
 
     closeThumbnail() {
-        $('#viewThumbnail').hide();
-        $('#listContent').css({ 'overflow': 'auto' });
+        this.showThumbnail = false;
     }
 
     processPostData(data: any) {

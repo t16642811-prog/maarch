@@ -4,6 +4,62 @@
     color: var(--maarch-color-secondary);
 }
 
+.table-head-main {
+    min-height: 64px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(19, 95, 127, 0.12);
+    background: linear-gradient(180deg, #ffffff 0%, #f6fafe 100%);
+}
+
+.table-head-main .table-head-result {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1f2f3b;
+    font-size: 20px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.table-head-main .table-head-result small {
+    font-size: 12px;
+    font-weight: 600;
+    color: #3f7d9a;
+}
+
+.table-head-main .table-head-tool {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.table-head-main .table-head-tool > span {
+    display: inline-flex;
+    align-items: center;
+}
+
+.table-head-main__selectall {
+    margin: 0 !important;
+    padding-right: 8px !important;
+}
+
+.table-head-main .paginatorResultList {
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(19, 95, 127, 0.05);
+}
+
+.table-head-main ::ng-deep .paginatorResultList .mat-paginator-container {
+    min-height: 40px;
+    padding: 0 10px;
+    align-items: center;
+}
+
 .folder-info {
     padding-left: 20px;
     padding-right: 20px;
@@ -66,7 +122,7 @@
     }
 
     ::ng-deep.mat-form-field-flex {
-        background: #135F7F;
+        background: #0893a9;
         border: solid 2px white;
         border-radius: 30px;
         display: flex;

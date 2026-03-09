@@ -177,7 +177,7 @@
                             <label>Type :&nbsp;</label>
                             <span>{{signatureBook.attachments[rightSelectedThumbnail].attachment_type}} <sup
                                     *ngIf="signatureBook.attachments[rightSelectedThumbnail].status === 'SIGN'"
-                                    style="color:#135F7F;">{{'lang.signed' | translate}}</sup></span>
+                                    style="color:#0893a9;">{{'lang.signed' | translate}}</sup></span>
                         </div>
                         <div class="infoPj" title="{{signatureBook.attachments[rightSelectedThumbnail].title}}">
                             <label>{{'lang.object' | translate}} :&nbsp;</label>
@@ -217,7 +217,7 @@
                                 <label>Version :&nbsp;</label>
                                 <span>{{signatureBook.attachments[rightSelectedThumbnail].relation}}</span>
                                 <i [ngStyle]="{'display': signatureBook.attachments[rightSelectedThumbnail].relation > 1 ? '' : 'none'}"
-                                    style="color:#135F7F" class="fa fa-chevron-circle-up" id="obsVersion"
+                                    style="color:#0893a9" class="fa fa-chevron-circle-up" id="obsVersion"
                                     data-tooltip-content="#obsVersionTooltip" aria-hidden="true"></i>
                             </div>
                             <div class="infoPj">
@@ -374,7 +374,7 @@
                 <span>{{version.relation}}</span>&nbsp;
                 <span>{{'lang.object' | translate}} : </span>
                 <span>{{version.title}}</span>&nbsp;
-                <a style="color:#135F7F" title="{{'lang.dlAttachment' | translate}}"
+                <a style="color:#0893a9" title="{{'lang.dlAttachment' | translate}}"
                     (click)="downloadOriginalFile(version.resId)" style="cursor: pointer;">
                     <i class="fa fa-download fa-2x"></i>
                 </a>
