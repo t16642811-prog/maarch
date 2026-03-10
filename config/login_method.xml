@@ -2,11 +2,11 @@
 <ROOT>
     <METHOD>
         <ID>standard</ID>
-        <ENABLED>true</ENABLED>
+        <ENABLED>false</ENABLED>
     </METHOD>
     <METHOD>
         <ID>ldap</ID>
-        <ENABLED>false</ENABLED>
+        <ENABLED>true</ENABLED>
     </METHOD>
     <METHOD>
         <ID>cas</ID>

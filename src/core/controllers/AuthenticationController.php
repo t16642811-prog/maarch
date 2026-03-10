@@ -36,7 +36,9 @@ use SrcCore\models\ValidatorModel;
 use stdClass;
 use Stevenmaguire\OAuth2\Client\Provider\Keycloak;
 use User\controllers\UserController;
+use User\models\UserEntityModel;
 use User\models\UserModel;
+use Entity\models\EntityModel;
 use VersionUpdate\controllers\VersionUpdateController;
 
 class AuthenticationController
@@ -456,7 +458,8 @@ class AuthenticationController
             }
         } elseif ($loggingMethod['id'] == 'ldap') {
             $login = $body['login'];
-            if (!AuthenticationController::isUserAuthorized(['login' => $login])) {
+            $existingUser = UserModel::getByLowerLogin(['login' => $login, 'select' => ['mode', 'status']]);
+            if (!empty($existingUser) && ($existingUser['mode'] == 'rest' || $existingUser['status'] == 'SPD')) {
                 return $response->withStatus(403)->withJson(['errors' => 'Authentication Failed']);
             }
             $authenticated = AuthenticationController::ldapConnection(
@@ -467,6 +470,22 @@ class AuthenticationController
             );
             if (!empty($authenticated['errors'])) {
                 return $response->withStatus(401)->withJson(['errors' => $authenticated['errors']]);
+            }
+            try {
+                $ldapUserData = AuthenticationController::getLdapUserData([
+                    'login'    => $login,
+                    'password' => $body['password']
+                ]);
+                AuthenticationController::ensureLdapUserExists(['login' => $login, 'ldapData' => $ldapUserData]);
+                AuthenticationController::syncLdapUserData(['login' => $login, 'ldapData' => $ldapUserData]);
+                AuthenticationController::syncLdapUserEntity(['login' => $login, 'ldapData' => $ldapUserData]);
+            } catch (\Throwable) {
+                // Do not block successful LDAP authentication on profile/entity sync issue.
+                try {
+                    AuthenticationController::ensureLdapUserExists(['login' => $login]);
+                } catch (\Throwable) {
+                    return $response->withStatus(401)->withJson(['errors' => 'Authentication Failed']);
+                }
             }
         } elseif ($loggingMethod['id'] == 'cas') {
             $authenticated = AuthenticationController::casConnection();
@@ -520,6 +539,9 @@ class AuthenticationController
 
         UserController::setAbsences();
         $user = UserModel::getByLowerLogin(['login' => $login, 'select' => ['id', 'refresh_token', 'user_id']]);
+        if (empty($user['id'])) {
+            return $response->withStatus(401)->withJson(['errors' => 'Authentication Failed']);
+        }
 
         $GLOBALS['id'] = $user['id'];
         $GLOBALS['login'] = $user['user_id'];
@@ -1193,6 +1215,340 @@ class AuthenticationController
         }
 
         return true;
+    }
+
+    /**
+     * Ensure LDAP-authenticated users exist in local Maarch users table.
+     * They can then be assigned groups/entities by an administrator.
+     */
+    private static function ensureLdapUserExists(array $args): void
+    {
+        $login = trim((string)($args['login'] ?? ''));
+        $ldapData = $args['ldapData'] ?? [];
+        if ($login === '') {
+            return;
+        }
+
+        $user = UserModel::getByLowerLogin(['login' => $login, 'select' => ['id']]);
+        if (!empty($user)) {
+            return;
+        }
+
+        $firstname = trim((string)($ldapData['firstname'] ?? ''));
+        $lastname = trim((string)($ldapData['lastname'] ?? ''));
+        $mail = trim((string)($ldapData['mail'] ?? ''));
+        $phone = trim((string)($ldapData['phone'] ?? ''));
+
+        if ($firstname === '') {
+            $firstname = $login;
+        }
+        if ($lastname === '') {
+            $lastname = $login;
+        }
+
+        UserModel::create([
+            'user' => [
+                'userId'      => $login,
+                'password'    => '',
+                'firstname'   => $firstname,
+                'lastname'    => $lastname,
+                'mail'        => $mail,
+                'phone'       => $phone,
+                'preferences' => '{}',
+                'mode'        => 'standard'
+            ]
+        ]);
+    }
+
+    /**
+     * Update local user profile fields from LDAP directory attributes.
+     */
+    private static function syncLdapUserData(array $args): void
+    {
+        $login = trim((string)($args['login'] ?? ''));
+        if ($login === '') {
+            return;
+        }
+
+        $ldapData = $args['ldapData'] ?? [];
+        if (empty($ldapData)) {
+            return;
+        }
+
+        $user = UserModel::getByLowerLogin([
+            'login'  => $login,
+            'select' => ['id', 'firstname', 'lastname', 'mail', 'phone']
+        ]);
+        if (empty($user)) {
+            return;
+        }
+
+        $set = [];
+        foreach (['firstname', 'lastname', 'mail', 'phone'] as $field) {
+            if (!empty($ldapData[$field]) && $ldapData[$field] !== ($user[$field] ?? null)) {
+                $set[$field] = $ldapData[$field];
+            }
+        }
+
+        if (!empty($set)) {
+            UserModel::update([
+                'set'   => $set,
+                'where' => ['id = ?'],
+                'data'  => [$user['id']]
+            ]);
+        }
+    }
+
+    /**
+     * Auto-assign LDAP user to a Maarch entity and set primary entity.
+     */
+    private static function syncLdapUserEntity(array $args): void
+    {
+        $login = trim((string)($args['login'] ?? ''));
+        if ($login === '') {
+            return;
+        }
+
+        $user = UserModel::getByLowerLogin([
+            'login'  => $login,
+            'select' => ['id']
+        ]);
+        if (empty($user['id'])) {
+            return;
+        }
+
+        $entityId = AuthenticationController::resolveEntityIdFromLdapData($args['ldapData'] ?? []);
+        if (empty($entityId)) {
+            return;
+        }
+
+        $hasEntity = UserModel::hasEntity([
+            'id'       => (int)$user['id'],
+            'entityId' => $entityId
+        ]);
+        if (!$hasEntity) {
+            $existingEntities = EntityModel::getByUserId([
+                'userId' => (int)$user['id'],
+                'select' => ['entity_id']
+            ]);
+            UserEntityModel::addUserEntity([
+                'id'            => (int)$user['id'],
+                'entityId'      => $entityId,
+                'role'          => '',
+                'primaryEntity' => empty($existingEntities) ? 'Y' : 'N'
+            ]);
+        }
+
+        // Keep LDAP-resolved entity as primary for consistency with directory.
+        UserEntityModel::updateUserPrimaryEntity([
+            'id'       => (int)$user['id'],
+            'entityId' => $entityId
+        ]);
+    }
+
+    /**
+     * Read user identity fields from LDAP after successful bind.
+     */
+    private static function getLdapUserData(array $args): array
+    {
+        $login = trim((string)($args['login'] ?? ''));
+        $password = (string)($args['password'] ?? '');
+        if ($login === '' || $password === '') {
+            return [];
+        }
+
+        $ldapConfigurations = CoreConfigModel::getXmlLoaded(['path' => 'modules/ldap/xml/config.xml']);
+        if (empty($ldapConfigurations) || empty($ldapConfigurations->config->ldap)) {
+            return [];
+        }
+
+        $baseDn = '';
+        if (!empty($ldapConfigurations->filter->dn)) {
+            foreach ($ldapConfigurations->filter->dn as $dn) {
+                $id = trim((string)$dn['id']);
+                $type = strtolower(trim((string)$dn['type']));
+                if (!empty($id) && ($type === '' || $type === 'users')) {
+                    $baseDn = $id;
+                    break;
+                }
+            }
+        }
+
+        $simpleLogin = AuthenticationController::normalizeLdapLogin($login);
+        $simpleLoginEscaped = AuthenticationController::escapeLdapFilter($simpleLogin);
+        $upnEscaped = AuthenticationController::escapeLdapFilter($simpleLogin . '@corp.anam.dz');
+        $searchFilter = "(|(sAMAccountName={$simpleLoginEscaped})(userPrincipalName={$simpleLoginEscaped})(userPrincipalName={$upnEscaped}))";
+        $attributes = ['givenName', 'sn', 'mail', 'telephoneNumber', 'displayName', 'memberOf', 'department'];
+
+        foreach ($ldapConfigurations->config->ldap as $ldapConfiguration) {
+            $ssl = strtolower(trim((string)$ldapConfiguration->ssl));
+            $domain = trim((string)$ldapConfiguration->domain);
+            $prefix = trim((string)$ldapConfiguration->prefix_login);
+            $suffix = trim((string)$ldapConfiguration->suffix_login);
+            $configBaseDn = trim((string)$ldapConfiguration->baseDN);
+
+            if (empty($domain)) {
+                continue;
+            }
+
+            $uri = ($ssl === 'true' ? "LDAPS://{$domain}" : $domain);
+            $ldap = @ldap_connect($uri);
+            if ($ldap === false) {
+                continue;
+            }
+
+            ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3);
+            ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
+            ldap_set_option($ldap, LDAP_OPT_NETWORK_TIMEOUT, 10);
+
+            $ldapLogin = (!empty($prefix) ? $prefix . '\\' . $login : $login);
+            $ldapLogin = (!empty($suffix) ? $ldapLogin . $suffix : $ldapLogin);
+
+            $authenticated = @ldap_bind($ldap, $ldapLogin, $password);
+            if (!$authenticated) {
+                continue;
+            }
+
+            $currentBaseDn = !empty($configBaseDn) ? $configBaseDn : $baseDn;
+            if (empty($currentBaseDn)) {
+                continue;
+            }
+
+            $search = @ldap_search($ldap, $currentBaseDn, $searchFilter, $attributes);
+            if ($search === false) {
+                continue;
+            }
+
+            $entries = @ldap_get_entries($ldap, $search);
+            if (empty($entries) || empty($entries['count']) || (int)$entries['count'] < 1) {
+                continue;
+            }
+
+            $entry = $entries[0];
+            $result = [
+                'firstname' => $entry['givenname'][0] ?? '',
+                'lastname'  => $entry['sn'][0] ?? '',
+                'mail'      => $entry['mail'][0] ?? '',
+                'phone'     => $entry['telephonenumber'][0] ?? '',
+                'department'=> $entry['department'][0] ?? '',
+                'memberOf'  => []
+            ];
+
+            if (!empty($entry['memberof']) && is_array($entry['memberof'])) {
+                $count = (int)($entry['memberof']['count'] ?? 0);
+                for ($i = 0; $i < $count; $i++) {
+                    if (!empty($entry['memberof'][$i])) {
+                        $result['memberOf'][] = (string)$entry['memberof'][$i];
+                    }
+                }
+            }
+
+            if (empty($result['firstname']) && empty($result['lastname']) && !empty($entry['displayname'][0])) {
+                $displayName = trim((string)$entry['displayname'][0]);
+                $parts = preg_split('/\s+/', $displayName, 2);
+                $result['firstname'] = $parts[0] ?? '';
+                $result['lastname'] = $parts[1] ?? '';
+            }
+
+            return $result;
+        }
+
+        return [];
+    }
+
+    /**
+     * Resolve Maarch entity id from LDAP data (memberOf / department / defaultEntity).
+     */
+    private static function resolveEntityIdFromLdapData(array $ldapData): ?string
+    {
+        $defaultEntity = AuthenticationController::getLdapDefaultEntity();
+        if (!empty($defaultEntity)) {
+            $entity = EntityModel::getByEntityId(['entityId' => $defaultEntity, 'select' => ['entity_id']]);
+            if (!empty($entity['entity_id'])) {
+                return $entity['entity_id'];
+            }
+        }
+
+        $memberOf = $ldapData['memberOf'] ?? [];
+        if (is_array($memberOf)) {
+            foreach ($memberOf as $dn) {
+                if (preg_match('/CN=([^,]+)/i', (string)$dn, $matches)) {
+                    $cn = trim($matches[1]);
+                    if ($cn === '') {
+                        continue;
+                    }
+
+                    // Match by entity_id first.
+                    $entity = EntityModel::getByEntityId(['entityId' => strtoupper($cn), 'select' => ['entity_id']]);
+                    if (!empty($entity['entity_id'])) {
+                        return $entity['entity_id'];
+                    }
+
+                    // Fallback: match by label/short label.
+                    $labelMatch = EntityModel::get([
+                        'select' => ['entity_id'],
+                        'where'  => ['(lower(entity_label) = lower(?) OR lower(short_label) = lower(?))', 'enabled = ?'],
+                        'data'   => [$cn, $cn, 'Y'],
+                        'limit'  => 1
+                    ]);
+                    if (!empty($labelMatch[0]['entity_id'])) {
+                        return $labelMatch[0]['entity_id'];
+                    }
+                }
+            }
+        }
+
+        $department = trim((string)($ldapData['department'] ?? ''));
+        if ($department !== '') {
+            $entity = EntityModel::get([
+                'select' => ['entity_id'],
+                'where'  => ['(lower(entity_label) = lower(?) OR lower(short_label) = lower(?))', 'enabled = ?'],
+                'data'   => [$department, $department, 'Y'],
+                'limit'  => 1
+            ]);
+            if (!empty($entity[0]['entity_id'])) {
+                return $entity[0]['entity_id'];
+            }
+        }
+
+        return null;
+    }
+
+    private static function getLdapDefaultEntity(): ?string
+    {
+        $ldapConfigurations = CoreConfigModel::getXmlLoaded(['path' => 'modules/ldap/xml/config.xml']);
+        if (empty($ldapConfigurations) || empty($ldapConfigurations->mapping->user->defaultEntity)) {
+            return null;
+        }
+
+        $defaultEntity = trim((string)$ldapConfigurations->mapping->user->defaultEntity);
+        return $defaultEntity === '' ? null : $defaultEntity;
+    }
+
+    private static function normalizeLdapLogin(string $login): string
+    {
+        $normalized = trim($login);
+        if (str_contains($normalized, '\\')) {
+            $parts = explode('\\', $normalized);
+            $normalized = end($parts);
+        }
+        if (str_contains($normalized, '@')) {
+            $parts = explode('@', $normalized);
+            $normalized = $parts[0];
+        }
+        return trim($normalized);
+    }
+
+    private static function escapeLdapFilter(string $value): string
+    {
+        if (function_exists('ldap_escape')) {
+            return ldap_escape($value, '', LDAP_ESCAPE_FILTER);
+        }
+        return str_replace(
+            ['\\', '*', '(', ')', "\x00"],
+            ['\\5c', '\\2a', '\\28', '\\29', '\\00'],
+            $value
+        );
     }
 
     /**
