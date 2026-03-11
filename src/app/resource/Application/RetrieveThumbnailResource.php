@@ -80,13 +80,26 @@ class RetrieveThumbnailResource
                     throw new ResourceDoesNotExistException();
                 }
 
-                $docserverAndFilePath = $this->retrieveResourceDocserverAndFilePath
-                    ->getDocserverAndFilePath($latestPdfVersion);
+                $extension = null;
+                try {
+                    $docserverAndFilePath = $this->retrieveResourceDocserverAndFilePath
+                        ->getDocserverAndFilePath($latestPdfVersion);
 
-                $fileContent = $this->resourceFile->getFileContent(
-                    $docserverAndFilePath->getFilePath(),
-                    $docserverAndFilePath->getDocserver()->getIsEncrypted()
-                );
+                    $fileContent = $this->resourceFile->getFileContent(
+                        $docserverAndFilePath->getFilePath(),
+                        $docserverAndFilePath->getDocserver()->getIsEncrypted()
+                    );
+                    $extension = pathinfo($docserverAndFilePath->getFilePath(), PATHINFO_EXTENSION);
+                } catch (\Throwable $e) {
+                    // Fallback: converted PDF path can be stale/missing; use the original main resource file.
+                    $docserverAndFilePath = $this->retrieveResourceDocserverAndFilePath
+                        ->getDocserverAndFilePath($document);
+                    $fileContent = $this->resourceFile->getFileContent(
+                        $docserverAndFilePath->getFilePath(),
+                        $docserverAndFilePath->getDocserver()->getIsEncrypted()
+                    );
+                    $extension = pathinfo($docserverAndFilePath->getFilePath(), PATHINFO_EXTENSION);
+                }
                 if ($fileContent === null) {
                     throw new ResourceFailedToGetDocumentFromDocserverException();
                 }
@@ -95,7 +108,7 @@ class RetrieveThumbnailResource
                     $resId,
                     $latestPdfVersion->getVersion(),
                     $fileContent,
-                    pathinfo($docserverAndFilePath->getFilePath(), PATHINFO_EXTENSION)
+                    $extension
                 );
                 if (isset($check['errors'])) {
                     throw new ConvertThumbnailException($check['errors']);

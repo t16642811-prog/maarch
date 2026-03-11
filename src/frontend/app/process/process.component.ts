@@ -184,6 +184,10 @@ export class ProcessComponent implements OnInit, OnDestroy {
     canDelete: boolean = false;
     showResponseSplit: boolean = false;
     responseAttachment: any = null;
+    private pendingBrowseDirection: 'next' | 'previous' | null = null;
+    private externalConnectionsLoaded: boolean = false;
+    dashboardWidgetsReady: boolean = false;
+    private dashboardWidgetsTimer: any = null;
 
     constructor(
         public translate: TranslateService,
@@ -261,6 +265,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     async initProcessPage(params: any) {
+        this.dashboardWidgetsReady = false;
 
         this.detailMode = false;
 
@@ -279,12 +284,12 @@ export class ProcessComponent implements OnInit, OnDestroy {
             route: `/basketList/users/${this.currentUserId}/groups/${this.currentGroupId}/baskets/${this.currentBasketId}`
         };
 
-        await this.checkAccesDocument(this.currentResourceInformations.resId);
-        this.loadAllResources();
+        // Load basket navigation IDs only on-demand (when user clicks next/previous).
 
         this.actionService.lockResource(this.currentUserId, this.currentGroupId, this.currentBasketId, [this.currentResourceInformations.resId]);
 
-        this.loadBadges();
+        // Non-blocking: badges are secondary info, defer to speed up initial paint.
+        setTimeout(() => this.loadBadges(), 200);
         this.loadResource();
 
         if (this.appService.getViewMode()) {
@@ -293,7 +298,8 @@ export class ProcessComponent implements OnInit, OnDestroy {
             }, 800);
         }
 
-        await this.getActions();
+        // Non-blocking: actions can load after the resource shell is displayed.
+        setTimeout(() => this.getActions(), 100);
     }
 
     getActions() {
@@ -323,6 +329,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     async initDetailPage(params: any) {
+        this.dashboardWidgetsReady = false;
         this._activatedRoute.queryParamMap.subscribe((paramMap: ParamMap) => {
             this.isMailing = !this.functions.empty(paramMap.get('isMailing'));
             this.isFromSearch = !this.functions.empty(paramMap.get('fromSearch'));
@@ -340,9 +347,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
             route: '__GOBACK'
         };
 
-        await this.checkAccesDocument(this.currentResourceInformations.resId);
-
-        this.loadBadges();
+        setTimeout(() => this.loadBadges(), 200);
         this.loadResource();
 
         await this.initDetailActionsFromBasket();
@@ -395,6 +400,9 @@ export class ProcessComponent implements OnInit, OnDestroy {
                 finalize(() => this.loading = false),
                 catchError((err: any) => {
                     this.notify.handleErrors(err);
+                    if (err?.status === 403 || err?.status === 404) {
+                        this.router.navigate(['/home']);
+                    }
                     return of(false);
                 })
             ).subscribe();
@@ -411,6 +419,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
                         } else {
                             this.currentTool = myData.configuration.listEvent.defaultTab;
                         }
+                        this.prepareToolPerformance(this.currentTool);
                     }),
                     catchError((err: any) => {
                         this.notify.handleErrors(err);
@@ -421,6 +430,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
             this.canEditData = this.canUpdate && this.currentResourceInformations.statusAlterable && this.functions.empty(this.currentResourceInformations.registeredMail_deposit_id);
             if (this.isMailing && this.isToolEnabled('attachments')) {
                 this.currentTool = 'attachments';
+                this.prepareToolPerformance(this.currentTool);
                 // Avoid auto open if the user click one more time on tab attachments
                 setTimeout(() => {
                     this.isMailing = false;
@@ -432,6 +442,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
                     if (data.listEventData !== null) {
                         if (this.isToolEnabled(data.listEventData.defaultTab)) {
                             this.currentTool = !this.functions.empty(this.sessionStorage.get('currentTool')) ? this.sessionStorage.get('currentTool') : data.listEventData.defaultTab;
+                            this.prepareToolPerformance(this.currentTool);
                         }
                         this.canEditData = data.listEventData.canUpdateData && this.functions.empty(this.currentResourceInformations.registeredMail_deposit_id);
                         this.canChangeModel = data.listEventData.canUpdateModel;
@@ -450,6 +461,9 @@ export class ProcessComponent implements OnInit, OnDestroy {
     loadAvaibleIntegrations(integrationsData: any) {
         this.integrationsInfo['inSignatureBook'].enable = !this.functions.empty(integrationsData['inSignatureBook']) ? integrationsData['inSignatureBook'] : false;
 
+        if (this.externalConnectionsLoaded) {
+            return;
+        }
         this.http.get('../rest/externalConnectionsEnabled').pipe(
             tap((data: any) => {
                 Object.keys(data.connection).filter(connectionId => connectionId !== 'maarchParapheur').forEach(connectionId => {
@@ -459,6 +473,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
                         };
                     }
                 });
+                this.externalConnectionsLoaded = true;
             }),
             catchError((err: any) => {
                 this.notify.handleSoftErrors(err);
@@ -755,6 +770,10 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     async ngOnDestroy() {
+        if (this.dashboardWidgetsTimer) {
+            clearTimeout(this.dashboardWidgetsTimer);
+            this.dashboardWidgetsTimer = null;
+        }
         if (!this.detailMode && !this.logoutTrigger) {
             this.actionService.stopRefreshResourceLock();
             if (!this.actionService.actionEnded) {
@@ -786,6 +805,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
                             this.loadResource(false);
                         }, 400);
                         this.currentTool = tabId;
+                        this.prepareToolPerformance(tabId);
                         this.currentResourceInformations.categoryId = !this.functions.empty(this.currentCategory) ? this.currentCategory : this.currentResourceInformations.categoryId;
                         this.prevCategory = this.currentResourceInformations.categoryId;
                     }
@@ -797,7 +817,25 @@ export class ProcessComponent implements OnInit, OnDestroy {
             ).subscribe();
         } else {
             this.currentTool = tabId;
+            this.prepareToolPerformance(tabId);
         }
+    }
+
+    private prepareToolPerformance(tabId: string) {
+        if (tabId !== 'dashboard') {
+            return;
+        }
+        if (this.dashboardWidgetsReady) {
+            return;
+        }
+        if (this.dashboardWidgetsTimer) {
+            clearTimeout(this.dashboardWidgetsTimer);
+            this.dashboardWidgetsTimer = null;
+        }
+        // Defer heavy dashboard widgets slightly so the document page appears instantly.
+        this.dashboardWidgetsTimer = setTimeout(() => {
+            this.dashboardWidgetsReady = true;
+        }, 250);
     }
 
     openConfirmModification() {
@@ -1123,6 +1161,11 @@ export class ProcessComponent implements OnInit, OnDestroy {
                     this.canGoToNext = !this.functions.empty(this.allResources[index + 1]);
                     this.canGoToPrevious = !this.functions.empty(this.allResources[index - 1]);
                 }
+                if (this.pendingBrowseDirection && this.allResources.length > 0) {
+                    const direction = this.pendingBrowseDirection;
+                    this.pendingBrowseDirection = null;
+                    this.goToResource(direction);
+                }
             }),
             catchError((err: any) => {
                 this.notify.handleErrors(err);
@@ -1132,6 +1175,11 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     goToResource(event: string = 'next' || 'previous') {
+        if (this.allResources.length === 0) {
+            this.pendingBrowseDirection = (event === 'previous' ? 'previous' : 'next');
+            this.loadAllResources();
+            return;
+        }
         this.sessionStorage.save('currentTool', this.currentTool);
 
         this.http.put(`../rest/resourcesList/users/${this.currentUserId}/groups/${this.currentGroupId}/baskets/${this.currentBasketId}/locked`, { resources: this.allResources }).pipe(

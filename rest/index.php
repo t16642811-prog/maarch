@@ -18,6 +18,10 @@ use MaarchCourrier\SignatureBook\Infrastructure\Controller\RetrieveSignatureBook
 
 require __DIR__ . '/../vendor/autoload.php';
 
+if (extension_loaded('zlib') && !headers_sent() && !ob_get_level()) {
+    ob_start('ob_gzhandler');
+}
+
 //Root application position
 chdir(__DIR__ . '/..');
 date_default_timezone_set(\SrcCore\models\CoreConfigModel::getTimezone());

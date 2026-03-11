@@ -317,7 +317,9 @@ export class BasketListComponent implements OnInit, OnDestroy {
     processPostData(data: any) {
         this.displayedSecondaryData = [];
         const unreadIds: number[] = [];
-        const basketResIds: number[] = Array.isArray(data?.allResources) ? data.allResources : [];
+        const basketResIds: number[] = Array.isArray(data?.allResources) && data.allResources.length > 0
+            ? data.allResources
+            : (Array.isArray(data?.resources) ? data.resources.map((r: any) => Number(r?.resId)).filter((id: number) => !isNaN(id)) : []);
         data.resources.forEach((element: any) => {
             element.anamTreated = this.isAnamValidated(element);
             // Process main datas
@@ -625,12 +627,30 @@ export class BasketListComponent implements OnInit, OnDestroy {
             this.data.forEach((element: any) => {
                 element['checked'] = true;
             });
-            this.selectedRes = JSON.parse(JSON.stringify(this.allResInBasket));
+            if (this.allResInBasket.length > 0) {
+                this.selectedRes = JSON.parse(JSON.stringify(this.allResInBasket));
+            } else {
+                this.loadAllResourceIdsForSelection();
+            }
         } else {
             this.data.forEach((element: any) => {
                 element['checked'] = false;
             });
         }
+    }
+
+    private loadAllResourceIdsForSelection() {
+        const url = `${this.basketUrl}?limit=1&offset=0${this.filtersListService.getUrlFilters()}&includeAllResources=true`;
+        this.http.get<any>(url).pipe(
+            tap((data: any) => {
+                this.allResInBasket = Array.isArray(data?.allResources) ? data.allResources : [];
+                this.selectedRes = JSON.parse(JSON.stringify(this.allResInBasket));
+            }),
+            catchError((err: any) => {
+                this.notify.handleErrors(err);
+                return of(false);
+            })
+        ).subscribe();
     }
 
     selectSpecificRes(row: any) {
@@ -773,7 +793,7 @@ export class ResultListHttpDao {
         this.filtersListService.updateListsPropertiesPage(page);
         this.filtersListService.updateListsPropertiesPageSize(pageSize);
         const offset = page * pageSize;
-        const requestUrl = `${href}?limit=${pageSize}&offset=${offset}${filters}`;
+        const requestUrl = `${href}?limit=${pageSize}&offset=${offset}${filters}&includeAllResources=false`;
 
         return this.http.get<BasketList>(requestUrl);
     }

@@ -57,12 +57,54 @@ class ConvertThumbnailController
             ) {
                 $size = $parameter['param_value_string'];
             }
-            $command = "convert -thumbnail {$size} -background white -alpha remove "
-                . escapeshellarg($filePath) . '[0] ' . escapeshellarg($filePathOutput);
+            $binary = self::getImageMagickBinary();
+            if ($binary === null) {
+                return [
+                    'return' => 1,
+                    'output' => ['ImageMagick binary not found (expected `magick` on Windows or `convert` on Linux).'],
+                    'filePathOutput' => $filePathOutput
+                ];
+            }
+            $firstPagePath = $filePath . '[0]';
+            $command = escapeshellarg($binary) . ' '
+                . escapeshellarg($firstPagePath)
+                . " -thumbnail {$size} -background white -alpha remove "
+                . escapeshellarg($filePathOutput);
         }
         exec($command . ' 2>&1', $output, $return);
 
         return ['return' => $return, 'output' => $output, 'filePathOutput' => $filePathOutput];
+    }
+
+    private static function getImageMagickBinary(): ?string
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            exec('where magick 2>NUL', $output, $code);
+            if ($code === 0 && !empty($output[0])) {
+                return trim($output[0]);
+            }
+
+            $commonCandidates = array_filter([
+                'C:\\Program Files\\ImageMagick-7.1.2-Q16-HDRI\\magick.exe',
+                'C:\\Program Files\\ImageMagick-7.1.2-Q16\\magick.exe',
+                'C:\\ProgramData\\chocolatey\\bin\\magick.exe'
+            ]);
+            foreach ($commonCandidates as $candidate) {
+                if (is_file($candidate)) {
+                    return $candidate;
+                }
+            }
+
+            $matches = glob('C:\\Program Files\\ImageMagick*\\magick.exe');
+            if (!empty($matches[0]) && is_file($matches[0])) {
+                return $matches[0];
+            }
+
+            return null;
+        }
+
+        exec('command -v convert 2>/dev/null', $output, $code);
+        return $code === 0 && !empty($output[0]) ? trim($output[0]) : null;
     }
 
     /**

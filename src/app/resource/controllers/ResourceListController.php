@@ -84,6 +84,7 @@ class ResourceListController
         $data = $request->getQueryParams();
         $data['offset'] = (empty($data['offset']) || !is_numeric($data['offset']) ? 0 : (int)$data['offset']);
         $data['limit'] = (empty($data['limit']) || !is_numeric($data['limit']) ? 10 : (int)$data['limit']);
+        $data['includeAllResources'] = filter_var($data['includeAllResources'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
         $allQueryData = ResourceListController::getResourcesListQueryData(
             ['data' => $data, 'basketClause' => $basket['basket_clause'], 'login' => $user['user_id']]
@@ -107,14 +108,17 @@ class ResourceListController
             ['resources' => $rawResources, 'offset' => $data['offset'], 'limit' => $data['limit']]
         );
 
-        $followedDocuments = UserFollowedResourceModel::get([
-            'select' => ['res_id'],
-            'where'  => ['user_id = ?'],
-            'data'   => [$GLOBALS['id']],
-        ]);
+        $followedDocuments = [];
+        if (!empty($resIds)) {
+            $followedDocuments = UserFollowedResourceModel::get([
+                'select' => ['res_id'],
+                'where'  => ['user_id = ?', 'res_id in (?)'],
+                'data'   => [$GLOBALS['id'], $resIds],
+            ]);
+        }
 
         $trackedMails = array_column($followedDocuments, 'res_id');
-        $allResources = array_column($rawResources, 'res_id');
+        $allResources = $data['includeAllResources'] ? array_column($rawResources, 'res_id') : [];
 
         $formattedResources = [];
         $defaultAction = [];
@@ -220,10 +224,13 @@ class ResourceListController
         }
 
         $resourcesMeta = ResModel::get([
-            'select' => ['res_id', 'dest_user', 'custom_fields'],
-            'where'  => ['res_id in (?)'],
+            'select' => ['res_id', 'dest_user', "custom_fields -> '_anamWorkflow' as anam_workflow"],
+            'where'  => ['res_id in (?)', 'custom_fields is not null', "jsonb_exists(custom_fields, '_anamWorkflow')"],
             'data'   => [$resIds]
         ]);
+        if (empty($resourcesMeta)) {
+            return $rawResources;
+        }
         $metaById = array_column($resourcesMeta, null, 'res_id');
 
         return array_values(array_filter($rawResources, static function (array $row) use ($metaById, $currentUserId) {
@@ -232,12 +239,10 @@ class ResourceListController
                 return true;
             }
             $meta = $metaById[$resId];
-            $customFields = !empty($meta['custom_fields']) ? json_decode($meta['custom_fields'], true) : [];
-            if (!is_array($customFields) || empty($customFields['_anamWorkflow']) || !is_array($customFields['_anamWorkflow'])) {
+            $workflow = !empty($meta['anam_workflow']) ? json_decode($meta['anam_workflow'], true) : [];
+            if (!is_array($workflow) || empty($workflow)) {
                 return true;
             }
-
-            $workflow = $customFields['_anamWorkflow'];
             $step = (string)($workflow['step'] ?? '');
             $destUserId = (int)($meta['dest_user'] ?? 0);
             $originUserId = (int)($workflow['originUserId'] ?? 0);

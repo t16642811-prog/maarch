@@ -38,7 +38,7 @@ class CoreConfigModel
             return self::$customId;
         }
 
-        if (!is_file('custom/custom.json') || empty($_SERVER['SCRIPT_NAME']) || empty($_SERVER['SERVER_ADDR'])) {
+        if (!is_file('custom/custom.json') || empty($_SERVER['SCRIPT_NAME'])) {
             self::$customId = '';
             return self::$customId;
         }
@@ -50,13 +50,17 @@ class CoreConfigModel
 
         $jsonFile = file_get_contents('custom/custom.json');
         $jsonFile = json_decode($jsonFile, true);
+        if (!is_array($jsonFile)) {
+            self::$customId = '';
+            return self::$customId;
+        }
         foreach ($jsonFile as $value) {
             if (!empty($value['path']) && $value['path'] == $path) {
                 self::$customId = $value['id'];
                 return self::$customId;
             } elseif (
-                $value['uri'] == $_SERVER['HTTP_HOST'] ||
-                ($_SERVER['HTTP_HOST'] == $_SERVER['SERVER_ADDR'] && $value['uri'] == $_SERVER['SERVER_ADDR'])
+                (!empty($_SERVER['HTTP_HOST']) && $value['uri'] == $_SERVER['HTTP_HOST']) ||
+                (!empty($_SERVER['SERVER_ADDR']) && !empty($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] == $_SERVER['SERVER_ADDR'] && $value['uri'] == $_SERVER['SERVER_ADDR'])
             ) {
                 self::$customId = $value['id'];
                 return self::$customId;

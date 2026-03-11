@@ -986,6 +986,15 @@ class ResController extends ResourceControlController
         try {
             $thumbnailFile = $retrieveResourceFactory->getThumbnailFile($args['resId']);
         } catch (Throwable $th) {
+            HistoryController::add([
+                'tableName' => 'res_letterbox',
+                'recordId'  => $args['resId'],
+                'eventType' => 'thumbnail',
+                'eventId'   => 'thumbnail_error',
+                'info'      => '[thumbnail] ' . $th->getMessage(),
+                'moduleId'  => 'resources',
+                'eventDate' => date('Y-m-d H:i:s')
+            ]);
             $noThumbnailPath = 'dist/assets/noThumbnail.png';
             if (is_readable($noThumbnailPath)) {
                 $fileContent = file_get_contents($noThumbnailPath);
