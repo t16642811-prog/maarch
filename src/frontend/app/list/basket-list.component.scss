@@ -217,6 +217,22 @@
 .table-head-main__selectall {
     margin: 0 !important;
     padding-right: 8px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.table-head-main__selectall ::ng-deep .mat-checkbox-layout {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+}
+
+.table-head-main__selectall ::ng-deep .mat-checkbox-inner-container {
+    width: 18px;
+    height: 18px;
+    margin-right: 0;
 }
 
 .table-head-main .table-head-result small {
@@ -226,10 +242,13 @@
 }
 
 .table-head-main .table-head-tool {
+    display: flex;
+    flex-wrap: nowrap;
     gap: 10px;
     flex: 0 0 auto;
     justify-content: flex-end;
     align-items: center;
+    white-space: nowrap;
 }
 
 .table-head-main .table-head-tool > span {
@@ -250,12 +269,52 @@
     height: 40px;
     border-radius: 12px;
     background: rgba(19, 95, 127, 0.05);
+    margin: 0;
 }
 
 .table-head-main ::ng-deep .paginatorResultList .mat-paginator-container {
     min-height: 40px;
     padding: 0 10px;
     align-items: center;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.table-head-main ::ng-deep .paginatorResultList .mat-paginator-range-actions {
+    height: 40px;
+    align-items: center;
+}
+
+.table-head-main ::ng-deep .paginatorResultList .mat-paginator-range-label {
+    margin: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 40px;
+    white-space: nowrap;
+}
+
+.table-head-main ::ng-deep .paginatorResultList .mat-paginator-page-size {
+    align-items: center;
+}
+
+.table-head-main ::ng-deep .paginatorResultList .mat-paginator-page-size-select .mat-form-field-wrapper {
+    padding-bottom: 0;
+}
+
+.table-head-main ::ng-deep .paginatorResultList .mat-paginator-page-size-select .mat-form-field-infix {
+    border-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.table-head-main ::ng-deep .paginatorResultList .mat-paginator-page-size-select .mat-form-field-underline {
+    bottom: 0 !important;
+    top: auto !important;
+}
+
+.table-head-main ::ng-deep .paginatorResultList .mat-paginator-page-size-select .mat-form-field-ripple {
+    bottom: 0 !important;
+    top: auto !important;
 }
 
 .table-head-main ::ng-deep .filtersContent {
@@ -538,8 +597,22 @@
 .mail-col-check {
     width: var(--col-check);
     display: inline-flex;
+    align-items: center;
     justify-content: center;
+    height: 100%;
     grid-column: 1;
+}
+
+.mail-col-check ::ng-deep .mat-checkbox-layout {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+}
+
+.mail-col-check ::ng-deep .mat-checkbox-inner-container {
+    width: 18px;
+    height: 18px;
+    margin-right: 0;
 }
 
 .followIcon {

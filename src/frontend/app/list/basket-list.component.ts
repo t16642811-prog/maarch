@@ -27,12 +27,12 @@ import { merge, Observable, of, Subject, Subscription } from 'rxjs';
 })
 export class BasketListComponent implements OnInit, OnDestroy {
 
-    @ViewChild('snav2', { static: true }) sidenavRight: MatSidenav;
-    @ViewChild('actionsListContext', { static: true }) actionsList: ActionsListComponent;
-    @ViewChild('filtersTool', { static: true }) filtersTool: FiltersToolComponent;
-    @ViewChild('appPanelList', { static: true }) appPanelList: PanelListComponent;
-    @ViewChild('tableBasketListSort', { static: true }) sort: MatSort;
-    @ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;
+    @ViewChild('snav2', { static: true }) sidenavRight!: MatSidenav;
+    @ViewChild('actionsListContext', { static: true }) actionsList!: ActionsListComponent;
+    @ViewChild('filtersTool', { static: true }) filtersTool!: FiltersToolComponent;
+    @ViewChild('appPanelList', { static: true }) appPanelList!: PanelListComponent;
+    @ViewChild('tableBasketListSort', { static: true }) sort!: MatSort;
+    @ViewChild(MatPaginator, { static: true }) paginator!: MatPaginator;
 
     subscription: Subscription;
     subscription2: Subscription;
@@ -41,8 +41,8 @@ export class BasketListComponent implements OnInit, OnDestroy {
 
     loading: boolean = false;
     docUrl: string = '';
-    public innerHtml: SafeHtml;
-    basketUrl: string;
+    public innerHtml: SafeHtml = '';
+    basketUrl: string = '';
 
     injectDatasParam = {
         resId: 0,
@@ -71,7 +71,7 @@ export class BasketListComponent implements OnInit, OnDestroy {
     ];
     displayedSecondaryData: any = [];
 
-    resultListDatabase: ResultListHttpDao | null;
+    resultListDatabase: ResultListHttpDao | null = null;
     data: any;
     resultsLength = 0;
     isLoadingResults = true;
@@ -125,7 +125,10 @@ export class BasketListComponent implements OnInit, OnDestroy {
         // Event after process action
         this.subscription = this.foldersService.catchEvent().subscribe((result: any) => {
             if (result.type === 'function') {
-                this[result.content]();
+                const handler = (this as any)[result.content];
+                if (typeof handler === 'function') {
+                    handler.call(this);
+                }
             }
         });
         this.subscription2 = this.actionService.catchAction().subscribe((message: any) => {
@@ -212,7 +215,7 @@ export class BasketListComponent implements OnInit, OnDestroy {
                     this.isLoadingResults = false;
                     data = this.processPostData(data);
                     this.resultsLength = data.count;
-                    this.allResInBasket = data.allResources;
+                    this.allResInBasket = Array.isArray(data?.allResources) ? data.allResources : [];
                     this.currentBasketInfo.basket_id = data.basket_id;
                     this.defaultAction = data.defaultAction;
                     this.displayFolderTags = data.displayFolderTags;
@@ -713,8 +716,10 @@ export class BasketListComponent implements OnInit, OnDestroy {
                 const file = new Blob([data], { type: 'application/pdf' });
                 const fileURL = URL.createObjectURL(file);
                 const newWindow = window.open();
-                newWindow.document.write(`<iframe style="width: 100%;height: 100%;margin: 0;padding: 0;" src="${fileURL}" frameborder="0" allowfullscreen></iframe>`);
-                newWindow.document.title = row.chrono;
+                if (newWindow) {
+                    newWindow.document.write(`<iframe style="width: 100%;height: 100%;margin: 0;padding: 0;" src="${fileURL}" frameborder="0" allowfullscreen></iframe>`);
+                    newWindow.document.title = row.chrono;
+                }
             }),
             catchError((err: any) => {
                 this.notify.handleBlobErrors(err);

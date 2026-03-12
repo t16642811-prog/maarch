@@ -58,7 +58,7 @@ export class LoginComponent implements OnInit {
         this.initConnection();
     }
 
-    onSubmit(ssoToken = null) {
+    onSubmit(ssoToken: string | null = null) {
         this.loading = true;
 
         let url = '../rest/authenticate';
@@ -70,8 +70,8 @@ export class LoginComponent implements OnInit {
         this.http.post(
             url,
             {
-                'login': this.loginForm.get('login').value,
-                'password': this.loginForm.get('password').value,
+                'login': this.loginForm.get('login')?.value ?? '',
+                'password': this.loginForm.get('password')?.value ?? '',
             },
             {
                 observe: 'response'
@@ -79,14 +79,23 @@ export class LoginComponent implements OnInit {
         ).pipe(
             tap(async (data: any) => {
                 this.localStorage.resetLocal();
-                this.authService.saveTokens(data.headers.get('Token'), data.headers.get('Refresh-Token'));
+                const token = data.headers.get('Token');
+                const refreshToken = data.headers.get('Refresh-Token');
+                if (!token || !refreshToken) {
+                    this.loading = false;
+                    this.notify.error(this.translate.instant('lang.wrongLoginPassword'));
+                    return;
+                }
+
+                this.authService.saveTokens(token, refreshToken);
                 await lastValueFrom(this.authService.getCurrentUserInfo());
                 await this.signatureBookService.getInternalSignatureBookConfig();
-                if (this.authService.getCachedUrl()) {
-                    this.router.navigateByUrl(this.authService.getCachedUrl());
+                const cachedUrl = this.authService.getCachedUrl();
+                if (cachedUrl) {
+                    this.router.navigateByUrl(cachedUrl);
                     this.authService.cleanCachedUrl();
-                } else if (!this.functionsService.empty(this.authService.getToken()?.split('.')[1]) && !this.functionsService.empty(this.authService.getUrl(JSON.parse(atob(data.headers.get('Token').split('.')[1])).user.id))) {
-                    this.router.navigate([this.authService.getUrl(JSON.parse(atob(data.headers.get('Token').split('.')[1])).user.id)]);
+                } else if (!this.functionsService.empty(this.authService.getToken()?.split('.')[1]) && !this.functionsService.empty(this.authService.getUrl(JSON.parse(atob(token.split('.')[1])).user.id))) {
+                    this.router.navigate([this.authService.getUrl(JSON.parse(atob(token.split('.')[1])).user.id)]);
                 } else {
                     this.router.navigate(['/home']);
                 }

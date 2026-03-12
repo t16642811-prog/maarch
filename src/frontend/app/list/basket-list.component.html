@@ -22,17 +22,17 @@
                     <div class="table-head table-head-main">
                         <div class="table-head-result">
                             <mat-checkbox color="primary"
-                                [checked]="selectedRes.length == allResInBasket.length && selectedRes.length > 0"
-                                [indeterminate]="selectedRes.length > 0 && selectedRes.length < allResInBasket.length"
+                                [checked]="resultsLength > 0 && selectedRes.length == resultsLength"
+                                [indeterminate]="selectedRes.length > 0 && selectedRes.length < resultsLength"
                                 class="table-head-main__selectall" title="{{'lang.selectAllResInBasket' | translate}}"
-                                (change)="toggleAllRes($event)"></mat-checkbox>&nbsp;{{allResInBasket.length}}
+                                (change)="toggleAllRes($event)"></mat-checkbox>&nbsp;{{resultsLength}}
                             {{'lang.records' | translate | ucfirst}}&nbsp;<small
                                 *ngIf="selectedRes.length > 0">- {{selectedRes.length}}
                                 {{'lang.selected' | translate}}</small>
                         </div>
                         <div class="table-head-filters">
                             <app-filters-tool #filtersTool
-                                [listProperties]="this.listProperties" [totalRes]="allResInBasket.length"
+                                [listProperties]="this.listProperties" [totalRes]="resultsLength"
                                 [selectedRes]="selectedRes" [routeDatas]="'/rest/resourcesList/users/' + this.currentBasketInfo.ownerId + '/groups/' + currentBasketInfo.groupId + '/baskets/' + currentBasketInfo.basketId + '/filters'" (toggleAllRes)="toggleAllRes($event)"
                                 (refreshEventAfterAction)="refreshDaoAfterAction()" (refreshEvent)="refreshDao()" [title]="'lang.searchMailInBasket' | translate">
                             </app-filters-tool>
@@ -49,7 +49,7 @@
                             </span>
                             <span>
                                 <app-actions-list #actionsList (refreshEvent)="refreshDao()"
-                                    [contextMode]="false" [totalRes]="allResInBasket.length" [selectedRes]="selectedRes"
+                                    [contextMode]="false" [totalRes]="resultsLength" [selectedRes]="selectedRes"
                                     [currentBasketInfo]="currentBasketInfo" [currentResource]="currentResource" (refreshPanelFolders)="foldersService.getFolders()"></app-actions-list>
                             </span>
                         </div>

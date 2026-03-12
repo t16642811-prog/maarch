@@ -12,7 +12,7 @@
         </button>
     </div>
     <ng-container *ngFor="let category of fieldCategories">
-        <div *ngIf="this['indexingModels_'+category].length > 0 || adminMode" class="banner"
+        <div *ngIf="this['indexingModels_'+category].length > 0 || adminMode || (!adminMode && category === 'process' && anamFormEnabled)" class="banner"
             [style.borderColor]="currentPriorityColor">
             <div class="title" [style.color]="currentPriorityColor">
                 {{'lang.' + category| translate | uppercase }} <small *ngIf="category === 'mail'"
@@ -41,35 +41,35 @@
                             </div>
                             <div class="anam-section">
                                 <div class="anam-row-grid">
-                                    <div class="anam-row">
+                                    <div class="anam-row" *ngIf="shouldShowReceptionField(anamFieldIds.bog)">
                                         <div class="anam-label">N° et date BOG</div>
                                         <mat-form-field class="input-form" [floatLabel]="appService.getViewMode() ? '' : 'never'">
                                             <input matInput [formControl]="arrFormControl[anamFieldIds.bog]"
                                                 [placeholder]="'lang.typeValue' | translate">
                                         </mat-form-field>
                                     </div>
-                                    <div class="anam-row">
+                                    <div class="anam-row" *ngIf="shouldShowReceptionField(anamFieldIds.mem)">
                                         <div class="anam-label">N° et date MEM</div>
                                         <mat-form-field class="input-form" [floatLabel]="appService.getViewMode() ? '' : 'never'">
                                             <input matInput [formControl]="arrFormControl[anamFieldIds.mem]"
                                                 [placeholder]="'lang.typeValue' | translate">
                                         </mat-form-field>
                                     </div>
-                                    <div class="anam-row">
+                                    <div class="anam-row" *ngIf="shouldShowReceptionField(anamFieldIds.sg)">
                                         <div class="anam-label">N° et date SG</div>
                                         <mat-form-field class="input-form" [floatLabel]="appService.getViewMode() ? '' : 'never'">
                                             <input matInput [formControl]="arrFormControl[anamFieldIds.sg]"
                                                 [placeholder]="'lang.typeValue' | translate">
                                         </mat-form-field>
                                     </div>
-                                    <div class="anam-row">
+                                    <div class="anam-row" *ngIf="shouldShowReceptionField(anamFieldIds.cc)">
                                         <div class="anam-label">N° et date CC</div>
                                         <mat-form-field class="input-form" [floatLabel]="appService.getViewMode() ? '' : 'never'">
                                             <input matInput [formControl]="arrFormControl[anamFieldIds.cc]"
                                                 [placeholder]="'lang.typeValue' | translate">
                                         </mat-form-field>
                                     </div>
-                                    <div class="anam-row">
+                                    <div class="anam-row" *ngIf="shouldShowReceptionField(anamFieldIds.dgm)">
                                         <div class="anam-label">N° et date DGM</div>
                                         <mat-form-field class="input-form" [floatLabel]="appService.getViewMode() ? '' : 'never'">
                                             <input matInput [formControl]="arrFormControl[anamFieldIds.dgm]"

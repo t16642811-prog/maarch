@@ -29,10 +29,11 @@ import { ContactAutocompleteComponent } from '../../contact/autocomplete/contact
 })
 
 export class IndexingFormComponent implements OnInit {
+    [key: string]: any;
 
-    @Input() indexingFormId: number;
-    @Input() resId: number = null;
-    @Input() groupId: number;
+    @Input() indexingFormId!: number;
+    @Input() resId: number | null = null;
+    @Input() groupId!: number;
     @Input() adminMode: boolean = false;
     @Input() canEdit: boolean = true;
     @Input() mode: string = 'indexation';
@@ -45,10 +46,10 @@ export class IndexingFormComponent implements OnInit {
     @Output() reloadBadge = new EventEmitter<any>();
     @Output() resourceToLinkEvent = new EventEmitter<any>();
 
-    @ViewChild('appDiffusionsList', { static: false }) appDiffusionsList: DiffusionsListComponent;
-    @ViewChild('appIssuingSiteInput', { static: false }) appIssuingSiteInput: IssuingSiteInputComponent;
-    @ViewChild('appRegisteredMailRecipientInput', { static: false }) appRegisteredMailRecipientInput: RegisteredMailRecipientInputComponent;
-    @ViewChild('appContactAutocomplete', { static: false }) appContactAutocomplete: ContactAutocompleteComponent;
+    @ViewChild('appDiffusionsList', { static: false }) appDiffusionsList!: DiffusionsListComponent;
+    @ViewChild('appIssuingSiteInput', { static: false }) appIssuingSiteInput!: IssuingSiteInputComponent;
+    @ViewChild('appRegisteredMailRecipientInput', { static: false }) appRegisteredMailRecipientInput!: RegisteredMailRecipientInputComponent;
+    @ViewChild('appContactAutocomplete', { static: false }) appContactAutocomplete!: ContactAutocompleteComponent;
 
     loading: boolean = true;
 
@@ -287,9 +288,9 @@ export class IndexingFormComponent implements OnInit {
     availableFieldsClone: any[] = [];
 
     availableCustomFields: any[] = [];
-    availableCustomFieldsClone: any[] = null;
+    availableCustomFieldsClone: any[] | null = null;
 
-    indexingFormGroup: UntypedFormGroup;
+    indexingFormGroup!: UntypedFormGroup;
 
     arrFormControl: any = {};
 
@@ -302,7 +303,7 @@ export class IndexingFormComponent implements OnInit {
     selfDest: boolean = false;
     customDiffusion: any = [];
 
-    dialogRef: MatDialogRef<any>;
+    dialogRef!: MatDialogRef<any>;
 
     mustFixErrors: boolean = false;
 
@@ -310,10 +311,10 @@ export class IndexingFormComponent implements OnInit {
     allDoctypes: boolean = true;
 
     hasLinkedRes: boolean = false;
-    linkedResources: any[] = [];
+    linkedResources: Record<string, any> = {};
     selectedContactClone: any = null;
-    suggestLinksNdaysAgo: number;
-    creationDateClone: Date;
+    suggestLinksNdaysAgo: number = 0;
+    creationDateClone: Date | null = null;
     msgToDisplay: string = '';
 
     indexingModelClone: any;
@@ -924,7 +925,8 @@ export class IndexingFormComponent implements OnInit {
                             if (Object.keys(data).indexOf(elem.identifier) > -1 || customId !== undefined) {
                                 let fieldValue: any = '';
                                 if (customId !== undefined) {
-                                    const myCustomField: any = this.availableCustomFieldsClone.find((custom: any) => custom.id.toString() === customId);
+                                    const customFields = this.availableCustomFieldsClone ?? [];
+                                    const myCustomField: any = customFields.find((custom: any) => custom.id.toString() === customId);
                                     if (['select', 'radio'].indexOf(myCustomField?.type) > -1) {
                                         fieldValue = !this.functions.empty(myCustomField.values.find((item: any) => item.id === data.customFields[customId])) ? data.customFields[customId] : '';
                                     } else if (myCustomField?.type === 'checkbox') {
@@ -1053,7 +1055,7 @@ export class IndexingFormComponent implements OnInit {
     async loadForm(indexModelId: number, saveResourceState: boolean = true) {
         this.loading = true;
         this.hasLinkedRes = false;
-        this.linkedResources = [];
+        this.linkedResources = {};
         this.customDiffusion = [];
         this.indexingFormId = indexModelId;
         this.resourceToLinkEvent.emit([]);
@@ -1255,7 +1257,7 @@ export class IndexingFormComponent implements OnInit {
     }
 
     requireDestValidator(error: ValidationErrors): ValidatorFn {
-        return (control: AbstractControl): { [key: string]: any } => {
+        return (control: AbstractControl): ValidationErrors | null => {
             if (!control.value) {
                 return null;
             }
@@ -1264,7 +1266,7 @@ export class IndexingFormComponent implements OnInit {
     }
 
     requireDestValidatorOrEmpty(error: ValidationErrors): ValidatorFn {
-        return (control: AbstractControl): { [key: string]: any } => {
+        return (control: AbstractControl): ValidationErrors | null => {
             if (!control.value) {
                 return null;
             }
@@ -1273,7 +1275,7 @@ export class IndexingFormComponent implements OnInit {
     }
 
     regexValidator(regex: RegExp, error: ValidationErrors): ValidatorFn {
-        return (control: AbstractControl): { [key: string]: any } => {
+        return (control: AbstractControl): ValidationErrors | null => {
             if (!control.value) {
                 return null;
             }
@@ -1283,8 +1285,18 @@ export class IndexingFormComponent implements OnInit {
     }
 
     hasAnamFormFields(): boolean {
-        return !!this.getFieldByIdentifier(this.anamFieldIds.mode) &&
-            !!this.getFieldByIdentifier(this.anamFieldIds.destExec);
+        const hasMode = !!this.getFieldByIdentifier(this.anamFieldIds.mode);
+        if (!hasMode) {
+            return false;
+        }
+
+        // In indexing mode (Houria screen), destination matrix fields can be absent.
+        if (this.mode === 'indexation') {
+            return true;
+        }
+
+        // In process mode, destination fields are required for ANAM block.
+        return !!this.getFieldByIdentifier(this.anamFieldIds.destExec);
     }
 
     isAnamField(field: any): boolean {
@@ -1399,17 +1411,25 @@ export class IndexingFormComponent implements OnInit {
     }
 
     shouldShowReceptionField(fieldId: string): boolean {
-        const mode = this.getSelectedReceptionMode();
-        if (this.functions.empty(mode)) {
+        const rawMode = this.getSelectedReceptionMode();
+        if (this.functions.empty(rawMode)) {
             return false;
         }
-        const map: any = {
-            'B.O.G': this.anamFieldIds.bog,
-            'F.A.X': this.anamFieldIds.mem,
-            'Mail': this.anamFieldIds.sg,
-            'Inter': this.anamFieldIds.cc
+
+        // Normalize labels/ids to avoid mismatch between environments (case/spacing/dots).
+        const normalizedMode = String(rawMode)
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, '')
+            .replace(/\./g, '');
+
+        const map: Record<string, string> = {
+            'bog': this.anamFieldIds.bog,
+            'fax': this.anamFieldIds.mem,
+            'mail': this.anamFieldIds.sg,
+            'inter': this.anamFieldIds.cc
         };
-        const mappedId = map[mode] ?? this.anamFieldIds.dgm;
+        const mappedId = map[normalizedMode] ?? this.anamFieldIds.dgm;
         return fieldId === mappedId;
     }
 
@@ -1488,9 +1508,9 @@ export class IndexingFormComponent implements OnInit {
     isValidForm() {
         if (!this.indexingFormGroup.valid) {
             Object.keys(this.indexingFormGroup.controls).forEach(key => {
-
-                const controlErrors: ValidationErrors = this.indexingFormGroup.get(key).errors;
-                if (controlErrors != null) {
+                const control = this.indexingFormGroup.get(key);
+                const controlErrors: ValidationErrors | null = control?.errors ?? null;
+                if (controlErrors != null && this.indexingFormGroup.controls[key]) {
                     this.indexingFormGroup.controls[key].markAsTouched();
                 }
             });
@@ -1842,8 +1862,12 @@ export class IndexingFormComponent implements OnInit {
 
     selectedContact(contact: any, identifier: string, removeEvent: boolean = false) {
         if (this.getCategory() === 'incoming' && identifier === 'senders' && (this.arrFormControl['senders'].value.length === 1 || removeEvent) && this.suggestLinksNdaysAgo > 0) {
-            const documentDate: Date = this.functions.empty(this.creationDateClone) ? new Date() : new Date(this.creationDateClone);
-            const resourceNotBefore = new Date(documentDate.setDate(documentDate.getDate() - this.suggestLinksNdaysAgo)).toISOString().split('T')[0];
+            const baseCreationDate: Date = this.creationDateClone ?? new Date();
+            const documentDate: Date = new Date(baseCreationDate);
+            const resourceNotBefore = new Date(documentDate.setDate(documentDate.getDate() - this.suggestLinksNdaysAgo))
+                .toISOString()
+                .split('T')
+                .shift() ?? '';
             const objToSend: any = {
                 creationDate : {
                     values : {

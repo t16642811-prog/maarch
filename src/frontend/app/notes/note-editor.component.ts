@@ -18,13 +18,13 @@ export class NoteEditorComponent implements OnInit {
 
     @Input() title: string = this.translate.instant('lang.addNote');
     @Input() content: string = '';
-    @Input() resIds: any[];
-    @Input() addMode: boolean;
-    @Input() upMode: boolean;
-    @Input() noteContent: string;
-    @Input() entitiesNoteRestriction: string[];
-    @Input() noteId: number;
-    @Input() defaultRestriction: boolean;
+    @Input() resIds: any[] = [];
+    @Input() addMode: boolean = false;
+    @Input() upMode: boolean = false;
+    @Input() noteContent: string = '';
+    @Input() entitiesNoteRestriction: string[] = [];
+    @Input() noteId: number = 0;
+    @Input() defaultRestriction: boolean = false;
     @Input() disableRestriction: boolean = false;
     @Output() refreshNotes = new EventEmitter<string>();
 
@@ -182,7 +182,7 @@ export class NoteEditorComponent implements OnInit {
 
     getTemplatesNote() {
         if (this.templatesNote.length == 0) {
-            const params = {};
+            const params: { resId?: any } = {};
             if (!this.functions.empty(this.resIds) && this.resIds.length == 1) {
                 params['resId'] = this.resIds[0];
             }
@@ -197,7 +197,7 @@ export class NoteEditorComponent implements OnInit {
     getEntities() {
         return new Promise((resolve) => {
             if (this.entities.length == 0) {
-                const params = {};
+                const params: { resId?: any } = {};
                 if (!this.functions.empty(this.resIds) && this.resIds.length == 1) {
                     params['resId'] = this.resIds[0];
                 }

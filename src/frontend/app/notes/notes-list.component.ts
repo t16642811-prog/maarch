@@ -19,7 +19,7 @@ export class NotesListComponent implements OnInit {
 
     @Input() injectDatas: any;
 
-    @Input() resId: number = null;
+    @Input() resId: number | null = null;
     @Input() editMode: boolean = false;
 
     @Output() reloadBadgeNotes = new EventEmitter<string>();
@@ -31,7 +31,7 @@ export class NotesListComponent implements OnInit {
     defaultRestriction: boolean = true;
 
 
-    dialogRef: MatDialogRef<any>;
+    dialogRef!: MatDialogRef<any>;
 
     constructor(
         public translate: TranslateService,

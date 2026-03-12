@@ -32,12 +32,12 @@ import { LadService } from '@service/lad.service';
 })
 export class IndexationComponent implements OnInit, OnDestroy {
 
-    @ViewChild('adminMenuTemplate', { static: true }) adminMenuTemplate: TemplateRef<any>;
+    @ViewChild('adminMenuTemplate', { static: true }) adminMenuTemplate!: TemplateRef<any>;
 
-    @ViewChild('appSelectIndexingModel', { static: false }) appSelectIndexingModel: SelectIndexingModelComponent;
-    @ViewChild('indexingForm', { static: false }) indexingForm: IndexingFormComponent;
-    @ViewChild('appIndexationAttachmentsList', { static: false }) appIndexationAttachmentsList: IndexationAttachmentsListComponent;
-    @ViewChild('appDocumentViewer', { static: false }) appDocumentViewer: DocumentViewerComponent;
+    @ViewChild('appSelectIndexingModel', { static: false }) appSelectIndexingModel!: SelectIndexingModelComponent;
+    @ViewChild('indexingForm', { static: false }) indexingForm!: IndexingFormComponent;
+    @ViewChild('appIndexationAttachmentsList', { static: false }) appIndexationAttachmentsList!: IndexationAttachmentsListComponent;
+    @ViewChild('appDocumentViewer', { static: false }) appDocumentViewer!: DocumentViewerComponent;
 
     loading: boolean = false;
     loadedForm: boolean = false;
@@ -45,7 +45,7 @@ export class IndexationComponent implements OnInit, OnDestroy {
 
     indexingModels: any[] = [];
     currentIndexingModel: any = {};
-    currentGroupId: number;
+    currentGroupId: number = 0;
 
     actionsList: any[] = [];
     actionsListLoaded: boolean = false;
@@ -58,13 +58,13 @@ export class IndexationComponent implements OnInit, OnDestroy {
     };
     tmpFilename: string = '';
 
-    dialogRef: MatDialogRef<any>;
+    dialogRef!: MatDialogRef<any>;
 
-    subscription: Subscription;
+    subscription!: Subscription;
 
     isMailing: boolean = false;
 
-    resourceToLink: number[];
+    resourceToLink: number[] = [];
 
     constructor(
         public translate: TranslateService,
