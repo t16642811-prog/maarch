@@ -231,13 +231,10 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
             return;
         }
 
-        const hasIncrease = baskets.some((basket: any) => {
-            const key = this.getBasketNotificationKey(basket);
-            return (basketCounters[key] ?? 0) > (this.lastBasketCounters[key] ?? 0);
-        });
-        if (hasIncrease) {
-            this.refreshDetailedMailNotifications(baskets, true);
-        }
+        // Refresh detailed notifications at each poll.
+        // Relying only on basket counters misses workflow transitions where
+        // one mail enters a basket while another leaves it during the same interval.
+        this.refreshDetailedMailNotifications(baskets, true);
 
         this.lastBasketCounters = basketCounters;
     }

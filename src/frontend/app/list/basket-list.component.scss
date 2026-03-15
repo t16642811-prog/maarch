@@ -562,7 +562,7 @@
 /* Compact mode for the basket list rows */
 .main-info {
     display: grid;
-    grid-template-columns: var(--col-check) var(--col-follow) var(--col-status) var(--col-chrono) minmax(260px, 1fr) var(--col-sender) var(--col-date) var(--col-action);
+    grid-template-columns: var(--col-check) var(--col-follow) var(--col-status) var(--col-chrono) var(--col-sender) minmax(260px, 1fr) var(--col-date) var(--col-action);
     align-items: center;
     column-gap: var(--row-gap);
     padding: 8px 12px;
@@ -660,7 +660,7 @@
     max-height: 2.4em;
     overflow-wrap: anywhere;
     word-break: break-word;
-    grid-column: 5;
+    grid-column: 6;
 }
 
 .mail-col-sender {
@@ -670,7 +670,7 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    grid-column: 6;
+    grid-column: 5;
 }
 
 .mail-col-date {

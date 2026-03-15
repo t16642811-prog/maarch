@@ -45,6 +45,7 @@ export class RedirectActionComponent implements OnInit {
         'entity_label': ''
     };
     redirectMode: string = '';
+    selectedUsers: any[] = [];
     userListRedirect: any[] = [];
     userRedirectCtrl = new UntypedFormControl();
     filteredUserRedirect: Observable<any[]>;
@@ -382,6 +383,7 @@ export class RedirectActionComponent implements OnInit {
 
     loadDestUser() {
         this.redirectMode = 'user';
+        this.selectedUsers = [];
         this.filteredUserRedirect = this.userRedirectCtrl.valueChanges
             .pipe(
                 startWith(''),
@@ -424,20 +426,17 @@ export class RedirectActionComponent implements OnInit {
     }
 
     changeDest(event: any) {
-        this.currentDiffusionListDestRedirect = this.diffusionListDestRedirect;
         const user = event.option.value;
+        if (!user || this.selectedUsers.some((item: any) => item.id === user.id)) {
+            this.userRedirectCtrl.reset();
+            $('.searchUserRedirect').blur();
+            return;
+        }
 
-        this.destUser = {
-            difflist_type: 'entity_id',
-            item_mode: 'dest',
-            item_type: 'user_id',
-            item_id: user.user_id,
-            itemSerialId: user.id,
-            labelToDisplay: user.labelToDisplay,
-            descriptionToDisplay: user.descriptionToDisplay
-        };
+        this.selectedUsers.push(user);
+        this.destUser = this.buildUserRedirectItem(user, 'dest');
 
-        if (this.data.resIds.length === 1) {
+        if (this.data.resIds.length === 1 && this.selectedUsers.length === 1) {
             this.isDestinationChanging = false;
             this.http.get('../rest/resources/' + this.data.resIds[0] + '/users/' + user.id + '/isDestinationChanging')
                 .subscribe((data: any) => {
@@ -445,30 +444,55 @@ export class RedirectActionComponent implements OnInit {
                 }, (err: any) => {
                     this.notify.handleErrors(err);
                 });
-
-            if (this.keepDestForRedirection && this.currentDiffusionListDestRedirect.length > 0) {
-                let isInCopy = false;
-                let newCopy = null;
-                this.currentDiffusionListDestRedirect.forEach((element: any) => {
-                    if (element.item_mode === 'cc' && element.itemSerialId === this.oldUser.itemSerialId) {
-                        isInCopy = true;
-                    }
-                });
-
-                if (!isInCopy) {
-                    newCopy = this.oldUser;
-                    newCopy.item_mode = 'cc';
-                    this.currentDiffusionListDestRedirect.push(newCopy);
-                }
-            }
-            this.currentDiffusionListDestRedirect.splice(this.currentDiffusionListDestRedirect.map((e: any) => e.item_mode).indexOf('dest'), 1);
         } else {
             this.isDestinationChanging = true;
         }
-        this.currentDiffusionListDestRedirect.push(this.destUser);
+
+        this.rebuildUserRedirectList();
 
         this.userRedirectCtrl.reset();
         $('.searchUserRedirect').blur();
+    }
+
+    removeSelectedUser(userId: number) {
+        this.selectedUsers = this.selectedUsers.filter((user: any) => user.id !== userId);
+        this.destUser = this.selectedUsers.length > 0 ? this.buildUserRedirectItem(this.selectedUsers[0], 'dest') : null;
+        this.rebuildUserRedirectList();
+    }
+
+    private rebuildUserRedirectList() {
+        const selectedIds = this.selectedUsers.map((user: any) => user.id);
+        this.currentDiffusionListDestRedirect = (this.diffusionListDestRedirect || []).filter((element: any) => {
+            if (element.item_mode === 'dest') {
+                return false;
+            }
+            return !selectedIds.includes(element.itemSerialId);
+        });
+
+        if (this.keepDestForRedirection && this.oldUser !== null) {
+            const oldUserInCopy = this.currentDiffusionListDestRedirect.some((element: any) =>
+                element.item_mode === 'cc' && element.itemSerialId === this.oldUser.itemSerialId
+            );
+            if (!oldUserInCopy) {
+                this.currentDiffusionListDestRedirect.push({ ...this.oldUser, item_mode: 'cc' });
+            }
+        }
+
+        this.selectedUsers.forEach((user: any, index: number) => {
+            this.currentDiffusionListDestRedirect.push(this.buildUserRedirectItem(user, index === 0 ? 'dest' : 'cc'));
+        });
+    }
+
+    private buildUserRedirectItem(user: any, mode: 'dest' | 'cc') {
+        return {
+            difflist_type: 'entity_id',
+            item_mode: mode,
+            item_type: 'user_id',
+            item_id: user.user_id,
+            itemSerialId: user.id,
+            labelToDisplay: user.labelToDisplay,
+            descriptionToDisplay: user.descriptionToDisplay
+        };
     }
 
     selectEntity(entity: any, initLoad: boolean = false) {
@@ -548,7 +572,7 @@ export class RedirectActionComponent implements OnInit {
     checkValidity() {
         if (this.redirectMode === 'entity' && this.appDiffusionsList && this.appDiffusionsList.getDestUser().length > 0 && this.currentEntity.serialId > 0 && !this.loading) {
             return false;
-        } else if (this.redirectMode === 'user' && this.currentDiffusionListDestRedirect.length > 0 && this.destUser != null && !this.loading) {
+        } else if (this.redirectMode === 'user' && this.currentDiffusionListDestRedirect.length > 0 && this.selectedUsers.length > 0 && !this.loading) {
             return false;
         } else {
             return true;

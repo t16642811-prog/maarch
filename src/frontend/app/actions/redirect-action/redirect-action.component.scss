@@ -62,6 +62,25 @@
     box-shadow: 0 2px 8px rgba(10, 44, 66, 0.08);
 }
 
+.assigneeRole {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #dff4f8;
+    color: #0a6f82;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.assigneeRole.secondary {
+    background: #eef5fb;
+    color: #567089;
+}
+
 .contentEntitiesList {
     background: #fff;
     margin: 10px;

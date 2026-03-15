@@ -71,15 +71,23 @@
             <div class="redirectContent" style="flex:2">
                 <h2 style="top:-5px;">{{'lang.newAssignee' | translate}} :</h2>
                 <div class="contentUser">
-                    <mat-list *ngIf="destUser !== null">
-                        <mat-list-item>
+                    <mat-list *ngIf="selectedUsers.length > 0">
+                        <mat-list-item *ngFor="let user of selectedUsers; let i = index">
                             <mat-icon mat-list-icon class="fa fa-2x fa-user" color="primary"></mat-icon>
-                            <h4 mat-line>{{destUser.labelToDisplay}}</h4>
+                            <h4 mat-line>
+                                {{user.labelToDisplay}}
+                                <span class="assigneeRole" *ngIf="i === 0">Destinataire</span>
+                                <span class="assigneeRole secondary" *ngIf="i > 0">Copie</span>
+                            </h4>
                             <p mat-line style="opacity:0.5;">
-                                {{destUser.descriptionToDisplay}} </p>
+                                {{user.descriptionToDisplay}}
+                            </p>
+                            <button mat-icon-button type="button" (click)="removeSelectedUser(user.id)" [disabled]="forcedRedirectUserId !== null">
+                                <mat-icon class="fa fa-times"></mat-icon>
+                            </button>
                         </mat-list-item>
                     </mat-list>
-                    <div *ngIf="destUser === null" class="noSelection">
+                    <div *ngIf="selectedUsers.length === 0" class="noSelection">
                         {{'lang.noPerson' | translate}}
                     </div>
                 </div>

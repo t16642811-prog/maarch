@@ -657,10 +657,20 @@ export class ProcessComponent implements OnInit, OnDestroy {
 
     async processAction() {
         const forceSaveAnam = this.selectedAction?.id === 22 && this.indexingForm?.anamFormEnabled;
+        const requireAnamStructureInstruction = this.selectedAction?.id === 540 && this.indexingForm?.anamFormEnabled;
         if (forceSaveAnam) {
             const anamErrors = this.indexingForm.getAnamProcessErrors();
             if (anamErrors.length > 0) {
                 this.indexingForm.markAnamProcessTouched();
+                this.notify.error(anamErrors.join(' '));
+                this.currentTool = 'info';
+                return;
+            }
+        }
+        if (requireAnamStructureInstruction) {
+            const anamErrors = this.indexingForm.getAnamStructureAssignErrors();
+            if (anamErrors.length > 0) {
+                this.indexingForm.markAnamStructureAssignTouched();
                 this.notify.error(anamErrors.join(' '));
                 this.currentTool = 'info';
                 return;
@@ -696,7 +706,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
                 if (this.appDocumentViewer.isEditingTemplate()) {
                     await this.appDocumentViewer.saveMainDocument();
                 }
-                if (forceSaveAnam && this.indexingForm?.saveData) {
+                if ((forceSaveAnam || requireAnamStructureInstruction) && this.indexingForm?.saveData) {
                     await this.indexingForm.saveData();
                 }
                 this.canLaunchAction();

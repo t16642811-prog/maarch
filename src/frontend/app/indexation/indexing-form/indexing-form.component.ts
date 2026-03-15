@@ -978,7 +978,8 @@ export class IndexingFormComponent implements OnInit {
                                         this.anamFieldIds.instructionsPcd,
                                         this.anamFieldIds.destExec,
                                         this.anamFieldIds.destFollow,
-                                        this.anamFieldIds.destInfo
+                                        this.anamFieldIds.destInfo,
+                                        this.anamFieldIds.instructionsStructure
                                     ].includes(elem.identifier);
                                 if (!anamEditableInProcess) {
                                     this.arrFormControl[elem.identifier].disable();
@@ -1404,6 +1405,22 @@ export class IndexingFormComponent implements OnInit {
         this.arrFormControl[this.anamFieldIds.destExec]?.markAsTouched();
         this.arrFormControl[this.anamFieldIds.destFollow]?.markAsTouched();
         this.arrFormControl[this.anamFieldIds.destInfo]?.markAsTouched();
+    }
+
+    getAnamStructureAssignErrors(): string[] {
+        if (!this.anamFormEnabled) {
+            return [];
+        }
+        const errors: string[] = [];
+        const instructions = this.arrFormControl[this.anamFieldIds.instructionsStructure]?.value ?? '';
+        if (this.functions.empty(instructions)) {
+            errors.push('Veuillez saisir les instructions de la structure.');
+        }
+        return errors;
+    }
+
+    markAnamStructureAssignTouched(): void {
+        this.arrFormControl[this.anamFieldIds.instructionsStructure]?.markAsTouched();
     }
 
     getSelectedReceptionMode(): string {

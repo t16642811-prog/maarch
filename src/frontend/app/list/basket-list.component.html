@@ -58,8 +58,8 @@
                         <div class="courrier-list-header" *ngIf="!appService.getViewMode()">
                             <span class="courrier-list-header__spacer"></span>
                             <span class="courrier-list-header__chrono">N° chrono</span>
-                            <span class="courrier-list-header__objet">Objet</span>
                             <span class="courrier-list-header__sender">Expéditeur</span>
+                            <span class="courrier-list-header__objet">Objet</span>
                             <span class="courrier-list-header__date">Date du courrier</span>
                             <span class="courrier-list-header__action">Action</span>
                         </div>
@@ -103,13 +103,13 @@
                                                 {{row.chrono}}
                                             </ng-container>
                                         </span>
-                                        <span class="main-info-data mail-col-subject"
-                                            [class.undefined]="row.subject == ('lang.undefined' | translate)"
-                                            title="{{row.subject}}" (click)="launch(defaultAction,row);">{{row.subject}}</span>
                                         <span class="main-info-data mail-col-sender"
                                             title="{{ getRowSender(row) }}" (click)="launch(defaultAction,row);">
                                              {{ getRowSender(row) }}
                                         </span>
+                                        <span class="main-info-data mail-col-subject"
+                                            [class.undefined]="row.subject == ('lang.undefined' | translate)"
+                                            title="{{row.subject}}" (click)="launch(defaultAction,row);">{{row.subject}}</span>
                                         <span class="main-info-data mail-col-date"
                                             (click)="launch(defaultAction,row);">
                                             

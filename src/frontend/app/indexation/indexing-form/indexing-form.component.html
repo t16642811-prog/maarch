@@ -88,6 +88,14 @@
                                     </mat-form-field>
                                 </div>
                                 <div class="anam-section">
+                                    <div class="anam-section-title">Instructions de la structure</div>
+                                    <mat-form-field class="input-form anam-instructions" [floatLabel]="appService.getViewMode() ? '' : 'never'">
+                                        <textarea matInput cdkTextareaAutosize cdkAutosizeMinRows="3" cdkAutosizeMaxRows="12"
+                                            [formControl]="arrFormControl[anamFieldIds.instructionsStructure]"
+                                            [placeholder]="'lang.typeValue' | translate"></textarea>
+                                    </mat-form-field>
+                                </div>
+                                <div class="anam-section">
                                     <div class="anam-section-title">Destinataires</div>
                                     <div class="anam-dest-grid anam-dest-grid-inverted">
                                         <div class="anam-grid-row anam-grid-header">
