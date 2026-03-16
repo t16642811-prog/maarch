@@ -26,8 +26,8 @@ export class VisaWorkflowComponent implements OnInit {
 
     @Input() injectDatas: any;
     @Input() target: string = '';
-    @Input() adminMode: boolean;
-    @Input() resId: number = null;
+    @Input() adminMode: boolean = false;
+    @Input() resId: number | null = null;
     @Input() lockVisaCircuit: boolean = false;
 
     @Input() showListModels: boolean = true;
@@ -38,7 +38,7 @@ export class VisaWorkflowComponent implements OnInit {
     @Output() workflowUpdated = new EventEmitter<any>();
     @Output() refreshActionsList = new EventEmitter<boolean>();
 
-    @ViewChild('searchVisaSignUserInput', { static: false }) searchVisaSignUserInput: ElementRef;
+    @ViewChild('searchVisaSignUserInput', { static: false }) searchVisaSignUserInput!: ElementRef;
 
     visaWorkflow: any = {
         roles: ['sign', 'visa'],
@@ -51,9 +51,9 @@ export class VisaWorkflowComponent implements OnInit {
     };
 
     signVisaUsers: any = [];
-    filteredSignVisaUsers: Observable<string[]>;
-    filteredPublicModels: Observable<string[]>;
-    filteredPrivateModels: Observable<string[]>;
+    filteredSignVisaUsers: Observable<string[]> = of([]);
+    filteredPublicModels: Observable<string[]> = of([]);
+    filteredPrivateModels: Observable<string[]> = of([]);
 
     loading: boolean = false;
     hasHistory: boolean = false;
@@ -64,7 +64,7 @@ export class VisaWorkflowComponent implements OnInit {
 
     loadedInConstructor: boolean = false;
 
-    workflowSignatoryRole: string;
+    workflowSignatoryRole: string = 'required';
 
     constructor(
         public translate: TranslateService,
@@ -85,8 +85,9 @@ export class VisaWorkflowComponent implements OnInit {
             this.resId = params['resId'];
 
             if (!this.functions.empty(this.resId)) {
+                const currentResId = Number(this.resId);
                 this.loadedInConstructor = true;
-                this.loadWorkflow(this.resId);
+                this.loadWorkflow(currentResId);
             } else {
                 this.loadedInConstructor = false;
             }
@@ -102,8 +103,9 @@ export class VisaWorkflowComponent implements OnInit {
         }
         this.checkWorkflowSignatoryRole();
         if (!this.functions.empty(this.resId) && !this.loadedInConstructor) {
+            const currentResId = Number(this.resId);
             // this.initFilterVisaModelList();
-            this.loadWorkflow(this.resId);
+            this.loadWorkflow(currentResId);
         } else {
             this.loading = false;
         }
@@ -380,10 +382,16 @@ export class VisaWorkflowComponent implements OnInit {
         return this.visaWorkflow.items.filter((item: any) => this.functions.empty(item.externalId)).map((item: any) => item.labelToDisplay);
     }
 
-    saveVisaWorkflow(resIds: number[] = [this.resId]): Promise<boolean> {
+    saveVisaWorkflow(resIds?: number[]): Promise<boolean> {
+        const effectiveResIds = resIds ?? (this.resId !== null ? [this.resId] : []);
+
         return new Promise((resolve) => {
+            if (effectiveResIds.length === 0) {
+                resolve(false);
+                return;
+            }
             if (this.visaWorkflow.items.length === 0) {
-                this.http.delete(`../rest/resources/${resIds[0]}/circuits/visaCircuit`).pipe(
+                this.http.delete(`../rest/resources/${effectiveResIds[0]}/circuits/visaCircuit`).pipe(
                     tap(() => {
                         this.visaWorkflowClone = JSON.parse(JSON.stringify(this.visaWorkflow.items));
                         this.notify.success(this.translate.instant('lang.visaWorkflowDeleted'));
@@ -397,7 +405,7 @@ export class VisaWorkflowComponent implements OnInit {
                     })
                 ).subscribe();
             } else if (this.isValidWorkflow()) {
-                const arrVisa = resIds.map(resId => ({
+                const arrVisa = effectiveResIds.map(resId => ({
                     resId: resId,
                     listInstances: this.visaWorkflow.items
                 }));

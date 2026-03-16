@@ -29,22 +29,22 @@ declare let $: any;
 })
 export class FollowedDocumentListComponent implements OnInit, OnDestroy {
 
-    @ViewChild('actionsListContext', { static: true }) actionsList: FollowedActionListComponent;
-    @ViewChild('appPanelList', { static: true }) appPanelList: PanelListComponent;
-    @ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;
-    @ViewChild('tableBasketListSort', { static: true }) sort: MatSort;
-    @ViewChild('basketHome', { static: true }) basketHome: BasketHomeComponent;
-    @ViewChild('menuShortcut', { static: true }) menuShortcut: MenuShortcutComponent;
-    @ViewChild('snav2', { static: true }) sidenavRight: MatSidenav;
+    @ViewChild('actionsListContext', { static: true }) actionsList!: FollowedActionListComponent;
+    @ViewChild('appPanelList', { static: true }) appPanelList!: PanelListComponent;
+    @ViewChild(MatPaginator, { static: true }) paginator!: MatPaginator;
+    @ViewChild('tableBasketListSort', { static: true }) sort!: MatSort;
+    @ViewChild('basketHome', { static: true }) basketHome!: BasketHomeComponent;
+    @ViewChild('menuShortcut', { static: true }) menuShortcut!: MenuShortcutComponent;
+    @ViewChild('snav2', { static: true }) sidenavRight!: MatSidenav;
 
-    subscription: Subscription;
+    subscription!: Subscription;
 
     currentSelectedChrono: string = '';
 
     loading: boolean = false;
     docUrl: string = '';
-    public innerHtml: SafeHtml;
-    basketUrl: string;
+    public innerHtml: SafeHtml = '';
+    basketUrl: string = '../rest/followedResources';
     homeData: any;
 
     injectDatasParam = {
@@ -57,7 +57,7 @@ export class FollowedDocumentListComponent implements OnInit, OnDestroy {
 
     dragInit: boolean = true;
 
-    dialogRef: MatDialogRef<any>;
+    dialogRef!: MatDialogRef<any>;
 
     displayedColumnsBasket: string[] = ['resId'];
 
@@ -74,7 +74,7 @@ export class FollowedDocumentListComponent implements OnInit, OnDestroy {
         }
     ];
 
-    resultListDatabase: ResultListHttpDao | null;
+    resultListDatabase: ResultListHttpDao | null = null;
     data: any;
     resultsLength = 0;
     isLoadingResults = true;
@@ -125,7 +125,7 @@ export class FollowedDocumentListComponent implements OnInit, OnDestroy {
 
         this.isLoadingResults = false;
 
-        this.route.params.subscribe(params => {
+        this.route.params.subscribe(() => {
 
             this.dragInit = true;
             this.destroy$.next(true);
@@ -371,8 +371,10 @@ export class FollowedDocumentListComponent implements OnInit, OnDestroy {
                 const file = new Blob([data], { type: 'application/pdf' });
                 const fileURL = URL.createObjectURL(file);
                 const newWindow = window.open();
-                newWindow.document.write(`<iframe style="width: 100%;height: 100%;margin: 0;padding: 0;" src="${fileURL}" frameborder="0" allowfullscreen></iframe>`);
-                newWindow.document.title = row.chrono;
+                if (newWindow) {
+                    newWindow.document.write(`<iframe style="width: 100%;height: 100%;margin: 0;padding: 0;" src="${fileURL}" frameborder="0" allowfullscreen></iframe>`);
+                    newWindow.document.title = row.chrono;
+                }
             }),
             catchError((err: any) => {
                 this.notify.handleBlobErrors(err);

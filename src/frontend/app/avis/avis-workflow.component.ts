@@ -20,12 +20,12 @@ import { ConfirmComponent } from '../../plugins/modal/confirm.component';
 export class AvisWorkflowComponent implements OnInit {
 
     @Input() injectDatas: any;
-    @Input() adminMode: boolean;
-    @Input() resId: number = null;
+    @Input() adminMode: boolean = false;
+    @Input() resId: number | null = null;
     @Input() showListModels: boolean = true;
     @Input() mode: 'parallel' | 'circuit' = 'circuit';
 
-    @ViewChild('searchAvisUserInput', { static: false }) searchAvisUserInput: ElementRef;
+    @ViewChild('searchAvisUserInput', { static: false }) searchAvisUserInput!: ElementRef;
 
     avisWorkflow: any = {
         roles: ['sign', 'avis'],
@@ -40,9 +40,9 @@ export class AvisWorkflowComponent implements OnInit {
     availableRoles: any[] = [];
 
     signAvisUsers: any = [];
-    filteredSignAvisUsers: Observable<string[]>;
-    filteredPublicModels: Observable<string[]>;
-    filteredPrivateModels: Observable<string[]>;
+    filteredSignAvisUsers: Observable<string[]> = of([]);
+    filteredPublicModels: Observable<string[]> = of([]);
+    filteredPrivateModels: Observable<string[]> = of([]);
 
     loading: boolean = false;
     avisModelListNotLoaded: boolean = true;

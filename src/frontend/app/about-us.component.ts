@@ -16,8 +16,8 @@ import { DomSanitizer } from '@angular/platform-browser';
 })
 export class AboutUsComponent implements OnInit {
 
-    applicationVersion: string;
-    currentYear: number;
+    applicationVersion: string = '';
+    currentYear: number = new Date().getFullYear();
 
 
     loading: boolean = false;
@@ -59,4 +59,3 @@ export class AboutUsComponent implements OnInit {
         });
     }
 }
-

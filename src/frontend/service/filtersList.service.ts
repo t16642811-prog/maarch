@@ -13,7 +13,7 @@ export class FiltersListService {
 
     constructor() { }
 
-    initListsProperties(userId: number, groupId: number, targetId: number, mode: string, specificChrono: string = '') {
+    initListsProperties(userId: number, groupId: number, targetId: number | null, mode: string, specificChrono: string = '') {
 
         this.listsProperties = JSON.parse(sessionStorage.getItem('propertyList' + mode));
 

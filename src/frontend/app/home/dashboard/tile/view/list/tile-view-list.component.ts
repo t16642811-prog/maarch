@@ -18,8 +18,8 @@ export class TileViewListComponent implements OnInit, AfterViewInit {
     @Input() resources: any[];
     @Input() tile: any;
     @Input() icon: string = '';
-    @Input() route: string = null;
-    @Input() viewDocRoute: string = null;
+    @Input() route: string | null = null;
+    @Input() viewDocRoute: string | null = null;
 
     thumbnailUrl: string = '';
     showThumbnail: boolean = false;
@@ -41,6 +41,9 @@ export class TileViewListComponent implements OnInit, AfterViewInit {
         const timeStamp = +new Date();
         const data = { ...resource, ...this.tile.parameters, ...this.tile };
         delete data.parameters;
+        if (!this.viewDocRoute) {
+            return;
+        }
         const link = this.dashboardService.getFormatedRoute(this.viewDocRoute, data);
         if (link) {
             this.thumbnailUrl = '../rest' + link.route + '?tsp=' + timeStamp;
@@ -55,7 +58,13 @@ export class TileViewListComponent implements OnInit, AfterViewInit {
     goTo(resource: any) {
         const data = { ...resource, ...this.tile.parameters, ...this.tile };
         delete data.parameters;
+        if (!this.route) {
+            return;
+        }
         const link = this.dashboardService.getFormatedRoute(this.route, data);
+        if (!link) {
+            return;
+        }
         const regex = /http[.]*/g;
         if (link.route.match(regex) === null) {
             this.router.navigate([link.route], { queryParams: link.params });

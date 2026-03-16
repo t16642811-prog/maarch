@@ -11,19 +11,25 @@ interface Tiles {
     'folder': Tile;
     'externalSignatoryBook': Tile;
     'shortcut': Tile;
+    [key: string]: Tile;
 }
 
 interface Tile {
-    'icon': string; // icon of tile
+    'icon': string | null; // icon of tile
     'menus': ('delete' | 'view' | 'color')[]; // action of tile
     'views': TileView[]; // views tile
 }
 
 interface TileView {
     'id': 'list' | 'summary' | 'chart'; // identifier
-    'route': string; // router when click on tile
-    'viewDocRoute'?: string; // router when view a doc (usefull for list view)
+    'route': string | null; // router when click on tile
+    'viewDocRoute'?: string | null; // router when view a doc (usefull for list view)
     'target'?: string; // route target after click
+}
+
+interface FormattedRoute {
+    route: string;
+    params: Record<string, string>;
 }
 
 @Injectable()
@@ -286,12 +292,12 @@ export class DashboardService {
         ];
     }
 
-    getFormatedRoute(route: string, data: any) {
+    getFormatedRoute(route: string, data: any): FormattedRoute | false {
         const regex = /:\w*/g;
         let  res = route.match(regex);
 
         let formatedRoute = route;
-        let errors = [];
+        let errors: string[] = [];
 
         if (res !== null) {
             let routeIdValue = null;
@@ -306,7 +312,7 @@ export class DashboardService {
             });
         }
         if (errors.length === 0) {
-            const objParams = {};
+            const objParams: Record<string, string> = {};
             const splitFormatedRoute = formatedRoute.split('?');
             if (splitFormatedRoute.length === 2) {
                 const arrUriParams = splitFormatedRoute[1].split('=');

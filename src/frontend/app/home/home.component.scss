@@ -88,11 +88,23 @@
 
 .graph-card-wide {
     grid-column: 1 / -1;
-    min-height: 360px;
-    overflow: hidden !important;
+    min-height: 560px;
+    overflow: visible !important;
     display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto 1fr;
     align-items: stretch;
+    padding-bottom: 18px;
+}
+
+.graph-card-evolution {
+    background:
+        linear-gradient(180deg, rgba(8, 147, 169, 0.03) 0%, rgba(8, 147, 169, 0) 100%),
+        #ffffff;
+}
+
+.graph-card-evolution .graph-head {
+    margin-bottom: 10px;
 }
 
 .graph-card-pie {
@@ -186,12 +198,112 @@
     overflow: hidden;
 }
 
-::ng-deep .home-graphs .graph-card-wide ngx-charts-line-chart {
+.evolution-summary {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.evolution-summary-item {
+    min-width: 110px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #f7fbfd;
+    border: 1px solid #dbe9f1;
+}
+
+.evolution-summary-label {
+    display: block;
+    color: #6b8190;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.evolution-summary-value {
+    color: #12384a;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.evolution-chart-frame {
+    position: relative;
+    min-height: 460px;
+    border: 1px solid #dce8f1;
+    border-radius: 16px;
+    background:
+        linear-gradient(180deg, rgba(248, 252, 254, 0.96) 0%, rgba(255, 255, 255, 1) 100%);
+    overflow: hidden;
+    width: min(100%, 1240px);
+    margin: 0 auto;
+}
+
+.evolution-chart-svg {
     display: block;
     width: 100%;
-    height: 100% !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
+    height: 460px;
+}
+
+.evolution-grid-line {
+    stroke: #d7e5ef;
+    stroke-width: 1;
+}
+
+.evolution-grid-label {
+    fill: #4e6978;
+    font-size: 14px;
+    font-weight: 800;
+    text-anchor: end;
+}
+
+.evolution-guide-line {
+    stroke: rgba(8, 147, 169, 0.08);
+    stroke-width: 1;
+}
+
+.evolution-area {
+    fill: rgba(8, 147, 169, 0.10);
+}
+
+.evolution-line {
+    fill: none;
+    stroke: #b33b67;
+    stroke-width: 3.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.evolution-point {
+    fill: #ffffff;
+    stroke: #0893a9;
+    stroke-width: 3;
+}
+
+.evolution-point.peak {
+    stroke: #b33b67;
+    r: 6;
+}
+
+.evolution-point-value {
+    fill: #18394a;
+    font-size: 15px;
+    font-weight: 900;
+    text-anchor: middle;
+    paint-order: stroke;
+    stroke: rgba(255, 255, 255, 0.96);
+    stroke-width: 5px;
+    stroke-linejoin: round;
+}
+
+.evolution-axis-label {
+    fill: #466271;
+    font-size: 12px;
+    font-weight: 800;
+    text-anchor: middle;
 }
 
 ::ng-deep .home-graphs .ngx-charts-outer {
@@ -224,15 +336,6 @@
     height: 100% !important;
     display: block;
     overflow: visible;
-}
-
-::ng-deep .home-graphs .graph-card-wide .ngx-charts-outer,
-::ng-deep .home-graphs .graph-card-wide .ngx-charts,
-::ng-deep .home-graphs .graph-card-wide .ngx-charts svg {
-    height: 100% !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    transform: none !important;
 }
 
 ::ng-deep .home-graphs .graph-card-bar .ngx-charts-outer,
@@ -414,6 +517,14 @@
     }
 
     .graph-card-wide {
-        min-height: 300px;
+        min-height: 340px;
+    }
+
+    .evolution-chart-frame {
+        min-height: 340px;
+    }
+
+    .evolution-chart-svg {
+        height: 340px;
     }
 }

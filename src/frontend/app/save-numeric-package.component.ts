@@ -13,7 +13,7 @@ declare let $: any;
 })
 export class SaveNumericPackageComponent implements OnInit {
 
-    @ViewChild('snav', { static: true }) sidenavLeft: MatSidenav;
+    @ViewChild('snav', { static: true }) sidenavLeft!: MatSidenav;
 
     numericPackage: any = {
         base64: '',
@@ -35,7 +35,7 @@ export class SaveNumericPackageComponent implements OnInit {
         private headerService: HeaderService,
         public appService: AppService
     ) {
-        window['angularSaveNumericPackageComponent'] = {
+        (window as any)['angularSaveNumericPackageComponent'] = {
             componentAfterUpload: (base64Content: any) => this.processAfterUpload(base64Content),
         };
     }
@@ -69,7 +69,7 @@ export class SaveNumericPackageComponent implements OnInit {
             reader.readAsDataURL(fileInput.target.files[0]);
 
             reader.onload = function (value: any) {
-                window['angularSaveNumericPackageComponent'].componentAfterUpload(value.target.result);
+                (window as any)['angularSaveNumericPackageComponent'].componentAfterUpload(value.target.result);
             };
 
         }

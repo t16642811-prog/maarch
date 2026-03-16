@@ -1,6 +1,8 @@
+import packageJson from '../../../package.json';
+
 export const environment = {
     production: true,
-    VERSION: require('../../../package.json').version,
-    BASE_VERSION: require('../../../package.json').version.split('.')[0],
-    AUTHOR: require('../../../package.json').author
+    VERSION: packageJson.version,
+    BASE_VERSION: packageJson.version.split('.')[0],
+    AUTHOR: packageJson.author
 };

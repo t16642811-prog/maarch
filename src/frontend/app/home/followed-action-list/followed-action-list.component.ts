@@ -20,20 +20,20 @@ import { PrivilegeService } from '@service/privileges.service';
 })
 export class FollowedActionListComponent implements OnInit {
 
-    @ViewChild(MatMenuTrigger, { static: false }) contextMenu: MatMenuTrigger;
+    @ViewChild(MatMenuTrigger, { static: false }) contextMenu!: MatMenuTrigger;
 
     @Input() selectedRes: any;
-    @Input() totalRes: number;
-    @Input() contextMode: boolean;
+    @Input() totalRes: number = 0;
+    @Input() contextMode: boolean = false;
     @Input() currentFolderInfo: any;
     @Input() currentResource: any = {};
-    @Input() menuShortcut: MenuShortcutComponent;
+    @Input() menuShortcut!: MenuShortcutComponent;
 
     @Output() refreshEvent = new EventEmitter<string>();
     @Output() refreshPanelFolders = new EventEmitter<string>();
     @Output() triggerEvent = new EventEmitter<string>();
 
-    dialogRef: MatDialogRef<any>;
+    dialogRef!: MatDialogRef<any>;
 
     loading: boolean = false;
 
@@ -145,7 +145,7 @@ export class FollowedActionListComponent implements OnInit {
         }
     }
 
-    toggleFreezing(value) {
+    toggleFreezing(value: boolean) {
         this.http.put('../rest/archival/freezeRetentionRule', { resources: this.selectedRes, freeze : value }).pipe(
             tap(() => {
                 if (value) {
@@ -164,7 +164,7 @@ export class FollowedActionListComponent implements OnInit {
         ).subscribe();
     }
 
-    toogleBinding(value) {
+    toogleBinding(value: boolean | null) {
         this.http.put('../rest/archival/binding', { resources: this.selectedRes, binding : value }).pipe(
             tap(() => {
                 if (value) {
