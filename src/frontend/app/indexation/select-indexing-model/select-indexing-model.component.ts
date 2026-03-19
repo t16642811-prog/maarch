@@ -19,6 +19,8 @@ import { PrivilegeService } from '@service/privileges.service';
     providers: [SortPipe]
 })
 export class SelectIndexingModelComponent implements OnInit {
+    private static indexingModelsCache: any[] | null = null;
+
 
     @Input() defaultIndexingModelId: number = null;
     @Input() indexingModels: any = [];
@@ -48,18 +50,20 @@ export class SelectIndexingModelComponent implements OnInit {
     }
 
     getIndexingModelList() {
+        if (SelectIndexingModelComponent.indexingModelsCache !== null) {
+            this.indexingModels = JSON.parse(JSON.stringify(SelectIndexingModelComponent.indexingModelsCache));
+            this.setCurrentIndexingModel();
+            this.loadIndexingModelsList();
+            this.loading = false;
+            return;
+        }
+
         this.http.get('../rest/indexingModels', { params: { showInUserEntity: true } }).pipe(
             tap((data: any) => {
-                this.indexingModels = data.indexingModels;
-                if (this.indexingModels.length > 0) {
-                    this.currentIndexingModel = this.defaultIndexingModelId === null ? this.indexingModels.filter((model: any) => model.default === true)[0] : this.indexingModels.filter((model: any) => model.id === this.defaultIndexingModelId)[0];
-
-                    if (this.currentIndexingModel === undefined) {
-                        this.currentIndexingModel = this.indexingModels[0];
-                        this.notify.error(this.translate.instant('lang.noDefaultIndexingModel'));
-                    }
-                    this.loadIndexingModelsList();
-                }
+                SelectIndexingModelComponent.indexingModelsCache = JSON.parse(JSON.stringify(data.indexingModels));
+                this.indexingModels = JSON.parse(JSON.stringify(data.indexingModels));
+                this.setCurrentIndexingModel();
+                this.loadIndexingModelsList();
             }),
             finalize(() => this.loading = false),
             catchError((err: any) => {
@@ -67,6 +71,21 @@ export class SelectIndexingModelComponent implements OnInit {
                 return of(false);
             })
         ).subscribe();
+    }
+
+    private setCurrentIndexingModel() {
+        if (this.indexingModels.length === 0) {
+            return;
+        }
+
+        this.currentIndexingModel = this.defaultIndexingModelId === null
+            ? this.indexingModels.filter((model: any) => model.default === true)[0]
+            : this.indexingModels.filter((model: any) => model.id === this.defaultIndexingModelId)[0];
+
+        if (this.currentIndexingModel === undefined) {
+            this.currentIndexingModel = this.indexingModels[0];
+            this.notify.error(this.translate.instant('lang.noDefaultIndexingModel'));
+        }
     }
 
     loadIndexingModelsList() {

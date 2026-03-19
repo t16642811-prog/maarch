@@ -161,7 +161,6 @@ export class BasketListComponent implements OnInit, OnDestroy {
             this.markAsReadActionLoaded = false;
             this.markAsReadActionId = 114;
             this.locallyReadResIds = this.loadLocalReadResIds();
-            this.loadMarkAsReadActionId();
             this.headerService.currentBasketInfo = this.currentBasketInfo;
 
             this.filtersListService.filterMode = false;
@@ -463,6 +462,9 @@ export class BasketListComponent implements OnInit, OnDestroy {
     }
 
     private isAnamValidated(resource: any): boolean {
+        if (resource?.anamTreated === true || resource?.anamWorkflowStep === 'validated') {
+            return true;
+        }
         const customFieldsRaw = resource?.custom_fields ?? resource?.customFields;
         if (!customFieldsRaw) {
             return false;
@@ -479,7 +481,11 @@ export class BasketListComponent implements OnInit, OnDestroy {
             return false;
         }
         const workflow = customFields['_anamWorkflow'];
-        return !!workflow && typeof workflow === 'object' && workflow.step === 'validated';
+        if (!workflow || typeof workflow !== 'object') {
+            return false;
+        }
+
+        return workflow.step === 'validated' || typeof workflow.validatedAt === 'string' && workflow.validatedAt.trim() !== '';
     }
 
     private startBasketPolling() {
@@ -527,18 +533,11 @@ export class BasketListComponent implements OnInit, OnDestroy {
         this.locallyReadResIds.add(Number(row.resId));
         this.saveLocalReadResIds();
         const basketIdForRead = this.currentBasketInfo.basket_id || this.currentBasketInfo.basketId;
-        const url = `../rest/resourcesList/users/${this.currentBasketInfo.ownerId}/groups/${this.currentBasketInfo.groupId}/baskets/${this.currentBasketInfo.basketId}/actions/${this.markAsReadActionId}`;
-        this.http.put(url, {
-            resources: [row.resId],
-            data: { basketId: basketIdForRead }
-        }).pipe(
-            tap(() => {}),
-            catchError((err: any) => {
-                // Keep local read status so UI remains consistent for the current user.
-                this.notify.handleSoftErrors(err);
-                return of(false);
-            })
-        ).subscribe();
+        if (!this.markAsReadActionLoaded) {
+            this.loadMarkAsReadActionId(() => this.sendMarkAsReadRequest(row.resId, basketIdForRead));
+            return;
+        }
+        this.sendMarkAsReadRequest(row.resId, basketIdForRead);
     }
 
     private trackOpenedNotificationResource(resId: any) {
@@ -560,8 +559,9 @@ export class BasketListComponent implements OnInit, OnDestroy {
         }
     }
 
-    private loadMarkAsReadActionId() {
+    private loadMarkAsReadActionId(onReady?: () => void) {
         if (this.markAsReadActionLoaded) {
+            onReady?.();
             return;
         }
         this.markAsReadActionLoaded = true;
@@ -576,8 +576,24 @@ export class BasketListComponent implements OnInit, OnDestroy {
                 if (readAction?.id) {
                     this.markAsReadActionId = Number(readAction.id);
                 }
+                onReady?.();
             }),
             catchError(() => of(false))
+        ).subscribe();
+    }
+
+    private sendMarkAsReadRequest(resId: number, basketIdForRead: any) {
+        const url = `../rest/resourcesList/users/${this.currentBasketInfo.ownerId}/groups/${this.currentBasketInfo.groupId}/baskets/${this.currentBasketInfo.basketId}/actions/${this.markAsReadActionId}`;
+        this.http.put(url, {
+            resources: [resId],
+            data: { basketId: basketIdForRead }
+        }).pipe(
+            tap(() => {}),
+            catchError((err: any) => {
+                // Keep local read status so UI remains consistent for the current user.
+                this.notify.handleSoftErrors(err);
+                return of(false);
+            })
         ).subscribe();
     }
 
@@ -752,7 +768,8 @@ export class BasketListComponent implements OnInit, OnDestroy {
     getRowSender(row: any): string {
         const senders = Array.isArray(row?.display) ? row.display.find((item: any) => item?.value === 'getSenders') : null;
         if (!senders) {
-            return this.translate.instant('lang.undefined');
+            const fallback = String(row?.senderLabel || '').replace(/<[^>]*>/g, '').trim();
+            return fallback || this.translate.instant('lang.undefined');
         }
         const value = senders.displayTitle || senders.displayValue || this.translate.instant('lang.undefined');
         return String(value).replace(/<[^>]*>/g, '').trim() || this.translate.instant('lang.undefined');

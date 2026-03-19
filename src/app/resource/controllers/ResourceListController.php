@@ -87,26 +87,37 @@ class ResourceListController
         $data['includeAllResources'] = filter_var($data['includeAllResources'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
         $allQueryData = ResourceListController::getResourcesListQueryData(
-            ['data' => $data, 'basketClause' => $basket['basket_clause'], 'login' => $user['user_id']]
+            [
+                'data'          => $data,
+                'basketClause'  => $basket['basket_clause'],
+                'login'         => $user['user_id'],
+                'currentUserId' => (int)$GLOBALS['id']
+            ]
         );
         if (!empty($allQueryData['order'])) {
             $data['order'] = $allQueryData['order'];
         }
 
-        $rawResources = ResourceListModel::getOnView([
+        $countRows = ResourceListModel::getOnView([
+            'select'   => ['COUNT(res_id) as total'],
+            'table'    => $allQueryData['table'],
+            'leftJoin' => $allQueryData['leftJoin'],
+            'where'    => $allQueryData['where'],
+            'data'     => $allQueryData['queryData']
+        ]);
+        $count = (int)($countRows[0]['total'] ?? 0);
+
+        $rawResourceIds = ResourceListModel::getOnView([
             'select'   => ['res_id'],
             'table'    => $allQueryData['table'],
             'leftJoin' => $allQueryData['leftJoin'],
             'where'    => $allQueryData['where'],
             'data'     => $allQueryData['queryData'],
-            'orderBy'  => empty($data['order']) ? [$basket['basket_res_order']] : [$data['order']]
+            'orderBy'  => empty($data['order']) ? [$basket['basket_res_order']] : [$data['order']],
+            'offset'   => $data['offset'],
+            'limit'    => $data['limit']
         ]);
-        $rawResources = ResourceListController::filterAnamWorkflowVisibleResources($rawResources, (int)$GLOBALS['id']);
-        $count = count($rawResources);
-
-        $resIds = ResourceListController::getIdsWithOffsetAndLimit(
-            ['resources' => $rawResources, 'offset' => $data['offset'], 'limit' => $data['limit']]
-        );
+        $resIds = array_column($rawResourceIds, 'res_id');
 
         $followedDocuments = [];
         if (!empty($resIds)) {
@@ -118,7 +129,18 @@ class ResourceListController
         }
 
         $trackedMails = array_column($followedDocuments, 'res_id');
-        $allResources = $data['includeAllResources'] ? array_column($rawResources, 'res_id') : [];
+        $allResources = [];
+        if ($data['includeAllResources']) {
+            $allResourcesRows = ResourceListModel::getOnView([
+                'select'   => ['res_id'],
+                'table'    => $allQueryData['table'],
+                'leftJoin' => $allQueryData['leftJoin'],
+                'where'    => $allQueryData['where'],
+                'data'     => $allQueryData['queryData'],
+                'orderBy'  => empty($data['order']) ? [$basket['basket_res_order']] : [$data['order']]
+            ]);
+            $allResources = array_column($allResourcesRows, 'res_id');
+        }
 
         $formattedResources = [];
         $defaultAction = [];
@@ -205,75 +227,6 @@ class ResourceListController
             'displayFolderTags' => $displayFolderTags,
             'templateColumns'   => $templateColumns
         ]);
-    }
-
-    /**
-     * Hide ANAM workflow resources from unrelated users in broad service baskets.
-     * Before assignment to a collaborator, only the current destination user (chef) can see it.
-     * After assignment, visibility depends on the ANAM workflow step (chef / collaborator / Houria).
-     */
-    private static function filterAnamWorkflowVisibleResources(array $rawResources, int $currentUserId): array
-    {
-        if (empty($rawResources)) {
-            return $rawResources;
-        }
-
-        $resIds = array_values(array_filter(array_map(static fn($r) => (int)($r['res_id'] ?? 0), $rawResources)));
-        if (empty($resIds)) {
-            return $rawResources;
-        }
-
-        $resourcesMeta = ResModel::get([
-            'select' => ['res_id', 'dest_user', "custom_fields -> '_anamWorkflow' as anam_workflow"],
-            'where'  => ['res_id in (?)', 'custom_fields is not null', "jsonb_exists(custom_fields, '_anamWorkflow')"],
-            'data'   => [$resIds]
-        ]);
-        if (empty($resourcesMeta)) {
-            return $rawResources;
-        }
-        $metaById = array_column($resourcesMeta, null, 'res_id');
-
-        return array_values(array_filter($rawResources, static function (array $row) use ($metaById, $currentUserId) {
-            $resId = (int)($row['res_id'] ?? 0);
-            if (empty($resId) || empty($metaById[$resId])) {
-                return true;
-            }
-            $meta = $metaById[$resId];
-            $workflow = !empty($meta['anam_workflow']) ? json_decode($meta['anam_workflow'], true) : [];
-            if (!is_array($workflow) || empty($workflow)) {
-                return true;
-            }
-            $step = (string)($workflow['step'] ?? '');
-            $destUserId = (int)($meta['dest_user'] ?? 0);
-            $originUserId = (int)($workflow['originUserId'] ?? 0);
-            $managerUserId = (int)($workflow['managerUserId'] ?? 0);
-            $assignedUserId = (int)($workflow['assignedUserId'] ?? 0);
-
-            // ANAM requirement: origin user (Houria) always keeps visibility of her incoming mail.
-            if (!empty($originUserId) && $currentUserId === $originUserId) {
-                return true;
-            }
-
-            switch ($step) {
-                case 'service_processing':
-                    // Only the current destination user (typically the chef) should see the mail.
-                    return !empty($destUserId) ? $currentUserId === $destUserId : true;
-
-                case 'user_processing':
-                case 'rejected_to_user':
-                    return in_array($currentUserId, array_filter([$managerUserId, $assignedUserId], static fn($v) => !empty($v)), true);
-
-                case 'manager_validation':
-                    return !empty($managerUserId) ? $currentUserId === $managerUserId : true;
-
-                case 'validated':
-                    return !empty($originUserId) ? $currentUserId === $originUserId : true;
-
-                default:
-                    // If workflow exists but no known step yet, fallback to destination user only when available.
-                    return !empty($destUserId) ? $currentUserId === $destUserId : true;
-            }
-        }));
     }
 
     /**
@@ -400,6 +353,9 @@ class ResourceListController
                 ['clause' => $args['basketClause'], 'userId' => $user['id']]
             );
             $where = [$whereClause];
+        }
+        if (!empty($args['currentUserId'])) {
+            $where[] = self::getAnamWorkflowVisibilityWhereClause((int)$args['currentUserId']);
         }
         $queryData = [];
         $order = null;
@@ -533,6 +489,29 @@ class ResourceListController
             'queryData' => $queryData,
             'order'     => $order
         ];
+    }
+
+    private static function getAnamWorkflowVisibilityWhereClause(int $currentUserId): string
+    {
+        return "(
+            custom_fields IS NULL
+            OR NOT jsonb_exists(custom_fields, '_anamWorkflow')
+            OR COALESCE((custom_fields -> '_anamWorkflow' ->> 'originUserId')::int, 0) = {$currentUserId}
+            OR CASE COALESCE(custom_fields -> '_anamWorkflow' ->> 'step', '')
+                WHEN 'service_processing' THEN COALESCE(dest_user, {$currentUserId}) = {$currentUserId}
+                WHEN 'user_processing' THEN {$currentUserId} IN (
+                    COALESCE((custom_fields -> '_anamWorkflow' ->> 'managerUserId')::int, -1),
+                    COALESCE((custom_fields -> '_anamWorkflow' ->> 'assignedUserId')::int, -1)
+                )
+                WHEN 'rejected_to_user' THEN {$currentUserId} IN (
+                    COALESCE((custom_fields -> '_anamWorkflow' ->> 'managerUserId')::int, -1),
+                    COALESCE((custom_fields -> '_anamWorkflow' ->> 'assignedUserId')::int, -1)
+                )
+                WHEN 'manager_validation' THEN COALESCE((custom_fields -> '_anamWorkflow' ->> 'managerUserId')::int, {$currentUserId}) = {$currentUserId}
+                WHEN 'validated' THEN COALESCE((custom_fields -> '_anamWorkflow' ->> 'originUserId')::int, {$currentUserId}) = {$currentUserId}
+                ELSE COALESCE(dest_user, {$currentUserId}) = {$currentUserId}
+            END
+        )";
     }
 
     /**
@@ -1327,6 +1306,10 @@ class ResourceListController
             $formattedResources[$key]['processLimitDate'] = $resource['process_limit_date'];
             $formattedResources[$key]['creationDate'] = $resource['creation_date'];
             $formattedResources[$key]['is_read'] = array_key_exists('is_read', $resource) ? (int)$resource['is_read'] : 0;
+            $senders = ContactController::getFormattedContacts(
+                ['resId' => $resource['res_id'], 'mode' => 'sender', 'onlyContact' => true]
+            );
+            $formattedResources[$key]['senderLabel'] = empty($senders) ? '' : implode(' - ', array_filter($senders));
             foreach ($attachments as $attachment) {
                 if ($attachment['res_id_master'] == $resource['res_id']) {
                     $formattedResources[$key]['countAttachments'] = $attachment['count'];

@@ -14,6 +14,7 @@ export interface PluginConfigInterface {
 })
 export class PluginManagerService {
     plugins: any = {};
+    pluginConfigs: Record<string, PluginConfigInterface> = {};
     constructor(
         private httpClient: HttpClient,
         private authService: AuthService,
@@ -28,22 +29,29 @@ export class PluginManagerService {
         return this.notificationService;
     }
 
-    async storePlugins(plugins: PluginConfigInterface[]) {
+    storePlugins(plugins: PluginConfigInterface[] = []) {
+        this.pluginConfigs = {};
         for (let index = 0; index < plugins.length; index++) {
             const plugin = plugins[index];
-            try {
-                const pluginContent = await this.loadRemotePlugin(plugin);
-                this.plugins[plugin.id] = pluginContent;
-                console.info(`PLUGIN ${plugin.id} LOADED`);
-            } catch (err) {
-                console.error(`PLUGIN ${plugin.id} FAILED: ${err}`);
-            }
+            this.pluginConfigs[plugin.id] = plugin;
         }
     }
 
     async initPlugin(pluginName: string, containerRef: ViewContainerRef, extraData: any = {}) {
         if (!this.plugins[pluginName]) {
-            return false;
+            const pluginConfig = this.pluginConfigs[pluginName];
+            if (!pluginConfig) {
+                return false;
+            }
+
+            try {
+                this.plugins[pluginName] = await this.loadRemotePlugin(pluginConfig);
+                console.info(`PLUGIN ${pluginName} LOADED`);
+            } catch (err) {
+                this.notificationService.error(`Load plugin ${pluginName} failed !`);
+                console.error(`PLUGIN ${pluginName} FAILED: ${err}`);
+                return false;
+            }
         }
         try {
             containerRef.detach();

@@ -318,6 +318,11 @@ class StoreController
             }
         }
 
+        if (!empty($args['selectedIndexingModelId'])) {
+            $args['customFields'] = $args['customFields'] ?? [];
+            $args['customFields']['_anamOutgoingModelId'] = (int)$args['selectedIndexingModelId'];
+        }
+
         $preparedData = [
             'res_id'             => $args['resId'],
             'model_id'           => $args['modelId'],
@@ -469,6 +474,9 @@ class StoreController
 
         if (!empty($args['customFields'])) {
             foreach ($args['customFields'] as $key => $value) {
+                if (!is_numeric($key)) {
+                    continue;
+                }
                 $customField = CustomFieldModel::getById(['id' => $key, 'select' => ['type']]);
                 if ($customField['type'] == 'date' && !empty($value)) {
                     $date = new \DateTime($value);
@@ -495,7 +503,23 @@ class StoreController
                     $args['customFields'][$technicalCustom] = $customFields[$technicalCustom];
                 }
             }
+            if (!empty($customFields['_anamWorkflow']) && is_array($customFields['_anamWorkflow'])) {
+                $args['customFields']['_anamWorkflow'] = $customFields['_anamWorkflow'];
+            }
+            if (!empty($customFields['_anamOutgoingModelId'])) {
+                $args['customFields']['_anamOutgoingModelId'] = $customFields['_anamOutgoingModelId'];
+            }
+            if (!empty($args['selectedIndexingModelId'])) {
+                $args['customFields']['_anamOutgoingModelId'] = (int)$args['selectedIndexingModelId'];
+            }
             $preparedData['custom_fields'] = json_encode($args['customFields']);
+        } elseif (!empty($args['selectedIndexingModelId'])) {
+            $customFields = json_decode($resource['custom_fields'], true);
+            if (!is_array($customFields)) {
+                $customFields = [];
+            }
+            $customFields['_anamOutgoingModelId'] = (int)$args['selectedIndexingModelId'];
+            $preparedData['custom_fields'] = json_encode($customFields);
         }
 
         return $preparedData;

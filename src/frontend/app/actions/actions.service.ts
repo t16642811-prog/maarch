@@ -338,6 +338,11 @@ export class ActionsService implements OnDestroy {
                         resolve(true);
                     }),
                     catchError((err: any) => {
+                        const perimeterUnlockError = err?.status === 403 && ['Resources out of perimeter', 'Document out of perimeter'].includes(err?.error?.errors);
+                        if (perimeterUnlockError) {
+                            resolve(true);
+                            return of(true);
+                        }
                         if (path !== null) {
                             this.router.navigate([`/basketList/users/${this.currentUserId}/groups/${this.currentGroupId}/baskets/${this.currentBasketId}`]);
                         } else {

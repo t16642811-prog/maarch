@@ -462,6 +462,8 @@ class ActionMethodController
         ValidatorModel::intVal($args, ['resId']);
         ValidatorModel::arrayType($args, ['data']);
 
+        $resource = ResModel::getById(['select' => ['initiator', 'custom_fields', 'dest_user'], 'resId' => $args['resId']]);
+
         $listInstances = [];
         if (!empty($args['data']['onlyRedirectDest'])) {
             if (count($args['data']['listInstances']) == 1) {
@@ -491,7 +493,6 @@ class ActionMethodController
             return ['errors' => [$controller['errors']]];
         }
 
-        $resource = ResModel::getById(['select' => ['initiator', 'custom_fields'], 'resId' => $args['resId']]);
         $primaryEntity = UserEntityModel::get([
             'select' => ['entity_id'],
             'where'  => ['user_id = ?', 'primary_entity = ?'],
@@ -563,6 +564,12 @@ class ActionMethodController
                 }
             }
             if (!empty($assignedUserSerialId)) {
+                $previousDestUserId = (int)($resource['dest_user'] ?? 0);
+                if (empty($anamWorkflow['originUserId']) && !empty($previousDestUserId)) {
+                    $anamWorkflow['originUserId'] = $previousDestUserId;
+                    $anamWorkflow['originSetAt'] = $now;
+                    $changedAnamWorkflow = true;
+                }
                 if (($anamWorkflow['managerUserId'] ?? null) !== (int)$GLOBALS['id']) {
                     $anamWorkflow['managerUserId'] = (int)$GLOBALS['id'];
                     $changedAnamWorkflow = true;

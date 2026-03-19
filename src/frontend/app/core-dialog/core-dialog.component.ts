@@ -1,4 +1,4 @@
-import { catchError, finalize, of, tap } from 'rxjs';
+import { catchError, finalize, of, take, tap } from 'rxjs';
 import { Component, OnInit } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef } from '@angular/material/legacy-dialog';
@@ -66,10 +66,8 @@ export class CoreDialogComponent implements OnInit {
         await this.intializeLanguage();
         if (res === 'noConfiguration') {
             this.router.navigate(['/install']);
+            this.finishInitialization();
         } else {
-            await this.applyMinorUpdate();
-            this.checkAppSecurity();
-
             const tokenInfo = this.authService.getToken();
             if (window.location.hash.indexOf('/reset-password') === -1) {
                 if (tokenInfo !== null) {
@@ -94,13 +92,17 @@ export class CoreDialogComponent implements OnInit {
                     }
                 }
             }
+
+            // These checks are useful but should not block the first visible screen.
+            setTimeout(() => {
+                this.applyMinorUpdate();
+                this.checkAppSecurity();
+            }, 0);
+
+            this.finishInitialization();
         }
 
         console.debug('INIT CORE DONE');
-
-        setTimeout(() => {
-            this.dialogRef.close();
-        }, 500);
     }
 
     initializeIcons(): void {
@@ -111,43 +113,63 @@ export class CoreDialogComponent implements OnInit {
     getLoggedUserInfo() {
         return new Promise((resolve) => {
             this.authService
-                .getCurrentUserInfo()
-                .pipe(
-                    tap(async () => {
-                        await this.signatureBookService.getInternalSignatureBookConfig();
+                .loadCurrentUserInfo()
+                .then(() => {
+                        setTimeout(() => {
+                            this.signatureBookService.getInternalSignatureBookConfig();
+                        }, 0);
                         resolve(true);
-                    }),
-                    catchError((err: any) => {
-                        if (err.error.errors === 'User must change his password') {
-                            resolve(err.error.errors)
-                        } else {
-                            resolve(false);
-                        }
-                        return of(false);
-                    })
-                ).subscribe();
+                })
+                .catch((err: any) => {
+                    if (err.error.errors === 'User must change his password') {
+                        resolve(err.error.errors)
+                    } else {
+                        resolve(false);
+                    }
+                });
         });
     }
 
     intializeLanguage(): Promise<boolean> {
         return new Promise((resolve) => {
-            this.translate.onLangChange.subscribe(() => {
-                this.localeService.initializeLocale(this.translate.instant('lang.langISO'));
-                this.loadLang = false;
-                resolve(true);
-            });
-
             if (this.authService.user?.preferences?.languages) {
                 if (this.authService.user?.preferences?.languages == this.translate.currentLang) {
+                    this.localeService.initializeLocale(this.translate.instant('lang.langISO'));
+                    this.loadLang = false;
                     resolve(true);
+                    return;
                 }
+                this.translate.onLangChange.pipe(take(1)).subscribe(() => {
+                    this.localeService.initializeLocale(this.translate.instant('lang.langISO'));
+                    this.loadLang = false;
+                    resolve(true);
+                });
                 this.translate.use(this.authService.user.preferences.languages);
             } else if (this.authService.lang) {
                 if (this.authService.lang == this.translate.currentLang) {
+                    this.localeService.initializeLocale(this.translate.instant('lang.langISO'));
+                    this.loadLang = false;
                     resolve(true);
+                    return;
                 }
+                this.translate.onLangChange.pipe(take(1)).subscribe(() => {
+                    this.localeService.initializeLocale(this.translate.instant('lang.langISO'));
+                    this.loadLang = false;
+                    resolve(true);
+                });
                 this.translate.use(this.authService.lang);
             } else {
+                if (this.translate.currentLang === 'fr') {
+                    this.localeService.initializeLocale(this.translate.instant('lang.langISO'));
+                    this.loadLang = false;
+                    resolve(true);
+                    return;
+                }
+                this.translate.onLangChange.pipe(take(1)).subscribe(() => {
+                    this.localeService.initializeLocale(this.translate.instant('lang.langISO'));
+                    this.loadLang = false;
+                    resolve(true);
+                });
                 this.translate.use('fr');
             }
         });
@@ -256,5 +278,11 @@ export class CoreDialogComponent implements OnInit {
     setIconLogo() {
         this.iconReg.addSvgIcon('maarchLogo', this.sanitizer.bypassSecurityTrustResourceUrl('../rest/images?image=onlyLogo'));
         this.iconReg.addSvgIcon('maarchLogoFull', this.sanitizer.bypassSecurityTrustResourceUrl('../rest/images?image=logo'));
+    }
+
+    private finishInitialization(): void {
+        setTimeout(() => {
+            this.dialogRef.close();
+        }, 50);
     }
 }

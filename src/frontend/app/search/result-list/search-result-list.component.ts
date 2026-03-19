@@ -807,7 +807,7 @@ export class ResultListHttpDao {
         this.criteriaSearchService.updateListsPropertiesPageSize(pageSize);
         this.criteriaSearchService.updateListsPropertiesCriteria(criteria);
         const offset = page * pageSize;
-        const requestUrl = `${href}?limit=${pageSize}&offset=${offset}&order=${filters.order}&orderDir=${filters.orderDir}`;
+        const requestUrl = `${href}?limit=${pageSize}&offset=${offset}&order=${filters.order}&orderDir=${filters.orderDir}&includeAllResources=false`;
         let dataToSend = Object.assign({}, this.criteriaSearchService.formatDatas(JSON.parse(JSON.stringify(criteria))), { filters: sideFilters });
         dataToSend = {
             ... dataToSend,

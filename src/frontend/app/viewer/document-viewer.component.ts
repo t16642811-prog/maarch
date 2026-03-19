@@ -16,7 +16,7 @@ import { FunctionsService } from '@service/functions.service';
 import { DocumentViewerModalComponent } from './modal/document-viewer-modal.component';
 import { PrivilegeService } from '@service/privileges.service';
 import { VisaWorkflowModalComponent } from '../visa/modal/visa-workflow-modal.component';
-import { of } from 'rxjs';
+import { of, forkJoin, firstValueFrom } from 'rxjs';
 import { CollaboraOnlineViewerComponent } from '@plugins/collabora-online/collabora-online-viewer.component';
 import { AuthService } from '@service/auth.service';
 import { LocalStorageService } from '@service/local-storage.service';
@@ -35,6 +35,8 @@ import { SignatureBookService } from '@appRoot/signatureBook/signature-book.serv
 })
 
 export class DocumentViewerComponent implements OnInit, OnDestroy {
+    private static fileInformationsCache: any = null;
+    private static fileInformationsPromise: Promise<any> | null = null;
 
     @ViewChild('templateList', { static: true }) templateList: PluginSelectSearchComponent;
     @ViewChild('onlyofficeViewer', { static: false }) onlyofficeViewer: EcplOnlyofficeViewerComponent;
@@ -219,37 +221,23 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
 
         this.setEditor();
 
-        this.http.get('../rest/indexing/fileInformations').pipe(
-            tap((data: any) => {
-                this.allowedExtensions = data.informations.allowedFiles.map((ext: any) => ({
-                    extension: '.' + ext.extension.toLowerCase(),
-                    mimeType: ext.mimeType,
-                    canConvert: ext.canConvert
-                }));
-                this.allowedExtensions = this.sortPipe.transform(this.allowedExtensions, 'extension');
-
-                this.maxFileSize = data.informations.maximumSize;
-                this.maxFileSizeLabel = data.informations.maximumSizeLabel;
-
-                if (this.resId !== null) {
-                    this.loadRessource(this.resId, this.mode);
-                    if (this.editMode) {
-                        if (this.attachType !== null && this.mode === 'attachment') {
-                            this.loadTemplatesByResId(this.resIdMaster, this.attachType);
-                        } else {
-                            this.loadTemplates();
-                        }
+        this.loadViewerInformations().then(() => {
+            if (this.resId !== null) {
+                this.loadRessource(this.resId, this.mode);
+                if (this.editMode) {
+                    if (this.attachType !== null && this.mode === 'attachment') {
+                        this.loadTemplatesByResId(this.resIdMaster, this.attachType);
+                    } else {
+                        this.loadTemplates();
                     }
-                } else {
-                    this.loadTemplates();
-                    this.loading = false;
                 }
-            }),
-            catchError((err: any) => {
-                this.notify.handleErrors(err);
-                return of(false);
-            })
-        ).subscribe();
+            } else {
+                this.loadTemplates();
+                this.loading = false;
+            }
+        }).catch((err: any) => {
+            this.notify.handleErrors(err);
+        });
 
         if (!this.functions.empty(this.base64)) {
             this.loadFileFromBase64();
@@ -276,6 +264,39 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
                 })
             ).subscribe();
         }
+    }
+
+    private async loadViewerInformations(): Promise<void> {
+        if (DocumentViewerComponent.fileInformationsCache !== null) {
+            this.applyViewerInformations(DocumentViewerComponent.fileInformationsCache);
+            return;
+        }
+
+        if (DocumentViewerComponent.fileInformationsPromise === null) {
+            DocumentViewerComponent.fileInformationsPromise = firstValueFrom(this.http.get('../rest/indexing/fileInformations'))
+                .then((data: any) => {
+                    DocumentViewerComponent.fileInformationsCache = data;
+                    return data;
+                })
+                .finally(() => {
+                    DocumentViewerComponent.fileInformationsPromise = null;
+                });
+        }
+
+        const data = await DocumentViewerComponent.fileInformationsPromise;
+        this.applyViewerInformations(data);
+    }
+
+    private applyViewerInformations(data: any) {
+        this.allowedExtensions = data.informations.allowedFiles.map((ext: any) => ({
+            extension: '.' + ext.extension.toLowerCase(),
+            mimeType: ext.mimeType,
+            canConvert: ext.canConvert
+        }));
+        this.allowedExtensions = this.sortPipe.transform(this.allowedExtensions, 'extension');
+
+        this.maxFileSize = data.informations.maximumSize;
+        this.maxFileSizeLabel = data.informations.maximumSizeLabel;
     }
 
     ngOnDestroy() {
@@ -882,16 +903,19 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
 
     loadMainDocumentSubInformations() {
         return new Promise((resolve) => {
-            this.http.get(`../rest/resources/${this.resId}/versionsInformations`).pipe(
-                tap((data: any) => {
-                    const mainDocVersions = data.DOC;
+            forkJoin({
+                versionsInformations: this.http.get(`../rest/resources/${this.resId}/versionsInformations`),
+                fileInformation: this.http.get(`../rest/resources/${this.resId}/fileInformation`)
+            }).pipe(
+                tap(({ versionsInformations, fileInformation }: any) => {
+                    const mainDocVersions = versionsInformations.DOC;
                     let mainDocPDFVersions = false;
                     let signedDocVersions = false;
                     let commentedDocVersions = false;
-                    if (data.DOC[data.DOC.length - 1] !== undefined) {
-                        signedDocVersions = data.SIGN.indexOf(data.DOC[data.DOC.length - 1]) > -1 ? true : false;
-                        commentedDocVersions = data.NOTE.indexOf(data.DOC[data.DOC.length - 1]) > -1 ? true : false;
-                        mainDocPDFVersions = data.PDF.indexOf(data.DOC[data.DOC.length - 1]) > -1 ? true : false;
+                    if (versionsInformations.DOC[versionsInformations.DOC.length - 1] !== undefined) {
+                        signedDocVersions = versionsInformations.SIGN.indexOf(versionsInformations.DOC[versionsInformations.DOC.length - 1]) > -1 ? true : false;
+                        commentedDocVersions = versionsInformations.NOTE.indexOf(versionsInformations.DOC[versionsInformations.DOC.length - 1]) > -1 ? true : false;
+                        mainDocPDFVersions = versionsInformations.PDF.indexOf(versionsInformations.DOC[versionsInformations.DOC.length - 1]) > -1 ? true : false;
                     }
 
                     this.file.subinfos = {
@@ -900,14 +924,12 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
                         commentedDocVersions: commentedDocVersions,
                         mainDocPDFVersions: mainDocPDFVersions
                     };
-                }),
-                exhaustMap(() => this.http.get(`../rest/resources/${this.resId}/fileInformation`)),
-                tap((data: any) => {
-                    this.file.subinfos.canConvert = data.information.canConvert;
+                    this.file.subinfos.canConvert = fileInformation.information.canConvert;
                     resolve(true);
                 }),
                 catchError((err: any) => {
                     this.notify.handleSoftErrors(err);
+                    resolve(false);
                     return of(false);
                 })
             ).subscribe();

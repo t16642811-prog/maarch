@@ -54,8 +54,8 @@ export class RedirectActionComponent implements OnInit {
     actionKeyword: string = '';
     autoSelectedEntities: any[] = [];
     autoSelectedEntityLabels: string[] = [];
-    private forcedRedirectMode: 'user' | 'entity' | '' = '';
-    private forcedRedirectUserId: number | null = null;
+    forcedRedirectMode: 'user' | 'entity' | '' = '';
+    forcedRedirectUserId: number | null = null;
 
     canGoToNextRes: boolean = false;
     showToggle: boolean = false;
@@ -81,6 +81,7 @@ export class RedirectActionComponent implements OnInit {
         await this.getEntities();
         await this.getDefaultEntity();
         this.setForcedRedirectModeFromAction();
+        await this.tryForceAnamManagerRedirect();
 
         if (this.forcedRedirectMode === 'user') {
             this.loadDestUser();
@@ -128,6 +129,79 @@ export class RedirectActionComponent implements OnInit {
         } else {
             this.forcedRedirectUserId = null;
         }
+    }
+
+    private async tryForceAnamManagerRedirect(): Promise<void> {
+        if (!this.isAnamSubmitToManagerAction() || this.data?.resIds?.length !== 1) {
+            return;
+        }
+
+        try {
+            const resource = await firstValueFrom(this.http.get(`../rest/resources/${this.data.resIds[0]}?light=true`));
+            const customFields = this.extractResourceCustomFields(resource);
+            const managerUserId = parseInt(customFields?._anamWorkflow?.managerUserId, 10);
+
+            if (Number.isNaN(managerUserId) || managerUserId <= 0) {
+                return;
+            }
+
+            this.forcedRedirectMode = 'user';
+            this.forcedRedirectUserId = managerUserId;
+
+            const existingUser = this.userListRedirect.find((user: any) => user.id === managerUserId);
+            if (existingUser) {
+                this.userListRedirect = [existingUser];
+                return;
+            }
+
+            const manager: any = await firstValueFrom(this.http.get(`../rest/users/${managerUserId}`));
+            this.userListRedirect = [{
+                difflist_type: 'entity_id',
+                item_mode: 'dest',
+                item_type: 'user_id',
+                id: manager.id,
+                item_id: manager.id,
+                itemSerialId: manager.id,
+                labelToDisplay: `${manager.firstname} ${manager.lastname}`,
+                descriptionToDisplay: manager.department
+            }];
+        } catch (e) {
+            // Keep standard redirect behavior if workflow metadata is missing.
+        }
+    }
+
+    private extractResourceCustomFields(resource: any): any {
+        if (!this.functionsService.empty(resource?.customFields)) {
+            return resource.customFields;
+        }
+        if (!this.functionsService.empty(resource?.custom_fields)) {
+            if (typeof resource.custom_fields === 'string') {
+                try {
+                    return JSON.parse(resource.custom_fields);
+                } catch (e) {
+                    return {};
+                }
+            }
+            return resource.custom_fields;
+        }
+        return {};
+    }
+
+    private isAnamSubmitToManagerAction(): boolean {
+        const actionName = (this.data?.action?.name || '').toString().toLowerCase();
+        const actionLabel = this.normalizeActionText((this.data?.action?.label || '').toString());
+
+        return actionName === 'anam_submit_manager_validation'
+            || (actionLabel.includes('soumettre') && actionLabel.includes('chef service'));
+    }
+
+    private normalizeActionText(value: string): string {
+        return value
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
     }
 
     private async tryAutoSelectAnamEntities(): Promise<void> {
@@ -558,7 +632,9 @@ export class RedirectActionComponent implements OnInit {
             return { onlyRedirectDest: true, listInstances: this.formatDiffusionList() };
         }
         const listInstances = this.appDiffusionsList ? this.appDiffusionsList.getCurrentListinstance() : [];
-        return { destination: this.currentEntity.serialId, listInstances };
+        const entityDestination = listInstances.find((item: any) => item.item_mode === 'dest' && item.item_type === 'entity');
+        const destination = entityDestination?.item_id ?? this.currentEntity.serialId;
+        return { destination, listInstances };
     }
 
     // WORKAROUND TO SEND SERIAL ID IN ITEM_ID (TO DO : REFACTOR TO ONLY USE SERIAL ID)

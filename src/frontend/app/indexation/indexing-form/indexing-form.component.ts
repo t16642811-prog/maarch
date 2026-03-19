@@ -5,8 +5,8 @@ import { NotificationService } from '@service/notification/notification.service'
 import { HeaderService } from '@service/header.service';
 import { MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef } from '@angular/material/legacy-dialog';
 import { AppService } from '@service/app.service';
-import { tap, catchError, exhaustMap, filter, finalize } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { tap, catchError, exhaustMap, filter } from 'rxjs/operators';
+import { of, firstValueFrom } from 'rxjs';
 import { SortPipe } from '../../../plugins/sorting.pipe';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { UntypedFormControl, Validators, UntypedFormGroup, ValidationErrors, ValidatorFn, AbstractControl } from '@angular/forms';
@@ -29,6 +29,11 @@ import { ContactAutocompleteComponent } from '../../contact/autocomplete/contact
 })
 
 export class IndexingFormComponent implements OnInit {
+    private static suggestLinksNdaysAgoCache: number | null = null;
+    private static doctypesCache: any[] | null = null;
+    private static indexingModelCache: Record<number, any> = {};
+    private static customFieldsCache: Record<string, any[]> = {};
+
     [key: string]: any;
 
     @Input() indexingFormId!: number;
@@ -52,6 +57,8 @@ export class IndexingFormComponent implements OnInit {
     @ViewChild('appContactAutocomplete', { static: false }) appContactAutocomplete!: ContactAutocompleteComponent;
 
     loading: boolean = true;
+    loadedResourceData: any = null;
+    loadedResourceId: number | null = null;
 
 
     fieldCategories: any[] = ['mail', 'contact', 'process', 'classifying'];
@@ -373,34 +380,14 @@ export class IndexingFormComponent implements OnInit {
 
     initCustomFields() {
         return new Promise((resolve) => {
-
-            this.http.get(`../rest/customFields?resId=${this.resId}`).pipe(
-                tap((data: any) => {
-                    const withFormMode = data.customFields.filter((item: { mode: any }) => item.mode === 'form');
-                    this.availableCustomFields = withFormMode.map((info: any) => {
-                        info.identifier = 'indexingCustomField_' + info.id;
-                        info.system = false;
-                        info.enabled = true;
-
-                        if (['integer', 'string', 'date'].indexOf(info.type) > -1 && !this.functions.empty(info.values)) {
-                            info.default_value = info.values[0].key;
-                        } else {
-                            info.default_value = ['contact', 'banAutocomplete'].indexOf(info.type) > -1 ? [] : null;
-                        }
-                        info.values = info.values.length > 0 ? info.values.map((custVal: any) => ({
-                            id: custVal.key,
-                            label: custVal.label
-                        })) : info.values;
-                        return info;
-                    });
-                    this.availableCustomFieldsClone = JSON.parse(JSON.stringify(this.availableCustomFields));
-                    resolve(true);
-                }),
-                catchError((err: any) => {
-                    this.notify.handleErrors(err);
-                    return of(false);
-                })
-            ).subscribe();
+            this.loadCustomFieldsDefinition().then((customFields: any[]) => {
+                this.availableCustomFields = customFields;
+                this.availableCustomFieldsClone = JSON.parse(JSON.stringify(this.availableCustomFields));
+                resolve(true);
+            }).catch((err: any) => {
+                this.notify.handleErrors(err);
+                resolve(false);
+            });
         });
     }
 
@@ -766,8 +753,7 @@ export class IndexingFormComponent implements OnInit {
 
     setDoctypeField(elem: any) {
         return new Promise((resolve) => {
-            this.http.get('../rest/doctypes').pipe(
-                tap(async (data: any) => {
+            this.loadDoctypes().then(async (data: any) => {
                     let arrValues: any[] = [];
                     data.structure.forEach((doctype: any) => {
                         if (doctype['doctypes_second_level_id'] === undefined) {
@@ -807,8 +793,7 @@ export class IndexingFormComponent implements OnInit {
                     }
                     await this.setAllowedValues(elem);
                     resolve(true);
-                })
-            ).subscribe();
+                }).catch(() => resolve(false));
         });
     }
 
@@ -911,8 +896,7 @@ export class IndexingFormComponent implements OnInit {
 
     setResource(saveResourceState: boolean = true) {
         return new Promise((resolve) => {
-            this.http.get(`../rest/resources/${this.resId}`).pipe(
-                tap(async (data: any) => {
+            this.getResourceData().then(async (data: any) => {
                     this.resDataClone = JSON.parse(JSON.stringify(data));
                     this.creationDateClone = JSON.parse(JSON.stringify(data['creationDate']));
                     await Promise.all(this.fieldCategories.map(async (element: any) => {
@@ -1008,12 +992,10 @@ export class IndexingFormComponent implements OnInit {
                     const priorityField: any = this.currentResourceValues.find((field: any) => field.identifier === 'priority')?.default_value;
                     this.setPriorityColor(null, !this.functions.empty(priorityField) ? priorityField : '');
                     resolve(true);
-                }),
-                catchError((err: any) => {
+                }).catch((err: any) => {
                     this.notify.handleErrors(err);
-                    return of(false);
-                })
-            ).subscribe();
+                    resolve(false);
+                });
         });
     }
 
@@ -1055,6 +1037,8 @@ export class IndexingFormComponent implements OnInit {
 
     async loadForm(indexModelId: number, saveResourceState: boolean = true) {
         this.loading = true;
+        this.loadedResourceData = null;
+        this.loadedResourceId = null;
         this.hasLinkedRes = false;
         this.linkedResources = {};
         this.customDiffusion = [];
@@ -1067,8 +1051,7 @@ export class IndexingFormComponent implements OnInit {
             this.arrFormControl['mail­tracking'] = new UntypedFormControl({ value: '', disabled: this.adminMode ? true : false });
         }
 
-        this.http.get(`../rest/indexingModels/${indexModelId}`).pipe(
-            tap(async (data: any) => {
+        this.loadIndexingModel(indexModelId).then(async (data: any) => {
                 this.isPrivate = data.indexingModel.private || data.indexingModel.master !== null;
                 this.indexingFormId = data.indexingModel.master !== null ? data.indexingModel.master : data.indexingModel.id;
                 this.currentCategory = data.indexingModel.category;
@@ -1165,18 +1148,14 @@ export class IndexingFormComponent implements OnInit {
                     await this.getAllowedValues(data.indexingModel.master);
                 }
                 this.createForm();
-            }),
-            catchError((err: any) => {
+            }).catch((err: any) => {
                 this.notify.handleErrors(err);
-                return of(false);
-            })
-        ).subscribe();
+            });
     }
 
     getAllowedValues(id: number) {
         return new Promise((resolve) => {
-            this.http.get(`../rest/indexingModels/${id}`).pipe(
-                tap(async (data: any) => {
+            this.loadIndexingModel(id).then(async (data: any) => {
                     this.allowedValues = data.indexingModel.fields.find((item: any) => item.identifier === 'doctype').allowedValues;
                     if (this.functions.empty(this['indexingModels_mail'].find((item: any) => item.identifier === 'doctype').allowedValues)) {
                         this['indexingModels_mail'].find((item: any) => item.identifier === 'doctype').allowedValues = this.allowedValues;
@@ -1185,12 +1164,10 @@ export class IndexingFormComponent implements OnInit {
                         }
                     }
                     resolve(true);
-                }),
-                catchError((err: any) => {
+                }).catch((err: any) => {
                     this.notify.handleSoftErrors(err);
-                    return of(false);
-                })
-            ).subscribe();
+                    resolve(false);
+                });
         });
     }
 
@@ -1737,21 +1714,17 @@ export class IndexingFormComponent implements OnInit {
     checkDisabledValues(field: any, afterSaveEvent: boolean = false) {
         return new Promise((resolve) => {
             if (!this.functions.empty(this.resId) && !afterSaveEvent) {
-                this.http.get(`../rest/resources/${this.resId}`).pipe(
-                    tap ((data: any) => {
+                this.getResourceData().then((data: any) => {
                         if (!this.functions.empty(data['doctype']) && field.allowedValues?.indexOf(data['doctype']) === -1) {
                             field.values.find((item: any) => item.id === data['doctype']).disabled = false;
                         }
-                    }),
-                    finalize(() => {
                         this.formatData(field);
                         resolve(true);
-                    }),
-                    catchError((err: any) => {
+                    }).catch((err: any) => {
                         this.notify.handleSoftErrors(err);
-                        return of(false);
-                    })
-                ).subscribe();
+                        this.formatData(field);
+                        resolve(false);
+                    });
             } else {
                 this.formatData(field);
                 resolve(true);
@@ -1936,17 +1909,91 @@ export class IndexingFormComponent implements OnInit {
 
     getParameter() {
         return new Promise((resolve) => {
-            this.http.get('../rest/parameters/suggest_links_n_days_ago').pipe(
-                tap((data: any) => {
-                    this.suggestLinksNdaysAgo = data.parameter.param_value_int;
-                    resolve(true);
-                }),
-                catchError((err: any) => {
-                    this.notify.handleSoftErrors(err);
-                    return of(false);
-                })
-            ).subscribe();
+            this.loadSuggestLinksNdaysAgo().then((value: number) => {
+                this.suggestLinksNdaysAgo = value;
+                resolve(true);
+            }).catch((err: any) => {
+                this.notify.handleSoftErrors(err);
+                resolve(false);
+            });
         });
+    }
+
+    private async loadSuggestLinksNdaysAgo(): Promise<number> {
+        if (IndexingFormComponent.suggestLinksNdaysAgoCache !== null) {
+            return IndexingFormComponent.suggestLinksNdaysAgoCache;
+        }
+
+        const data: any = await firstValueFrom(this.http.get('../rest/parameters/suggest_links_n_days_ago'));
+        IndexingFormComponent.suggestLinksNdaysAgoCache = data.parameter.param_value_int;
+
+        return IndexingFormComponent.suggestLinksNdaysAgoCache;
+    }
+
+    private async loadCustomFieldsDefinition(): Promise<any[]> {
+        const cacheKey = `${this.resId ?? 'new'}`;
+        if (IndexingFormComponent.customFieldsCache[cacheKey] !== undefined) {
+            return JSON.parse(JSON.stringify(IndexingFormComponent.customFieldsCache[cacheKey]));
+        }
+
+        const data: any = await firstValueFrom(this.http.get(`../rest/customFields?resId=${this.resId}`));
+        const withFormMode = data.customFields.filter((item: { mode: any }) => item.mode === 'form');
+        const formattedFields = withFormMode.map((info: any) => {
+            const formattedInfo = { ...info };
+            formattedInfo.identifier = 'indexingCustomField_' + formattedInfo.id;
+            formattedInfo.system = false;
+            formattedInfo.enabled = true;
+
+            if (['integer', 'string', 'date'].indexOf(formattedInfo.type) > -1 && !this.functions.empty(formattedInfo.values)) {
+                formattedInfo.default_value = formattedInfo.values[0].key;
+            } else {
+                formattedInfo.default_value = ['contact', 'banAutocomplete'].indexOf(formattedInfo.type) > -1 ? [] : null;
+            }
+            formattedInfo.values = formattedInfo.values.length > 0 ? formattedInfo.values.map((custVal: any) => ({
+                id: custVal.key,
+                label: custVal.label
+            })) : formattedInfo.values;
+
+            return formattedInfo;
+        });
+
+        IndexingFormComponent.customFieldsCache[cacheKey] = JSON.parse(JSON.stringify(formattedFields));
+
+        return JSON.parse(JSON.stringify(formattedFields));
+    }
+
+    private async loadIndexingModel(indexModelId: number): Promise<any> {
+        if (IndexingFormComponent.indexingModelCache[indexModelId] !== undefined) {
+            return JSON.parse(JSON.stringify(IndexingFormComponent.indexingModelCache[indexModelId]));
+        }
+
+        const data: any = await firstValueFrom(this.http.get(`../rest/indexingModels/${indexModelId}`));
+        IndexingFormComponent.indexingModelCache[indexModelId] = JSON.parse(JSON.stringify(data));
+
+        return JSON.parse(JSON.stringify(data));
+    }
+
+    private async loadDoctypes(): Promise<any> {
+        if (IndexingFormComponent.doctypesCache !== null) {
+            return JSON.parse(JSON.stringify({ structure: IndexingFormComponent.doctypesCache }));
+        }
+
+        const data: any = await firstValueFrom(this.http.get('../rest/doctypes'));
+        IndexingFormComponent.doctypesCache = JSON.parse(JSON.stringify(data.structure));
+
+        return JSON.parse(JSON.stringify(data));
+    }
+
+    private async getResourceData(forceReload: boolean = false): Promise<any> {
+        if (!forceReload && this.loadedResourceData !== null && this.loadedResourceId === this.resId) {
+            return JSON.parse(JSON.stringify(this.loadedResourceData));
+        }
+
+        const data: any = await firstValueFrom(this.http.get(`../rest/resources/${this.resId}`));
+        this.loadedResourceData = JSON.parse(JSON.stringify(data));
+        this.loadedResourceId = this.resId;
+
+        return JSON.parse(JSON.stringify(data));
     }
 
     openSearchResourceModal() {

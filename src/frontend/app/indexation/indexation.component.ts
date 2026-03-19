@@ -31,6 +31,8 @@ import { LadService } from '@service/lad.service';
     providers: [ActionsService, SortPipe],
 })
 export class IndexationComponent implements OnInit, OnDestroy {
+    private static actionsByGroupCache: Record<number, any[]> = {};
+
 
     @ViewChild('adminMenuTemplate', { static: true }) adminMenuTemplate!: TemplateRef<any>;
 
@@ -137,6 +139,20 @@ export class IndexationComponent implements OnInit, OnDestroy {
         this.route.params.subscribe(params => {
             this.currentGroupId = params['groupId'];
 
+            const cachedActions = IndexationComponent.actionsByGroupCache[this.currentGroupId];
+            if (cachedActions !== undefined) {
+                this.actionsList = JSON.parse(JSON.stringify(cachedActions));
+                this.selectedAction = this.actionsList[0] || {
+                    id: 0,
+                    label: '',
+                    component: '',
+                    default: false,
+                    categoryUse: []
+                };
+                this.actionsListLoaded = true;
+                return;
+            }
+
             this.http.get('../rest/indexing/groups/' + this.currentGroupId + '/actions').pipe(
                 map((data: any) => {
                     data.actions = data.actions.map((action: any, index: number) => ({
@@ -150,6 +166,7 @@ export class IndexationComponent implements OnInit, OnDestroy {
                     return data;
                 }),
                 tap((data: any) => {
+                    IndexationComponent.actionsByGroupCache[this.currentGroupId] = JSON.parse(JSON.stringify(data.actions));
                     this.selectedAction = data.actions[0];
                     this.actionsList = data.actions;
                     this.actionsListLoaded = true;
@@ -176,6 +193,7 @@ export class IndexationComponent implements OnInit, OnDestroy {
             const formatdatas = this.indexingForm.formatDatas(this.indexingForm.getDatas());
 
             formatdatas['modelId'] = this.currentIndexingModel.master !== null ? this.currentIndexingModel.master : this.currentIndexingModel.id;
+            formatdatas['selectedIndexingModelId'] = this.currentIndexingModel.id;
             formatdatas['chrono'] = true;
 
             this.appDocumentViewer.getFile().pipe(

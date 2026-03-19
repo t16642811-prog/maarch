@@ -384,18 +384,19 @@ export class ProcessComponent implements OnInit, OnDestroy {
                     this.resourceFollowed = data.followed;
                     this.resourceBinded = data.binding;
                     this.resourceFreezed = data.retentionFrozen;
-                    if (this.currentResourceInformations.categoryId !== 'outgoing') {
-                        this.loadSenders();
-                    } else {
-                        this.loadRecipients();
-                    }
                     if (redirectDefautlTool) {
-                        this.setEditDataPrivilege();
+                        setTimeout(() => this.setEditDataPrivilege(), 0);
                     }
-
-                    this.loadAvaibleIntegrations(data.integrations);
                     this.headerService.setHeader(this.detailMode ? this.translate.instant('lang.detailDoc') : this.translate.instant('lang.eventProcessDoc'), this.translate.instant('lang.' + this.currentResourceInformations.categoryId));
-                    this.loadResponseAttachment();
+                    setTimeout(() => {
+                        if (this.currentResourceInformations.categoryId !== 'outgoing') {
+                            this.loadSenders();
+                        } else {
+                            this.loadRecipients();
+                        }
+                        this.loadAvaibleIntegrations(data.integrations);
+                    }, 25);
+                    setTimeout(() => this.loadResponseAttachment(), 100);
                 }),
                 finalize(() => this.loading = false),
                 catchError((err: any) => {

@@ -47,7 +47,7 @@
                 </div>
 
                 <div class="stats-chart-card" *ngIf="!statsLoading && !statsLoaded">
-                    <div class="stats-chart-title">Statistiques avancأ©es</div>
+                    <div class="stats-chart-title">Statistiques avancées</div>
                     <button mat-stroked-button color="primary" (click)="loadHomeStatistics()">
                         Charger les graphes
                     </button>
@@ -55,7 +55,7 @@
 
                 <div class="home-graphs" *ngIf="chartPriorityData.length || chartDoctypeData.length || getCurrentEvolutionSeries()[0]?.series?.length">
                     <div class="graph-card graph-card-pie" *ngIf="chartPriorityData.length > 0">
-                        <div class="graph-title">Statistiques par prioritأ©</div>
+                        <div class="graph-title">Statistiques par priorité</div>
                         <ngx-charts-pie-chart
                             [results]="chartPriorityData"
                             [legend]="false"

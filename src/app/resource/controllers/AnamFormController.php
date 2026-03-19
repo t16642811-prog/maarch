@@ -58,7 +58,7 @@ class AnamFormController
                 return $response->withStatus(400)->withJson(['errors' => 'Document does not exist']);
             }
 
-            $templatePath = 'C:\\Users\\ANAM1406\\Desktop\\maarch\\courrier.pdf';
+            $templatePath = dirname(__DIR__, 4) . DIRECTORY_SEPARATOR . 'courrier.pdf';
             if (!is_file($templatePath)) {
                 return $response->withStatus(400)->withJson(['errors' => 'Template file not found']);
             }
@@ -241,10 +241,57 @@ class AnamFormController
             $refDate = !empty($referenceDate) ? (new DateTime($referenceDate))->format('d/m/Y') : '';
             $pdf->SetXY(175, 228);
             $pdf->Cell(25, 5, $refDate, 0, 0);
+            
+            // Instructions structure: first line starts after the label, following lines align on the dedicated grid.
+            $instructionStructurePositions = [
+                ['x' => 117, 'y' => 194.5, 'width' => 80],
+                ['x' => 80, 'y' => 201, 'width' => 117],
+                ['x' => 80, 'y' => 207.5, 'width' => 117],
+                ['x' => 80, 'y' => 214.5, 'width' => 117],
+                ['x' => 80, 'y' => 221, 'width' => 117],
+                ['x' => 80, 'y' => 227.5, 'width' => 117],
+                ['x' => 80, 'y' => 234, 'width' => 117],
+                ['x' => 80, 'y' => 240, 'width' => 117],
+                ['x' => 80, 'y' => 246, 'width' => 117]
+            ];
+            $instructionStructureLines = [];
+            $remainingInstructionStructure = trim((string)$instructionsStructure);
 
-            // Instructions structure
-            $pdf->SetXY(115, 242);
-            $pdf->MultiCell(80, 4.2, $instructionsStructure, 0, 'L');
+            foreach ($instructionStructurePositions as $lineIndex => $position) {
+                if ($remainingInstructionStructure === '') {
+                    break;
+                }
+
+                $line = '';
+                foreach (preg_split('/\s+/', $remainingInstructionStructure) as $word) {
+                    $candidate = $line === '' ? $word : $line . ' ' . $word;
+                    if ($pdf->GetStringWidth($candidate) <= $position['width']) {
+                        $line = $candidate;
+                    } else {
+                        if ($line === '') {
+                            $line = $word;
+                        }
+                        break;
+                    }
+                }
+
+                if ($lineIndex === count($instructionStructurePositions) - 1 && $line !== $remainingInstructionStructure) {
+                    $line = $remainingInstructionStructure;
+                }
+
+                $instructionStructureLines[] = [
+                    'x' => $position['x'],
+                    'y' => $position['y'],
+                    'text' => $line
+                ];
+
+                $remainingInstructionStructure = trim(substr($remainingInstructionStructure, strlen($line)));
+            }
+
+            foreach ($instructionStructureLines as $line) {
+                $pdf->SetXY($line['x'], $line['y']);
+                $pdf->Cell(117, 4.2, $line['text'], 0, 0);
+            }
 
             // Date du courrier
             $pdf->SetXY(10, 286);
@@ -277,7 +324,6 @@ class AnamFormController
                     ['G', 50, 133],
                     ['I', 10, 164],
                     ['R', 142, 188.5],
-                    ['S', 117, 195],
                     ['T', 100,164.3],
                     ['F', 50, 140],
                     ['L', 50, 147],
@@ -296,6 +342,14 @@ class AnamFormController
                     ['P', 142, 164],
                     ['Q', 142, 188.5],
                     ['1', 8, 202],
+                    ['l', 80, 201],
+                    ['a', 80, 207.5],
+                    ['b', 80, 214.5],
+                    ['c', 80, 221],
+                    ['d', 80, 227.5],
+                    ['e', 80, 234],
+                    ['f', 80, 240],
+                    ['g', 80, 246],
                     ['2', 8, 208],
                     ['3', 8, 214.5],
                     ['4', 8, 221],

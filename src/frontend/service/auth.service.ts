@@ -31,6 +31,7 @@ export class AuthService {
     externalSignatoryBook: any = null;
     idleTime: number; // Inactivity time
     plugins: PluginConfigInterface[];
+    private currentUserInfoPromise: Promise<any> | null = null;
 
     public userActivitySubscription: Subscription;
     public inactivitySubscription: Subscription;
@@ -115,6 +116,7 @@ export class AuthService {
     clearTokens() {
         this.localStorage.remove('MaarchCourrierToken');
         this.localStorage.remove('MaarchCourrierRefreshToken');
+        this.currentUserInfoPromise = null;
     }
 
     refreshToken() {
@@ -246,6 +248,22 @@ export class AuthService {
                 this.privilegeService.resfreshUserShortcuts();
             })
         );
+    }
+
+    loadCurrentUserInfo(forceRefresh: boolean = false): Promise<any> {
+        if (forceRefresh || this.currentUserInfoPromise === null) {
+            this.currentUserInfoPromise = new Promise((resolve, reject) => {
+                this.getCurrentUserInfo().subscribe({
+                    next: (data) => resolve(data),
+                    error: (err) => {
+                        this.currentUserInfoPromise = null;
+                        reject(err);
+                    },
+                });
+            });
+        }
+
+        return this.currentUserInfoPromise;
     }
 
     clearFilters() {

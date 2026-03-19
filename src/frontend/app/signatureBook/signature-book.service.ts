@@ -33,6 +33,7 @@ export class SignatureBookService {
     selectedResourceCount: number = 0;
 
     basketGroupActions: BasketGroupListActionInterface[] = []
+    private configPromise: Promise<SignatureBookConfigInterface | null> | null = null;
 
     constructor(
         private http: HttpClient,
@@ -43,20 +44,25 @@ export class SignatureBookService {
         private functions: FunctionsService
     ) {}
 
-    getInternalSignatureBookConfig(): Promise<SignatureBookConfigInterface | null> {
-        return new Promise((resolve) => {
-            this.http.get('../rest/signatureBook/config').pipe(
-                tap((config: SignatureBookConfigInterface) => {
-                    this.config = new SignatureBookConfig(config);
-                    resolve(config);
-                }),
-                catchError((err: any) => {
-                    this.notifications.handleSoftErrors(err);
-                    resolve(null);
-                    return of(false);
-                })
-            ).subscribe();
-        })
+    getInternalSignatureBookConfig(forceRefresh: boolean = false): Promise<SignatureBookConfigInterface | null> {
+        if (forceRefresh || this.configPromise === null) {
+            this.configPromise = new Promise((resolve) => {
+                this.http.get('../rest/signatureBook/config').pipe(
+                    tap((config: SignatureBookConfigInterface) => {
+                        this.config = new SignatureBookConfig(config);
+                        resolve(config);
+                    }),
+                    catchError((err: any) => {
+                        this.notifications.handleSoftErrors(err);
+                        this.configPromise = null;
+                        resolve(null);
+                        return of(false);
+                    })
+                ).subscribe();
+            });
+        }
+
+        return this.configPromise;
     }
 
     initDocuments(userId: number, groupId: number, basketId:number, resId: number): Promise<{ resourcesToSign: Attachment[], resourcesAttached: Attachment[] } | null> {

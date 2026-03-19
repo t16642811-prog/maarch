@@ -184,18 +184,37 @@ class PreProcessActionController
                 if ($mode == 'USERS') {
                     if (!empty($allowedEntities)) {
                         $users = UserEntityModel::getWithUsers([
-                            'select'  => ['DISTINCT users.id', 'users.user_id', 'firstname', 'lastname'],
+                            'select'  => ['DISTINCT users.id', 'users.user_id', 'users.mail', 'firstname', 'lastname'],
                             'where'   => ['users_entities.entity_id in (?)', 'status not in (?)'],
                             'data'    => [$allowedEntities, ['DEL', 'ABS', 'SPD']],
                             'orderBy' => ['lastname', 'firstname']
                         ]);
 
+                        $deduplicatedUsers = [];
                         foreach ($users as $key => $user) {
                             $users[$key]['labelToDisplay'] = "{$user['firstname']} {$user['lastname']}";
                             $users[$key]['descriptionToDisplay'] = UserModel::getPrimaryEntityById(
                                 ['id' => $user['id'], 'select' => ['entities.entity_label']]
                             )['entity_label'];
+
+                            $dedupeKey = mb_strtolower(trim(($user['mail'] ?? ''))) . '|' . mb_strtolower(trim($users[$key]['descriptionToDisplay'] ?? ''));
+                            if (empty(trim($user['mail'] ?? ''))) {
+                                $dedupeKey = mb_strtolower(trim($user['firstname'] . ' ' . $user['lastname'])) . '|' . mb_strtolower(trim($users[$key]['descriptionToDisplay'] ?? ''));
+                            }
+
+                            if (empty($deduplicatedUsers[$dedupeKey])) {
+                                $deduplicatedUsers[$dedupeKey] = $users[$key];
+                                continue;
+                            }
+
+                            $currentIsTechnical = preg_match('/^anam\d+$/i', $deduplicatedUsers[$dedupeKey]['user_id'] ?? '') === 1;
+                            $candidateIsTechnical = preg_match('/^anam\d+$/i', $user['user_id'] ?? '') === 1;
+                            if ($currentIsTechnical && !$candidateIsTechnical) {
+                                $deduplicatedUsers[$dedupeKey] = $users[$key];
+                            }
                         }
+
+                        $users = array_values($deduplicatedUsers);
                     }
                 } elseif ($mode == 'ENTITY') {
                     $primaryEntity = UserModel::getPrimaryEntityById(

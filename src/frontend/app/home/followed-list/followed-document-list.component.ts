@@ -398,7 +398,7 @@ export class ResultListHttpDao {
         this.filtersListService.updateListsPropertiesPage(page);
         this.filtersListService.updateListsPropertiesPageSize(pageSize);
         const offset = page * pageSize;
-        const requestUrl = `${href}?limit=${pageSize}&offset=${offset}${filters}`;
+        const requestUrl = `${href}?limit=${pageSize}&offset=${offset}${filters}&includeAllResources=false`;
 
         return this.http.get<BasketList>(requestUrl);
     }

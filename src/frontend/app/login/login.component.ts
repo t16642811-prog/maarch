@@ -7,7 +7,7 @@ import { tap, catchError } from 'rxjs/operators';
 import { AuthService } from '@service/auth.service';
 import { NotificationService } from '@service/notification/notification.service';
 import { environment } from '../../environments/environment';
-import { lastValueFrom, of } from 'rxjs';
+import { of } from 'rxjs';
 import { HeaderService } from '@service/header.service';
 import { FunctionsService } from '@service/functions.service';
 import { TimeLimitPipe } from '../../plugins/timeLimit.pipe';
@@ -88,7 +88,7 @@ export class LoginComponent implements OnInit {
                 }
 
                 this.authService.saveTokens(token, refreshToken);
-                await lastValueFrom(this.authService.getCurrentUserInfo());
+                await this.authService.loadCurrentUserInfo();
                 await this.signatureBookService.getInternalSignatureBookConfig();
                 const cachedUrl = this.authService.getCachedUrl();
                 if (cachedUrl) {
