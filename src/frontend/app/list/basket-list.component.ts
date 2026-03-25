@@ -430,6 +430,8 @@ export class BasketListComponent implements OnInit, OnDestroy {
             } else {
                 element['checked'] = true;
             }
+            element['senderDisplay'] = this.computeRowSender(element);
+            element['documentDateDisplay'] = this.computeRowDocumentDate(element);
             if (this.locallyReadResIds.has(Number(element['resId']))) {
                 element['is_read'] = 1;
             }
@@ -766,6 +768,10 @@ export class BasketListComponent implements OnInit, OnDestroy {
     }
 
     getRowSender(row: any): string {
+        return row?.senderDisplay || this.computeRowSender(row);
+    }
+
+    private computeRowSender(row: any): string {
         const senders = Array.isArray(row?.display) ? row.display.find((item: any) => item?.value === 'getSenders') : null;
         if (!senders) {
             const fallback = String(row?.senderLabel || '').replace(/<[^>]*>/g, '').trim();
@@ -776,6 +782,10 @@ export class BasketListComponent implements OnInit, OnDestroy {
     }
 
     getRowDocumentDate(row: any): string {
+        return row?.documentDateDisplay || this.computeRowDocumentDate(row);
+    }
+
+    private computeRowDocumentDate(row: any): string {
         const creationDate = row?.creation_date || row?.creationDate;
         if (creationDate) {
             return creationDate;
@@ -793,6 +803,10 @@ export class BasketListComponent implements OnInit, OnDestroy {
             return creationField.displayValue.creationDate;
         }
         return creationField.displayValue || '';
+    }
+
+    trackByResId(_index: number, row: any): number {
+        return Number(row?.resId) || _index;
     }
 }
 

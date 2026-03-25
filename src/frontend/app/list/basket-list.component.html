@@ -63,7 +63,7 @@
                             <span class="courrier-list-header__date">Date du courrier</span>
                             <span class="courrier-list-header__action">Action</span>
                         </div>
-                        <table cdkDropList id="document-list" [cdkDropListConnectedTo]="listTodrag()" [cdkDropListData]="data" #tableBasketListSort="matSort" mat-table [dataSource]="data" matSort
+                        <table cdkDropList id="document-list" [cdkDropListConnectedTo]="listTodrag()" [cdkDropListData]="data" #tableBasketListSort="matSort" mat-table [dataSource]="data" [trackBy]="trackByResId" matSort
                             matSortActive="resId" matSortDisableClear matSortDirection="asc" style="width:100%;" [cdkDropListDisabled]="dragInit || appService.getViewMode()">
 
                             <ng-container matColumnDef="resId">
@@ -104,8 +104,8 @@
                                             </ng-container>
                                         </span>
                                         <span class="main-info-data mail-col-sender"
-                                            title="{{ getRowSender(row) }}" (click)="launch(defaultAction,row);">
-                                             {{ getRowSender(row) }}
+                                            title="{{ row.senderDisplay }}" (click)="launch(defaultAction,row);">
+                                             {{ row.senderDisplay }}
                                         </span>
                                         <span class="main-info-data mail-col-subject"
                                             [class.undefined]="row.subject == ('lang.undefined' | translate)"
@@ -113,8 +113,8 @@
                                         <span class="main-info-data mail-col-date"
                                             (click)="launch(defaultAction,row);">
                                             
-                                            <ng-container *ngIf="getRowDocumentDate(row); else noDocDate">
-                                                {{ getRowDocumentDate(row) | date:'dd/MM/yyyy HH:mm' }}
+                                            <ng-container *ngIf="row.documentDateDisplay; else noDocDate">
+                                                {{ row.documentDateDisplay | date:'dd/MM/yyyy HH:mm' }}
                                             </ng-container>
                                             <ng-template #noDocDate>{{'lang.undefined' | translate}}</ng-template>
                                         </span>
