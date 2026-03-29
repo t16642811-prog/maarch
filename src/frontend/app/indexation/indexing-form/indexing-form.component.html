@@ -241,14 +241,55 @@
                                             matInput [matDatepicker]="picker"
                                             [placeholder]="!adminMode ? ('lang.chooseDate' | translate) : ('lang.defaultValue' | translate)"
                                             [min]="getMinDate(field.startDate)" [max]="getMaxDate(field.endDate)"
-                                            readonly style="cursor:pointer;" (dateChange)="launchEvent($event, field)">
+                                            readonly style="cursor:pointer;">
+                                        <span matSuffix class="maarch-date-inline-meta"
+                                            *ngIf="arrFormControl[field.identifier].value && arrFormControl[field.identifier + '_time']?.value">
+                                            <mat-icon class="far fa-clock"></mat-icon>
+                                            <span class="maarch-date-inline-time">{{arrFormControl[field.identifier + '_time'].value}}</span>
+                                        </span>
                                         <mat-datepicker-toggle matSuffix [for]="picker"
                                             *ngIf="!arrFormControl[field.identifier].value">
                                         </mat-datepicker-toggle>
-                                        <mat-datepicker [touchUi]="appService.getViewMode()" #picker></mat-datepicker>
+                                        <mat-datepicker [touchUi]="appService.getViewMode()" panelClass="maarch-datepicker-panel"
+                                            #picker (selectedChanged)="onDateSelected($event, field)">
+                                            <mat-datepicker-actions>
+                                                <div class="maarch-datepicker-footer" (click)="$event.stopPropagation()">
+                                                    <div class="maarch-datepicker-footer-meta">
+                                                        <div class="maarch-datepicker-footer-heading">
+                                                            <span class="maarch-datepicker-clock" aria-hidden="true">
+                                                                <span class="maarch-datepicker-clock-face">
+                                                                    <span class="maarch-datepicker-clock-hand maarch-datepicker-clock-hand-hour"></span>
+                                                                    <span class="maarch-datepicker-clock-hand maarch-datepicker-clock-hand-minute"></span>
+                                                                </span>
+                                                            </span>
+                                                            <div class="maarch-datepicker-footer-label">Heure du courrier</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="maarch-datepicker-footer-controls">
+                                                        <button mat-stroked-button type="button" class="maarch-datepicker-now-button"
+                                                            [disabled]="arrFormControl[field.identifier].disabled"
+                                                            (click)="setCurrentDateTime(field)">
+                                                            Maintenant
+                                                        </button>
+                                                        <div class="maarch-datepicker-time-shell">
+                                                            <input class="maarch-datepicker-time-input" type="time"
+                                                                [formControl]="arrFormControl[field.identifier + '_time']"
+                                                                [disabled]="arrFormControl[field.identifier].disabled || !arrFormControl[field.identifier].value"
+                                                                (click)="$event.stopPropagation()"
+                                                                (input)="onTimeChanged(field, $any($event.target).value)">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="maarch-datepicker-actions-row">
+                                                    <div class="maarch-datepicker-actions-spacer"></div>
+                                                    <button mat-button class="maarch-datepicker-cancel" matDatepickerCancel>Fermer</button>
+                                                    <button mat-raised-button color="primary" class="maarch-datepicker-apply" matDatepickerApply>Valider</button>
+                                                </div>
+                                            </mat-datepicker-actions>
+                                        </mat-datepicker>
                                         <button mat-button color="warn" matSuffix mat-icon-button
                                             *ngIf="arrFormControl[field.identifier].value && !arrFormControl[field.identifier].disabled"
-                                            (click)="$event.stopPropagation();arrFormControl[field.identifier].reset();"
+                                            (click)="$event.stopPropagation();arrFormControl[field.identifier].reset(); arrFormControl[field.identifier + '_time']?.setValue(field.identifier === 'processLimitDate' ? '23:59' : '08:00')"
                                             [title]="'lang.eraseValue' | translate">
                                             <mat-icon color="warn" class="fa fa-calendar-times">
                                             </mat-icon>

@@ -352,7 +352,8 @@ class ResourceListController
             $whereClause = PreparedClauseController::getPreparedClause(
                 ['clause' => $args['basketClause'], 'userId' => $user['id']]
             );
-            $where = [$whereClause];
+            $persistentClause = self::getPersistentVisibilityWhereClause((int)$args['currentUserId']);
+            $where = ["({$whereClause} OR {$persistentClause})"];
         }
         if (!empty($args['currentUserId'])) {
             $where[] = self::getAnamWorkflowVisibilityWhereClause((int)$args['currentUserId']);
@@ -493,7 +494,11 @@ class ResourceListController
 
     private static function getAnamWorkflowVisibilityWhereClause(int $currentUserId): string
     {
+        $persistentClause = self::getPersistentVisibilityWhereClause($currentUserId);
+
         return "(
+            {$persistentClause}
+            OR (
             custom_fields IS NULL
             OR NOT jsonb_exists(custom_fields, '_anamWorkflow')
             OR COALESCE((custom_fields -> '_anamWorkflow' ->> 'originUserId')::int, 0) = {$currentUserId}
@@ -511,6 +516,17 @@ class ResourceListController
                 WHEN 'validated' THEN COALESCE((custom_fields -> '_anamWorkflow' ->> 'originUserId')::int, {$currentUserId}) = {$currentUserId}
                 ELSE COALESCE(dest_user, {$currentUserId}) = {$currentUserId}
             END
+            )
+        )";
+    }
+
+    private static function getPersistentVisibilityWhereClause(int $currentUserId): string
+    {
+        return "res_id IN (
+            SELECT res_id
+            FROM basket_persistent_mode
+            WHERE user_id = {$currentUserId}
+              AND is_persistent = 'Y'
         )";
     }
 

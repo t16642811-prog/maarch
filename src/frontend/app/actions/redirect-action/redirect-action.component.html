@@ -105,7 +105,7 @@
         </div>
 
         <div class="row" *ngIf="redirectMode !== '' && redirectMode !== 'none'">
-            <app-note-editor #noteEditor [resIds]="data.resIds"></app-note-editor>
+            <app-note-editor #noteEditor [resIds]="data.resIds" [disableRestriction]="isServiceUserAssignmentAction()"></app-note-editor>
         </div>
         <ng-container *ngIf="showToggle">
             <div class="row">

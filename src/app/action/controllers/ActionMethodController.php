@@ -124,10 +124,19 @@ class ActionMethodController
         $set = ['locker_user_id' => null, 'locker_time' => null, 'modification_date' => 'CURRENT_TIMESTAMP'];
 
         $action = ActionModel::getById(
-            ['id' => $args['id'], 'select' => ['label_action', 'id_status', 'history', 'parameters']]
+            ['id' => $args['id'], 'select' => ['label_action', 'id_status', 'history', 'parameters', 'component']]
         );
         $action['parameters'] = json_decode($action['parameters'], true);
         $isTreatAction = (int)$args['id'] === 19 || mb_strtolower(trim((string)$action['label_action'])) === mb_strtolower('Traiter courrier');
+        $isAssignToUserAction = (int)$args['id'] === 540 || mb_strtolower(trim((string)$action['label_action'])) === mb_strtolower('Attribuer a un utilisateur');
+        $shouldEnableBasketPersistence = $isTreatAction || in_array(
+            $action['component'],
+            [
+                'anamSubmitManagerValidationAction',
+                'anamValidateResponseAction',
+                'anamRejectToCollaboratorAction'
+            ]
+        ) || $isAssignToUserAction;
         $anamTreatResourceIds = [];
         if ($isTreatAction && !empty($args['resources'])) {
             $resources = ResModel::get([
@@ -173,6 +182,10 @@ class ActionMethodController
                 'where' => ['res_id in (?)'],
                 'data'  => [$args['resources']]
             ]);
+        }
+
+        if ($shouldEnableBasketPersistence && !empty($args['resources'])) {
+            self::enableBasketPersistenceForCurrentUser($args['resources']);
         }
 
         $resLetterboxData = ResModel::get([
@@ -243,6 +256,31 @@ class ActionMethodController
         }
 
         return true;
+    }
+
+    /**
+     * Keep processed resources visible in the acting user's basket list.
+     */
+    private static function enableBasketPersistenceForCurrentUser(array $resIds): void
+    {
+        $resIds = array_values(array_unique(array_map('intval', $resIds)));
+        $resIds = array_filter($resIds, static fn($resId) => $resId > 0);
+        if (empty($resIds) || empty($GLOBALS['id'])) {
+            return;
+        }
+
+        BasketPersistenceModel::delete([
+            'where' => ['res_id in (?)', 'user_id = ?'],
+            'data'  => [$resIds, $GLOBALS['id']]
+        ]);
+
+        foreach ($resIds as $resId) {
+            BasketPersistenceModel::create([
+                'res_id'        => $resId,
+                'user_id'       => $GLOBALS['id'],
+                'is_persistent' => 'Y'
+            ]);
+        }
     }
 
     /**

@@ -237,7 +237,7 @@ export class AttachmentsListComponent implements OnInit {
     }
 
     showAttachment(attachment: any) {
-        this.dialogRef = this.dialog.open(AttachmentPageComponent, { height: '99vh', width: this.appService.getViewMode() ? '99vw' : '90vw', maxWidth: this.appService.getViewMode() ? '99vw' : '90vw', panelClass: 'attachment-modal-container', disableClose: true, data: { resId: attachment.resId, editMode : attachment.canUpdate } });
+        this.dialogRef = this.dialog.open(AttachmentPageComponent, { height: '99vh', width: this.appService.getViewMode() ? '99vw' : '90vw', maxWidth: this.appService.getViewMode() ? '99vw' : '90vw', panelClass: 'attachment-modal-container', disableClose: true, data: { resId: attachment.resId, editMode : attachment.canUpdate && (this.canModify || this.canModify === null) } });
 
         this.dialogRef.afterClosed().pipe(
             filter((data: string) => data === 'success'),
@@ -252,6 +252,9 @@ export class AttachmentsListComponent implements OnInit {
     }
 
     createAttachment() {
+        if (this.canModify === false) {
+            return;
+        }
         this.dialogRef = this.dialog.open(AttachmentCreateComponent, { disableClose: true, panelClass: 'attachment-modal-container', height: '90vh', width: this.appService.getViewMode() ? '99vw' : '90vw', maxWidth: this.appService.getViewMode() ? '99vw' : '90vw', data: { resIdMaster: this.resId } });
 
         this.dialogRef.afterClosed().pipe(

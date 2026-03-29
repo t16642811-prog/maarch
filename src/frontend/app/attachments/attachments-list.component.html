@@ -55,11 +55,12 @@
             <div class="pjToolsContent">
                 <span *ngIf="attachment.relation > 1" color="primary" class="versionButton">{{'lang.version' | translate}} <b
                         color="secondary">{{attachment.relation}}</b></span>
-                <button name="menuPjAction" color="primary" class="actionsButton" mat-icon-button [matMenuTriggerFor]="menuPjAction" #menuTrigger="matMenuTrigger">
+                <button name="menuPjAction" color="primary" class="actionsButton" mat-icon-button [matMenuTriggerFor]="menuPjAction" #menuTrigger="matMenuTrigger"
+                    [style.visibility]="(canModify !== false || (attachment.type !=='reply_record_management' && attachment.type !=='acknowledgement_record_management' && attachment.status!=='SIGN' && attachment.status!=='FRZ' && attachment.canDelete && (canDelete || canDelete === null))) ? 'visible' : 'hidden'">
                     <mat-icon fontSet="fas" fontIcon="fa-ellipsis-v"></mat-icon>
                 </button>
                 <mat-menu #menuPjAction="matMenu">
-                    <button
+                    <button *ngIf="canModify !== false"
                         class="button-item"
                         name="putInSignatureBook"
                         mat-menu-item
@@ -69,7 +70,7 @@
                         <mat-checkbox color="primary" [checked]="attachment.inSignatureBook"></mat-checkbox>
                         {{'lang.putInSignatureBook' | translate}}
                     </button>
-                    <button
+                    <button *ngIf="canModify !== false"
                         class="button-item"
                         mat-menu-item
                         [title]="'lang.putInSendAttach' | translate"
@@ -140,7 +141,7 @@
             </div>
         </mat-card>
     </div>
-    <button mat-fab class="addPj" [class.addPjPanel]="target === 'panel'" [class.addPjProcess]="target === 'process'" color="primary" [title]="'lang.addAttachment' | translate" (click)="createAttachment()">
+    <button *ngIf="canModify !== false" mat-fab class="addPj" [class.addPjPanel]="target === 'panel'" [class.addPjProcess]="target === 'process'" color="primary" [title]="'lang.addAttachment' | translate" (click)="createAttachment()">
         <mat-icon class="fa fa-plus"></mat-icon>
     </button>
 </ng-template>

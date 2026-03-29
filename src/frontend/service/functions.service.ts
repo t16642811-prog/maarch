@@ -111,6 +111,21 @@ export class FunctionsService {
         }
     }
 
+    formatDateObjectToDateTimeString(date: Date, format: string = 'dd-mm-yyyy') {
+        if (date !== null) {
+            const formattedDate = this.formatDateObjectToDateString(date, false, format);
+            let hours: any = date.getHours();
+            let minutes: any = date.getMinutes();
+            let seconds: any = date.getSeconds();
+            hours = ('00' + hours).slice(-2);
+            minutes = ('00' + minutes).slice(-2);
+            seconds = ('00' + seconds).slice(-2);
+            return `${formattedDate} ${hours}:${minutes}:${seconds}`;
+        } else {
+            return date;
+        }
+    }
+
     formatSerializedDateToDateString(date: string) {
         return this.formatDateObjectToDateString(new Date(date));
     }

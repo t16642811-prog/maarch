@@ -48,7 +48,7 @@
                                     [currentBasketInfo]="currentBasketInfo" [from]="'basket'"></app-tools-list>
                             </span>
                             <span>
-                                <app-actions-list #actionsList (refreshEvent)="refreshDao()"
+                                <app-actions-list *ngIf="!isCurrentSelectionReadOnly()" #actionsList (refreshEvent)="refreshDao()"
                                     [contextMode]="false" [totalRes]="resultsLength" [selectedRes]="selectedRes"
                                     [currentBasketInfo]="currentBasketInfo" [currentResource]="currentResource" (refreshPanelFolders)="foldersService.getFolders()"></app-actions-list>
                             </span>

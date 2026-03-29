@@ -52,6 +52,7 @@ use SrcCore\controllers\CoreController;
 use SrcCore\controllers\PreparedClauseController;
 use SrcCore\http\Response;
 use SrcCore\models\CoreConfigModel;
+use SrcCore\models\DatabaseModel;
 use SrcCore\models\TextFormatModel;
 use SrcCore\models\ValidatorModel;
 use Status\models\StatusModel;
@@ -1481,12 +1482,42 @@ class ResController extends ResourceControlController
                     ['resources' => $resources, 'userId' => $args['userId'], 'mode' => 'folders']
                 );
                 $authorizedResources = array_merge($authorizedResources, $authorizedResourcesFolders);
+                $authorizedResourcesPersistent = ResController::getPersistentAuthorizedResources(
+                    ['resources' => $resources, 'userId' => $args['userId']]
+                );
+                $authorizedResources = array_merge($authorizedResources, $authorizedResourcesPersistent);
                 $authorizedResources = array_unique($authorizedResources);
                 return count($authorizedResources) == count($resources);
             }
         }
 
         return true;
+    }
+
+    /**
+     * Allow read access to resources explicitly kept in basket follow-up mode.
+     *
+     * @param array $args
+     * @return array
+     */
+    private static function getPersistentAuthorizedResources(array $args): array
+    {
+        ValidatorModel::notEmpty($args, ['resources', 'userId']);
+        ValidatorModel::intVal($args, ['userId']);
+        ValidatorModel::arrayType($args, ['resources']);
+
+        if (empty($args['resources'])) {
+            return [];
+        }
+
+        $resources = DatabaseModel::select([
+            'select'   => ['res_id'],
+            'table'    => ['basket_persistent_mode'],
+            'where'    => ['user_id = ?', 'is_persistent = ?', 'res_id in (?)'],
+            'data'     => [$args['userId'], 'Y', $args['resources']]
+        ]);
+
+        return array_column($resources, 'res_id');
     }
 
     /**

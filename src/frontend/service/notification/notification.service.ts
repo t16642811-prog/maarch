@@ -19,6 +19,7 @@ export class CustomSnackbarComponent {
 
 @Injectable()
 export class NotificationService {
+    private static readonly IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY = 'ignoreTransferredResource403';
 
     constructor(public translate: TranslateService, private router: Router, public snackBar: MatSnackBar) {
     }
@@ -48,6 +49,9 @@ export class NotificationService {
     }
 
     handleErrors(err: any) {
+        if (this.shouldIgnoreTransferredResourceForbidden(err)) {
+            return;
+        }
         if (err.status === 0 && err.statusText === 'Unknown Error') {
             this.error(this.translate.instant('lang.connectionFailed'));
         } else {
@@ -83,6 +87,9 @@ export class NotificationService {
     }
 
     handleSoftErrors(err: any) {
+        if (this.shouldIgnoreTransferredResourceForbidden(err)) {
+            return;
+        }
         if (err?.error !== undefined) {
             if (err.error.errors !== undefined) {
                 if (err.error.lang !== undefined) {
@@ -129,5 +136,40 @@ export class NotificationService {
             return maxDuration;
         }
         return duration;
+    }
+
+    private shouldIgnoreTransferredResourceForbidden(err: any): boolean {
+        if (err?.status !== 403 || typeof err?.url !== 'string') {
+            return false;
+        }
+
+        const match = err.url.match(/\/rest\/resources\/(\d+)(\?.*)?$/);
+        if (match === null) {
+            return false;
+        }
+
+        const isExpectedProcessForbidden = err?.error?.errors === 'Service forbidden' && this.router.url.includes('/process/');
+        if (isExpectedProcessForbidden) {
+            return true;
+        }
+
+        try {
+            const rawState = window.sessionStorage.getItem(NotificationService.IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY);
+            if (!rawState) {
+                return false;
+            }
+
+            const state = JSON.parse(rawState);
+            const currentResId = Number(match[1]);
+            if (Number(state?.resId) !== currentResId || Number(state?.until) < Date.now()) {
+                window.sessionStorage.removeItem(NotificationService.IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY);
+                return false;
+            }
+
+            return true;
+        } catch (e) {
+            window.sessionStorage.removeItem(NotificationService.IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY);
+            return false;
+        }
     }
 }

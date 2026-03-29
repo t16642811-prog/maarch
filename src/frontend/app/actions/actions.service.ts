@@ -395,6 +395,11 @@ export class ActionsService implements OnDestroy {
         this.notify.success(this.translate.instant('lang.action') + ' : "' + this.currentAction.label + '" ' + this.translate.instant('lang.done'));
 
         this.actionEnded = true;
+        if (this.router.url.includes('process') && Number(this.currentAction?.id) === 540) {
+            this.router.navigate([`/basketList/users/${this.currentUserId}/groups/${this.currentGroupId}/baskets/${this.currentBasketId}`]);
+            this.eventAction.next(resIds);
+            return;
+        }
         if (this.router.url.includes('process') && !this.functions.empty(this.sessionStorage.get(`canGoToNextRes_basket_${this.currentBasketId}_group_${this.currentGroupId}_action_${this.currentAction.id}`))) {
             this.loadResources().pipe(
                 tap((data: any) => {

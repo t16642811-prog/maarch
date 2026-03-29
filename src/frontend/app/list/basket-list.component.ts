@@ -683,6 +683,10 @@ export class BasketListComponent implements OnInit, OnDestroy {
     }
 
     open({ x, y }: MouseEvent, row: any) {
+        if (this.isReadOnlyTreatedRow(row)) {
+            this.openReadonlyResource(row);
+            return false;
+        }
 
         const thisSelect = { checked: true };
         const thisDeselect = { checked: false };
@@ -698,6 +702,10 @@ export class BasketListComponent implements OnInit, OnDestroy {
     }
 
     launch(action: any, row: any) {
+        if (this.isReadOnlyTreatedRow(row)) {
+            this.openReadonlyResource(row);
+            return;
+        }
         const thisSelect = { checked: true };
         const thisDeselect = { checked: false };
         row.checked = true;
@@ -725,6 +733,19 @@ export class BasketListComponent implements OnInit, OnDestroy {
 
     openContact(row: any, mode: string) {
         this.dialog.open(ContactResourceModalComponent, { panelClass: 'maarch-modal', data: { title: `${row.chrono} - ${row.subject}`, mode: mode, resId: row.resId } });
+    }
+
+    isReadOnlyTreatedRow(row: any): boolean {
+        return row?.anamTreated === true || row?.anamWorkflowStep === 'validated';
+    }
+
+    isCurrentSelectionReadOnly(): boolean {
+        return this.selectedRes.length === 1 && this.isReadOnlyTreatedRow(this.currentResource);
+    }
+
+    private openReadonlyResource(row: any) {
+        this.markAsRead(row);
+        this.router.navigate([`/resources/${row.resId}`]);
     }
 
     viewDocument(row: any) {

@@ -189,6 +189,8 @@
 }
 
 .input-form.input-date {
+    width: 500px;
+
     ::ng-deep.mat-form-field-flex {
         align-items: center;
 
@@ -200,9 +202,267 @@
     ::ng-deep.mat-date-range-input-inner {
         color: var(--maarch-color-primary);
     }
+
+    ::ng-deep .mat-form-field-infix {
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    ::ng-deep .mat-form-field-suffix {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-right: 10px;
+    }
+
+    ::ng-deep .mat-form-field-suffix .maarch-date-inline-meta {
+        margin-right: 0;
+    }
     /*::ng-deep.mat-form-field-infix {
         padding-top: 5px;
     }*/
+}
+
+.maarch-date-inline-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 8px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #f3fbfd;
+    box-shadow: inset 0 0 0 1px rgba(8, 147, 169, 0.18);
+    color: var(--maarch-color-primary);
+    font-size: 11px;
+    line-height: 1;
+
+    .mat-icon {
+        width: 12px;
+        height: 12px;
+        font-size: 12px;
+        color: var(--maarch-color-primary);
+    }
+}
+
+.maarch-date-inline-time {
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+
+::ng-deep .maarch-datepicker-panel .mat-datepicker-content {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 14px 32px rgba(15, 55, 70, 0.16);
+}
+
+::ng-deep .mat-datepicker-content .mat-datepicker-content-container-with-actions {
+    flex-direction: row;
+    align-items: stretch;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel {
+    border-right: 1px solid #e4eef2;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: space-between;
+    width: 220px;
+    min-width: 220px;
+    padding: 18px 16px 16px;
+    background: linear-gradient(180deg, #fbfdfe 0%, #f4f9fb 100%);
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px 14px;
+    border: 1px solid #d9e7ed;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(28, 74, 89, 0.06);
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-footer-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-footer-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-clock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e9f7fb 45%, #d8eef4 100%);
+    box-shadow: inset 0 0 0 1px rgba(8, 147, 169, 0.18);
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-clock-face {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--maarch-color-primary);
+    border-radius: 50%;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-clock-face::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--maarch-color-primary);
+    transform: translate(-50%, -50%);
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-clock-hand {
+    position: absolute;
+    left: 50%;
+    bottom: 50%;
+    transform-origin: bottom center;
+    border-radius: 999px;
+    background: var(--maarch-color-primary);
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-clock-hand-hour {
+    width: 1.5px;
+    height: 4px;
+    margin-left: -0.75px;
+    animation: maarchClockHourSpin 12s linear infinite;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-clock-hand-minute {
+    width: 1px;
+    height: 5px;
+    margin-left: -0.5px;
+    animation: maarchClockMinuteSpin 2.4s linear infinite;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-footer-label {
+    color: #24444f;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-now-button {
+    min-width: 0;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+    color: var(--maarch-color-primary);
+    font-weight: 600;
+    border-color: rgba(8, 147, 169, 0.28);
+    background: #f8fcfd;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-footer-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-time-shell {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid #c7dce4;
+    border-radius: 12px;
+    background: #fcfeff;
+    box-sizing: border-box;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-time-input {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: #fff;
+    color: var(--maarch-color-primary);
+    font-size: 18px;
+    font-weight: 700;
+    outline: none;
+    box-shadow: none;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-time-shell:focus-within {
+    border-color: var(--maarch-color-primary);
+    box-shadow: 0 0 0 3px rgba(8, 147, 169, 0.1);
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-time-input::-webkit-calendar-picker-indicator {
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-time-input:disabled {
+    background: #f3f6f8;
+    color: #9aaab2;
+    cursor: not-allowed;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-actions-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 0 2px;
+    margin-top: auto;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-actions-spacer {
+    flex: 1;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-cancel {
+    color: #5f737c;
+    border-radius: 10px;
+}
+
+::ng-deep .mat-datepicker-content .mat-calendar.maarch-datepicker-panel + .mat-datepicker-actions .maarch-datepicker-apply {
+    border-radius: 10px;
+    padding: 0 18px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    box-shadow: 0 8px 18px rgba(8, 147, 169, 0.18);
+}
+
+@keyframes maarchClockMinuteSpin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes maarchClockHourSpin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .input-form-filled {

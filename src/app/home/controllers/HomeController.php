@@ -20,6 +20,8 @@ use Doctype\models\DoctypeModel;
 use Exception;
 use Group\models\GroupModel;
 use Priority\models\PriorityModel;
+use Resource\controllers\ResourceListController;
+use Resource\models\ResourceListModel;
 use Resource\models\ResModel;
 use Slim\Psr7\Request;
 use SrcCore\controllers\PreparedClauseController;
@@ -118,8 +120,12 @@ class HomeController
                     }
                 }
 
-                $baskets[$kBasket]['resourceNumber'] = BasketModel::getResourceNumberByClause(
-                    ['userId' => $GLOBALS['id'], 'clause' => $basket['basket_clause']]
+                $baskets[$kBasket]['resourceNumber'] = self::getVisibleResourceNumberForBasket(
+                    [
+                        'ownerUserId'    => $GLOBALS['id'],
+                        'currentUserId'  => $GLOBALS['id'],
+                        'basketClause'   => $basket['basket_clause']
+                    ]
                 );
 
                 if ($withStats && !empty($basket['basket_clause'])) {
@@ -148,8 +154,12 @@ class HomeController
                 ['select' => ['id', 'basket_clause'], 'basketId' => $assignedBasket['basket_id']]
             );
             $assignedBaskets[$key]['id'] = $basket['id'];
-            $assignedBaskets[$key]['resourceNumber'] = BasketModel::getResourceNumberByClause(
-                ['userId' => $assignedBasket['owner_user_id'], 'clause' => $basket['basket_clause']]
+            $assignedBaskets[$key]['resourceNumber'] = self::getVisibleResourceNumberForBasket(
+                [
+                    'ownerUserId'    => (int)$assignedBasket['owner_user_id'],
+                    'currentUserId'  => $GLOBALS['id'],
+                    'basketClause'   => $basket['basket_clause']
+                ]
             );
             if ($withStats && !empty($basket['basket_clause'])) {
                 $statsSources[] = [
@@ -256,6 +266,31 @@ class HomeController
         }
 
         return $statsSources;
+    }
+
+    private static function getVisibleResourceNumberForBasket(array $args): int
+    {
+        if (empty($args['basketClause']) || empty($args['ownerUserId']) || empty($args['currentUserId'])) {
+            return 0;
+        }
+
+        $owner = UserModel::getById(['id' => (int)$args['ownerUserId'], 'select' => ['user_id']]);
+        $queryData = ResourceListController::getResourcesListQueryData([
+            'data'          => [],
+            'basketClause'  => $args['basketClause'],
+            'login'         => $owner['user_id'],
+            'currentUserId' => (int)$args['currentUserId']
+        ]);
+
+        $countRows = ResourceListModel::getOnView([
+            'select'   => ['COUNT(res_id) as total'],
+            'table'    => $queryData['table'],
+            'leftJoin' => $queryData['leftJoin'],
+            'where'    => $queryData['where'],
+            'data'     => $queryData['queryData']
+        ]);
+
+        return (int)($countRows[0]['total'] ?? 0);
     }
 
     private static function getHomeStatsCachePath(int $userId): string

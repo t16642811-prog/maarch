@@ -17,6 +17,7 @@ import { SessionStorageService } from '@service/session-storage.service';
     styleUrls: ['redirect-action.component.scss'],
 })
 export class RedirectActionComponent implements OnInit {
+    private static readonly IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY = 'ignoreTransferredResource403';
 
     @ViewChild('appDiffusionsList', { static: false }) appDiffusionsList: DiffusionsListComponent;
     @ViewChild('noteEditor', { static: false }) noteEditor: NoteEditorComponent;
@@ -78,9 +79,11 @@ export class RedirectActionComponent implements OnInit {
         this.showToggle = this.data.additionalInfo.showToggle;
         this.canGoToNextRes = this.data.additionalInfo.canGoToNextRes;
         this.inLocalStorage = this.data.additionalInfo.inLocalStorage;
-        await this.getEntities();
-        await this.getDefaultEntity();
         this.setForcedRedirectModeFromAction();
+        await this.getEntities();
+        if (!this.isServiceUserAssignmentAction()) {
+            await this.getDefaultEntity();
+        }
         await this.tryForceAnamManagerRedirect();
 
         if (this.forcedRedirectMode === 'user') {
@@ -128,6 +131,10 @@ export class RedirectActionComponent implements OnInit {
             this.forcedRedirectUserId = Number.isNaN(parsed) ? null : parsed;
         } else {
             this.forcedRedirectUserId = null;
+        }
+
+        if (this.isServiceUserAssignmentAction()) {
+            this.forcedRedirectMode = 'user';
         }
     }
 
@@ -193,6 +200,16 @@ export class RedirectActionComponent implements OnInit {
 
         return actionName === 'anam_submit_manager_validation'
             || (actionLabel.includes('soumettre') && actionLabel.includes('chef service'));
+    }
+
+    isServiceUserAssignmentAction(): boolean {
+        const actionId = Number(this.data?.action?.id);
+        const actionName = (this.data?.action?.name || '').toString().toLowerCase();
+        const actionLabel = this.normalizeActionText((this.data?.action?.label || '').toString());
+
+        return actionId === 540
+            || actionName === 'attribuer_a_un_utilisateur'
+            || actionLabel.includes('attribuer a un utilisateur');
     }
 
     private normalizeActionText(value: string): string {
@@ -465,7 +482,19 @@ export class RedirectActionComponent implements OnInit {
             );
 
         this.loading = false;
-        if (this.data.resIds.length === 1) {
+        if (this.isServiceUserAssignmentAction()) {
+            this.keepDestForRedirection = false;
+            if (this.forcedRedirectUserId !== null) {
+                const forcedUser = this.userListRedirect.find((user: any) => user.id === this.forcedRedirectUserId);
+                if (forcedUser) {
+                    this.userListRedirect = [forcedUser];
+                    this.changeDest({ option: { value: forcedUser } });
+                }
+            }
+            setTimeout(() => {
+                $('.searchUserRedirect').click();
+            }, 200);
+        } else if (this.data.resIds.length === 1) {
             this.http.get('../rest/resources/' + this.data.resIds[0] + '/listInstance').subscribe((data: any) => {
                 this.diffusionListDestRedirect = data.listInstance;
                 data.listInstance.forEach((line: any) => {
@@ -511,13 +540,17 @@ export class RedirectActionComponent implements OnInit {
         this.destUser = this.buildUserRedirectItem(user, 'dest');
 
         if (this.data.resIds.length === 1 && this.selectedUsers.length === 1) {
-            this.isDestinationChanging = false;
-            this.http.get('../rest/resources/' + this.data.resIds[0] + '/users/' + user.id + '/isDestinationChanging')
-                .subscribe((data: any) => {
-                    this.isDestinationChanging = data.isDestinationChanging;
-                }, (err: any) => {
-                    this.notify.handleErrors(err);
-                });
+            if (this.isServiceUserAssignmentAction()) {
+                this.isDestinationChanging = true;
+            } else {
+                this.isDestinationChanging = false;
+                this.http.get('../rest/resources/' + this.data.resIds[0] + '/users/' + user.id + '/isDestinationChanging')
+                    .subscribe((data: any) => {
+                        this.isDestinationChanging = data.isDestinationChanging;
+                    }, (err: any) => {
+                        this.notify.handleErrors(err);
+                    });
+            }
         } else {
             this.isDestinationChanging = true;
         }
@@ -586,6 +619,12 @@ export class RedirectActionComponent implements OnInit {
 
     executeAction() {
         const actionData = this.getRedirectData();
+        if (this.isServiceUserAssignmentAction() && this.data?.resIds?.length === 1) {
+            window.sessionStorage.setItem(RedirectActionComponent.IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY, JSON.stringify({
+                until: Date.now() + 15000,
+                resId: this.data.resIds[0]
+            }));
+        }
         this.http.put(this.data.processActionRoute, { resources: this.data.resIds, data: actionData, note: this.noteEditor.getNote() }).pipe(
             tap((data: any) => {
                 if (data && data.errors != null) {

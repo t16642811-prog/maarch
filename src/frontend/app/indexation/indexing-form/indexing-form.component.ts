@@ -457,18 +457,15 @@ export class IndexingFormComponent implements OnInit {
         });
         arrIndexingModels.forEach(element => {
             if (element.type === 'date' && !this.functions.empty(this.arrFormControl[element.identifier].value)) {
+                const dateValue = this.mergeDateAndTimeControlValue(element.identifier, this.arrFormControl[element.identifier].value);
                 if (element.today === true) {
                     if (this.adminMode) {
                         element.default_value = '_TODAY';
                     } else {
-                        element.default_value = this.functions.formatDateObjectToDateString(this.arrFormControl[element.identifier].value, false);
+                        element.default_value = this.functions.formatDateObjectToDateTimeString(dateValue, 'dd-mm-yyyy');
                     }
                 } else {
-                    if (element.identifier === 'processLimitDate') {
-                        element.default_value = this.functions.formatDateObjectToDateString(this.arrFormControl[element.identifier].value, true);
-                    } else {
-                        element.default_value = this.functions.formatDateObjectToDateString(this.arrFormControl[element.identifier].value, false);
-                    }
+                    element.default_value = this.functions.formatDateObjectToDateTimeString(dateValue, 'dd-mm-yyyy');
                 }
             } else {
                 element.default_value = this.functions.empty(this.arrFormControl[element.identifier].value) ? null : this.arrFormControl[element.identifier].value;
@@ -537,6 +534,7 @@ export class IndexingFormComponent implements OnInit {
                         resolve(true);
                     }),
                     catchError((err: any) => {
+                        resolve(false);
                         this.notify.handleErrors(err);
                         return of(false);
                     })
@@ -804,6 +802,7 @@ export class IndexingFormComponent implements OnInit {
             await Promise.all(this['indexingModels_' + element].map(async (elem: any) => {
                 if (elem.identifier === 'documentDate'){
                     this.arrFormControl[elem.identifier].setValue(new Date(ladResult.documentDate));
+                    this.syncTimeControlFromDate(elem.identifier);
                 } else if (elem.identifier === 'subject'){
                     this.arrFormControl[elem.identifier].setValue(ladResult.subject);
                 } else if (elem.identifier === 'senders' && !this.functions.empty(ladResult.contactIdx)){
@@ -949,6 +948,9 @@ export class IndexingFormComponent implements OnInit {
                                 }
                                 if (!this.functions.empty(fieldValue)) {
                                     this.arrFormControl[elem.identifier].setValue(fieldValue);
+                                    if (elem.type === 'date') {
+                                        this.syncTimeControlFromDate(elem.identifier);
+                                    }
                                 }
                             } else if (!saveResourceState && elem.identifier === 'destination') {
                                 this.arrFormControl[elem.identifier].disable();
@@ -967,6 +969,9 @@ export class IndexingFormComponent implements OnInit {
                                     ].includes(elem.identifier);
                                 if (!anamEditableInProcess) {
                                     this.arrFormControl[elem.identifier].disable();
+                                    if (elem.type === 'date') {
+                                        this.arrFormControl[this.getTimeControlName(elem.identifier)]?.disable();
+                                    }
                                 }
                             }
                         }));
@@ -1135,12 +1140,14 @@ export class IndexingFormComponent implements OnInit {
                         }
 
                     });
+                    this.moveMailFieldAfter('indexingCustomField_4', 'documentDate', 'arrivalDate');
                     this.indexingModelClone = JSON.parse(JSON.stringify(data.indexingModel));
                 }
 
                 await this.initElemForm(saveResourceState).then(() => {
                     if (this.adminMode && !this.functions.empty(this.arrFormControl['processLimitDate'])) {
                         this.arrFormControl['processLimitDate'].disable();
+                        this.arrFormControl[this.getTimeControlName('processLimitDate')]?.disable();
                         this.indexingModelClone.fields.find((field: any) => field.identifier === 'processLimitDate').enabled = false;
                     }
                 });
@@ -1171,10 +1178,40 @@ export class IndexingFormComponent implements OnInit {
         });
     }
 
+    private moveMailFieldAfter(identifierToMove: string, previousIdentifier: string, nextIdentifier?: string) {
+        const mailFields = this['indexingModels_mail'];
+        if (!Array.isArray(mailFields) || mailFields.length === 0) {
+            return;
+        }
+
+        const fieldIndex = mailFields.findIndex((field: any) => field.identifier === identifierToMove);
+        const previousIndex = mailFields.findIndex((field: any) => field.identifier === previousIdentifier);
+
+        if (fieldIndex === -1 || previousIndex === -1) {
+            return;
+        }
+
+        const [fieldToMove] = mailFields.splice(fieldIndex, 1);
+        const refreshedPreviousIndex = mailFields.findIndex((field: any) => field.identifier === previousIdentifier);
+        let targetIndex = refreshedPreviousIndex + 1;
+
+        if (nextIdentifier) {
+            const nextIndex = mailFields.findIndex((field: any) => field.identifier === nextIdentifier);
+            if (nextIndex !== -1 && targetIndex > nextIndex) {
+                targetIndex = nextIndex;
+            }
+        }
+
+        mailFields.splice(targetIndex, 0, fieldToMove);
+    }
+
     enableField(field: any, enable: boolean) {
         if (enable) {
             if (!this.isAlwaysDisabledField(field) && field.identifier !== 'processLimitDate') {
                 this.arrFormControl[field.identifier].enable();
+                if (field.type === 'date') {
+                    this.arrFormControl[this.getTimeControlName(field.identifier)]?.enable();
+                }
             }
             field.enabled = true;
         } else {
@@ -1183,6 +1220,9 @@ export class IndexingFormComponent implements OnInit {
                 return false;
             }
             this.arrFormControl[field.identifier].disable();
+            if (field.type === 'date') {
+                this.arrFormControl[this.getTimeControlName(field.identifier)]?.disable();
+            }
             field.enabled = false;
         }
     }
@@ -1203,11 +1243,18 @@ export class IndexingFormComponent implements OnInit {
         }
 
         this.arrFormControl[field.identifier] = new UntypedFormControl({ value: field.default_value, disabled: disabledState });
+        if (field.type === 'date') {
+            this.arrFormControl[this.getTimeControlName(field.identifier)] = new UntypedFormControl({
+                value: this.getDefaultTimeValue(field.default_value, field.identifier),
+                disabled: disabledState
+            });
+        }
 
         if (field.type === 'integer') {
             valArr.push(this.regexValidator(new RegExp('[+-]?([0-9]*[.])?[0-9]+'), { 'floatNumber': '' }));
         } else if (field.type === 'date' && !this.functions.empty(field.default_value)) {
             this.arrFormControl[field.identifier].setValue(new Date(field.default_value));
+            this.syncTimeControlFromDate(field.identifier);
         }
 
         if (field.mandatory && !this.adminMode) {
@@ -1553,12 +1600,43 @@ export class IndexingFormComponent implements OnInit {
         if (field.today) {
             this.arrFormControl[field.identifier].disable();
             this.arrFormControl[field.identifier].setValue(new Date());
+            this.arrFormControl[this.getTimeControlName(field.identifier)]?.disable();
+            this.syncTimeControlFromDate(field.identifier);
         } else {
             this.arrFormControl[field.identifier].setValue('');
+            this.arrFormControl[this.getTimeControlName(field.identifier)]?.setValue(this.getDefaultTimeValue(null, field.identifier));
             if (field.identifier !== 'processLimitDate') {
                 this.arrFormControl[field.identifier].enable();
+                this.arrFormControl[this.getTimeControlName(field.identifier)]?.enable();
             }
         }
+    }
+
+    onDateSelected(value: Date | null, field: any) {
+        if (this.functions.empty(value)) {
+            return;
+        }
+        const mergedDate = this.mergeDateAndTimeControlValue(field.identifier, value);
+        this.arrFormControl[field.identifier].setValue(mergedDate);
+        this.syncTimeControlFromDate(field.identifier);
+        this.launchEvent({ value: mergedDate }, field);
+    }
+
+    onTimeChanged(field: any, timeValue: string) {
+        const currentValue = this.arrFormControl[field.identifier]?.value;
+        if (this.functions.empty(currentValue)) {
+            return;
+        }
+        const mergedDate = this.mergeDateAndTimeControlValue(field.identifier, currentValue, timeValue);
+        this.arrFormControl[field.identifier].setValue(mergedDate);
+        this.launchEvent({ value: mergedDate }, field);
+    }
+
+    setCurrentDateTime(field: any) {
+        const now = new Date();
+        this.arrFormControl[field.identifier].setValue(now);
+        this.syncTimeControlFromDate(field.identifier);
+        this.launchEvent({ value: now }, field);
     }
 
     toggleMailTracking() {
@@ -1600,6 +1678,7 @@ export class IndexingFormComponent implements OnInit {
                     tap((data: any) => {
                         limitDate = data.processLimitDate !== null ? new Date(data.processLimitDate) : '';
                         this.arrFormControl['processLimitDate'].setValue(limitDate);
+                        this.syncTimeControlFromDate('processLimitDate');
                         if (this.functions.empty(limitDate)) {
                             resolve(true);
                         }
@@ -1628,6 +1707,7 @@ export class IndexingFormComponent implements OnInit {
         return new Promise((resolve) => {
             if (this.functions.empty(value) && !this.functions.empty(this.arrFormControl['processLimitDate'])) {
                 this.arrFormControl['processLimitDate'].setValue(null);
+                this.arrFormControl[this.getTimeControlName('processLimitDate')]?.setValue(this.getDefaultTimeValue(null, 'processLimitDate'));
                 return;
             }
             let limitDate: any = null;
@@ -1645,6 +1725,7 @@ export class IndexingFormComponent implements OnInit {
                     tap((data: any) => {
                         limitDate = data.processLimitDate !== null ? new Date(data.processLimitDate) : '';
                         this.arrFormControl['processLimitDate'].setValue(limitDate);
+                        this.syncTimeControlFromDate('processLimitDate');
                         this.setPriorityColor(field, value);
                         resolve(true);
                     }),
@@ -1687,6 +1768,54 @@ export class IndexingFormComponent implements OnInit {
             })
         ).subscribe();
 
+    }
+
+    private getTimeControlName(identifier: string): string {
+        return `${identifier}_time`;
+    }
+
+    private getDefaultTimeValue(value: any, identifier: string): string {
+        if (!this.functions.empty(value)) {
+            const parsedDate = value instanceof Date ? value : new Date(value);
+            if (!isNaN(parsedDate.getTime())) {
+                return this.formatTime(parsedDate);
+            }
+        }
+
+        return identifier === 'processLimitDate' ? '23:59' : '08:00';
+    }
+
+    private formatTime(date: Date): string {
+        const hours = ('00' + date.getHours()).slice(-2);
+        const minutes = ('00' + date.getMinutes()).slice(-2);
+        return `${hours}:${minutes}`;
+    }
+
+    private syncTimeControlFromDate(identifier: string) {
+        const control = this.arrFormControl[identifier];
+        const timeControl = this.arrFormControl[this.getTimeControlName(identifier)];
+        if (!control || !timeControl || this.functions.empty(control.value)) {
+            return;
+        }
+        const dateValue = control.value instanceof Date ? control.value : new Date(control.value);
+        if (!isNaN(dateValue.getTime())) {
+            timeControl.setValue(this.formatTime(dateValue), { emitEvent: false });
+        }
+    }
+
+    private mergeDateAndTimeControlValue(identifier: string, value: Date, forcedTime?: string): Date {
+        const baseDate = value instanceof Date ? new Date(value) : new Date(value);
+        const timeValue = forcedTime ?? this.arrFormControl[this.getTimeControlName(identifier)]?.value ?? this.getDefaultTimeValue(null, identifier);
+        const [hours, minutes] = String(timeValue || '').split(':').map((part: string) => Number(part));
+        if (!Number.isNaN(hours)) {
+            baseDate.setHours(hours);
+        }
+        if (!Number.isNaN(minutes)) {
+            baseDate.setMinutes(minutes);
+        }
+        baseDate.setSeconds(0);
+        baseDate.setMilliseconds(0);
+        return baseDate;
     }
 
     loadDiffusionList(field: any, value: any) {

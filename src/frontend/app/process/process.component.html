@@ -138,7 +138,8 @@
                     [adminMode]="detailMode ? privilegeService.hasCurrentUserPrivilege('config_avis_workflow_in_detail') : privilegeService.hasCurrentUserPrivilege('config_avis_workflow')">
                 </app-avis-workflow>
                 <app-attachments-list *ngIf="currentTool === 'attachments' && !loading" #appAttachmentsList
-                    [resId]="currentResourceInformations.resId" [autoOpenCreation]="isMailing" [target]="'process'"
+                    [resId]="currentResourceInformations.resId" [autoOpenCreation]="isMailing && !isReadOnlyTreated()" [target]="'process'"
+                    [canModify]="!isReadOnlyTreated()" [canDelete]="!isReadOnlyTreated()"
                     (reloadBadgeAttachments)="refreshBadge($event,'attachments')">
                 </app-attachments-list>
                 <app-select-indexing-model *ngIf="currentTool === 'info' && !loading" #appSelectIndexingModel
@@ -155,7 +156,7 @@
                     (retrieveDocumentEvent)="appDocumentViewer.saveDocService()" (afterSaveEvent)="refreshData()">
                 </app-indexing-form>
                 <div style="position: sticky;bottom: 0px;text-align:right;">
-                    <button mat-fab [title]="'lang.saveModifications' | translate" *ngIf="isToolModified()"
+                    <button mat-fab [title]="'lang.saveModifications' | translate" *ngIf="isToolModified() && !isReadOnlyTreated()"
                         (click)="saveTool()" color="accent">
                         <mat-icon style="height:auto;font-size:20px;" class="fas fa-check"></mat-icon>
                     </button>
@@ -169,7 +170,7 @@
                 </div>
             </ng-template>
         </div>
-        <div class="actions-indexing-form" *ngIf="!detailMode || allowActionsInDetail">
+        <div class="actions-indexing-form" *ngIf="(!detailMode || allowActionsInDetail) && !isReadOnlyTreated()">
             <ng-container *ngIf="actionsListLoaded && hasActions() && selectedAction !== undefined">
                 <button mat-button class="button-form-primary" [disabled]="selectedAction.id === 0"
                     [matMenuTriggerFor]="menu" style="width:350px;margin-right:20px;" [title]="selectedAction.label">

@@ -12,7 +12,7 @@ import { FiltersListService } from '@service/filtersList.service';
 import { Overlay } from '@angular/cdk/overlay';
 import { AppService } from '@service/app.service';
 import { ActionsService } from '../actions/actions.service';
-import { tap, catchError, map, finalize, filter, take } from 'rxjs/operators';
+import { tap, catchError, map, finalize, filter, take, exhaustMap } from 'rxjs/operators';
 import { DocumentViewerComponent } from '../viewer/document-viewer.component';
 import { IndexingFormComponent } from '../indexation/indexing-form/indexing-form.component';
 import { ConfirmComponent } from '@plugins/modal/confirm.component';
@@ -26,7 +26,7 @@ import { PrivilegeService } from '@service/privileges.service';
 import { AvisWorkflowComponent } from '../avis/avis-workflow.component';
 import { FunctionsService } from '@service/functions.service';
 import { PrintedFolderModalComponent } from '../printedFolder/printed-folder-modal.component';
-import { of, Subscription } from 'rxjs';
+import { of, Subscription, from } from 'rxjs';
 import { TechnicalInformationComponent } from '@appRoot/indexation/technical-information/technical-information.component';
 import { NotesListComponent } from '@appRoot/notes/notes-list.component';
 import { AuthService } from '@service/auth.service';
@@ -42,6 +42,7 @@ import { SessionStorageService } from '@service/session-storage.service';
     providers: [ActionsService, ContactService],
 })
 export class ProcessComponent implements OnInit, OnDestroy {
+    private static readonly IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY = 'ignoreTransferredResource403';
 
     @ViewChild('snav2', { static: true }) sidenavRight: MatSidenav;
     @ViewChild('adminMenuTemplate', { static: true }) adminMenuTemplate: TemplateRef<any>;
@@ -400,6 +401,10 @@ export class ProcessComponent implements OnInit, OnDestroy {
                 }),
                 finalize(() => this.loading = false),
                 catchError((err: any) => {
+                    if (this.shouldIgnoreTransferredResourceForbidden(err)) {
+                        this.router.navigate([`/basketList/users/${this.currentUserId}/groups/${this.currentGroupId}/baskets/${this.currentBasketId}`]);
+                        return of(false);
+                    }
                     this.notify.handleErrors(err);
                     if (err?.status === 403 || err?.status === 404) {
                         this.router.navigate(['/home']);
@@ -407,6 +412,36 @@ export class ProcessComponent implements OnInit, OnDestroy {
                     return of(false);
                 })
             ).subscribe();
+        }
+    }
+
+    private shouldIgnoreTransferredResourceForbidden(err: any): boolean {
+        if (err?.status !== 403 || typeof err?.url !== 'string') {
+            return false;
+        }
+
+        const match = err.url.match(/\/rest\/resources\/(\d+)(\?.*)?$/);
+        if (match === null) {
+            return false;
+        }
+
+        try {
+            const rawState = window.sessionStorage.getItem(ProcessComponent.IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY);
+            if (!rawState) {
+                return false;
+            }
+
+            const state = JSON.parse(rawState);
+            const currentResId = Number(match[1]);
+            if (Number(state?.resId) !== currentResId || Number(state?.until) < Date.now()) {
+                window.sessionStorage.removeItem(ProcessComponent.IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY);
+                return false;
+            }
+
+            return true;
+        } catch (e) {
+            window.sessionStorage.removeItem(ProcessComponent.IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY);
+            return false;
         }
     }
 
@@ -428,7 +463,8 @@ export class ProcessComponent implements OnInit, OnDestroy {
                     })
                 ).subscribe();
             }
-            this.canEditData = this.canUpdate && this.currentResourceInformations.statusAlterable && this.functions.empty(this.currentResourceInformations.registeredMail_deposit_id);
+            this.canEditData = !this.isReadOnlyTreated() && this.canUpdate && this.currentResourceInformations.statusAlterable && this.functions.empty(this.currentResourceInformations.registeredMail_deposit_id);
+            this.canChangeModel = !this.isReadOnlyTreated() && this.canChangeModel;
             if (this.isMailing && this.isToolEnabled('attachments')) {
                 this.currentTool = 'attachments';
                 this.prepareToolPerformance(this.currentTool);
@@ -445,8 +481,8 @@ export class ProcessComponent implements OnInit, OnDestroy {
                             this.currentTool = !this.functions.empty(this.sessionStorage.get('currentTool')) ? this.sessionStorage.get('currentTool') : data.listEventData.defaultTab;
                             this.prepareToolPerformance(this.currentTool);
                         }
-                        this.canEditData = data.listEventData.canUpdateData && this.functions.empty(this.currentResourceInformations.registeredMail_deposit_id);
-                        this.canChangeModel = data.listEventData.canUpdateModel;
+                        this.canEditData = !this.isReadOnlyTreated() && data.listEventData.canUpdateData && this.functions.empty(this.currentResourceInformations.registeredMail_deposit_id);
+                        this.canChangeModel = !this.isReadOnlyTreated() && data.listEventData.canUpdateModel;
                         this.canGoToNextRes = !this.functions.empty(data.listEventData.canGoToNextRes) ? data.listEventData.canGoToNextRes : null;
                         this.currentResourceInformations = { ... this.currentResourceInformations, canGoToNextRes: this.canGoToNextRes };
                     }
@@ -489,6 +525,10 @@ export class ProcessComponent implements OnInit, OnDestroy {
         }
         const workflow = this.currentResourceInformations?.customFields?._anamWorkflow;
         return !!workflow && workflow.step === 'validated';
+    }
+
+    isReadOnlyTreated(): boolean {
+        return this.isAnamTreated();
     }
 
     toggleIntegration(integrationId: string) {
@@ -630,9 +670,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
                 const dialogRef = this.openConfirmModification();
                 dialogRef.afterClosed().pipe(
                     filter((data: string) => data === 'ok'),
-                    tap(() => {
-                        this.saveTool();
-                    }),
+                    exhaustMap(() => from(this.saveTool())),
                     finalize(() => {
                         this.autoAction = true;
                         this.currentTool = 'info';
@@ -718,6 +756,9 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     showActionInCurrentCategory(action: any) {
+        if (this.isReadOnlyTreated()) {
+            return false;
+        }
 
         if (this.selectedAction.categoryUse.indexOf(this.currentResourceInformations.categoryId) === -1) {
             const newAction = this.actionsList.filter(actionItem => actionItem.categoryUse.indexOf(this.currentResourceInformations.categoryId) > -1)[0];
@@ -737,6 +778,9 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     selectAction(action: any) {
+        if (this.isReadOnlyTreated()) {
+            return;
+        }
         this.selectedAction = action;
     }
 
@@ -759,11 +803,8 @@ export class ProcessComponent implements OnInit, OnDestroy {
                     }
                 }),
                 filter((data: string) => data === 'ok'),
+                exhaustMap(() => from(this.confirmModification())),
                 tap(() => {
-                    this.indexingForm.saveData();
-                    setTimeout(() => {
-                        this.loadResource(false);
-                    }, 400);
                     this.modalModule.splice(index, 1);
                 }),
                 catchError((err: any) => {
@@ -809,12 +850,9 @@ export class ProcessComponent implements OnInit, OnDestroy {
                     }
                 }),
                 filter((data: string) => data === 'ok'),
+                exhaustMap(() => from(this.saveTool())),
                 tap(() => {
-                    this.saveTool();
                     if (!this.indexingForm?.mustFixErrors) {
-                        setTimeout(() => {
-                            this.loadResource(false);
-                        }, 400);
                         this.currentTool = tabId;
                         this.prepareToolPerformance(tabId);
                         this.currentResourceInformations.categoryId = !this.functions.empty(this.currentCategory) ? this.currentCategory : this.currentResourceInformations.categoryId;
@@ -853,11 +891,10 @@ export class ProcessComponent implements OnInit, OnDestroy {
         return this.dialog.open(ConfirmComponent, { panelClass: 'maarch-modal', autoFocus: false, disableClose: true, data: { title: this.translate.instant('lang.confirm'), msg: this.translate.instant('lang.saveModifiedData'), buttonValidate: this.translate.instant('lang.yes'), buttonCancel: this.translate.instant('lang.no') } });
     }
 
-    confirmModification() {
-        this.indexingForm.saveData();
-        setTimeout(() => {
-            this.loadResource(false);
-        }, 400);
+    async confirmModification() {
+        this.markResourceAsTransferredPending();
+        await this.indexingForm.saveData();
+        this.reloadOrLeaveAfterSave();
     }
 
     async saveModificationBeforeClose() {
@@ -1001,27 +1038,44 @@ export class ProcessComponent implements OnInit, OnDestroy {
 
     async saveTool() {
         if (this.currentTool === 'info' && this.indexingForm !== undefined) {
-            this.appDocumentViewer.getFile().pipe(
-                take(1),
-                tap(async (data: any) => {
-                    if (this.functions.empty(data.contentView) && this.indexingForm.mandatoryFile) {
-                        this.notify.error(this.translate.instant('lang.mandatoryFile'));
-                    } else {
-                        if (this.indexingForm.isValidForm()) {
-                            this.currentResourceInformations.categoryId = !this.functions.empty(this.currentCategory) ? this.currentCategory : this.currentResourceInformations.categoryId;
-                            this.prevCategory = this.currentResourceInformations.categoryId;
-                            this.actionService.loading = false;
+            return new Promise<void>((resolve) => {
+                this.appDocumentViewer.getFile().pipe(
+                    take(1),
+                    tap(async (data: any) => {
+                        if (this.functions.empty(data.contentView) && this.indexingForm.mandatoryFile) {
+                            this.notify.error(this.translate.instant('lang.mandatoryFile'));
+                            resolve();
+                        } else {
+                            if (this.indexingForm.isValidForm()) {
+                                this.currentResourceInformations.categoryId = !this.functions.empty(this.currentCategory) ? this.currentCategory : this.currentResourceInformations.categoryId;
+                                this.prevCategory = this.currentResourceInformations.categoryId;
+                                this.actionService.loading = false;
+                            }
+                            this.markResourceAsTransferredPending();
+                            const saved = await this.indexingForm.saveData();
+                            if (!saved) {
+                                resolve();
+                                return;
+                            }
+                            if (this.shouldReturnToBasketAfterSave()) {
+                                this.router.navigate([`/basketList/users/${this.currentUserId}/groups/${this.currentGroupId}/baskets/${this.currentBasketId}`]);
+                                resolve();
+                                return;
+                            }
+                            if (!this.detailMode) {
+                                await this.getActions();
+                            }
+                            this.reloadOrLeaveAfterSave();
+                            resolve();
                         }
-                        await this.indexingForm.saveData();
-                        if (!this.detailMode) {
-                            await this.getActions();
-                        }
-                        setTimeout(() => {
-                            this.loadResource(false);
-                        }, 400);
-                    }
-                })
-            ).subscribe();
+                    }),
+                    catchError((err: any) => {
+                        this.notify.handleErrors(err);
+                        resolve();
+                        return of(false);
+                    })
+                ).subscribe();
+            });
         } else if (this.currentTool === 'diffusionList' && this.appDiffusionsList !== undefined) {
             await this.appDiffusionsList.saveListinstance();
             this.loadBadges();
@@ -1053,6 +1107,31 @@ export class ProcessComponent implements OnInit, OnDestroy {
         } else {
             return true;
         }
+    }
+
+    private reloadOrLeaveAfterSave() {
+        setTimeout(() => {
+            if (this.shouldReturnToBasketAfterSave()) {
+                this.router.navigate([`/basketList/users/${this.currentUserId}/groups/${this.currentGroupId}/baskets/${this.currentBasketId}`]);
+            } else {
+                this.loadResource(false);
+            }
+        }, 400);
+    }
+
+    private shouldReturnToBasketAfterSave(): boolean {
+        return !this.detailMode && Number(this.selectedAction?.id) === 540;
+    }
+
+    private markResourceAsTransferredPending(): void {
+        if (this.detailMode || this.functions.empty(this.currentResourceInformations?.resId)) {
+            return;
+        }
+
+        window.sessionStorage.setItem(ProcessComponent.IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY, JSON.stringify({
+            until: Date.now() + 15000,
+            resId: this.currentResourceInformations.resId
+        }));
     }
 
     toggleFollow() {
@@ -1119,6 +1198,9 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     isToolEnabled(id: string) {
+        if (this.isReadOnlyTreated() && ['attachments', 'diffusionList', 'visaCircuit', 'opinionCircuit'].includes(id)) {
+            return false;
+        }
         if (id === 'history') {
             if (!this.privilegeService.hasCurrentUserPrivilege('view_full_history') && !this.privilegeService.hasCurrentUserPrivilege('view_doc_history')) {
                 return false;
@@ -1146,6 +1228,9 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     hasActions() {
+        if (this.isReadOnlyTreated()) {
+            return false;
+        }
         return this.loading ? true : this.actionsList.filter(action => action.categoryUse.indexOf(this.currentResourceInformations.categoryId) > -1).length > 0;
     }
 
@@ -1155,6 +1240,9 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     canLaunchAction() {
+        if (this.isReadOnlyTreated()) {
+            return;
+        }
         const currentActions: any[] = this.actionsList.filter((action: any) => action.categoryUse.indexOf(this.currentResourceInformations.categoryId) > -1);
         if (currentActions.length > 0 && currentActions.find((action: any) => action.id === this.selectedAction.id) !== undefined) {
             this.actionService.loading = true;
