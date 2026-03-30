@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ViewContainerRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ViewContainerRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
@@ -14,7 +14,7 @@ import { catchError, of, tap } from 'rxjs';
     templateUrl: 'home.component.html',
     styleUrls: ['home.component.scss']
 })
-export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
+export class HomeComponent implements OnInit, AfterViewInit {
     @ViewChild('remotePlugin2', { read: ViewContainerRef, static: true }) remotePlugin2: ViewContainerRef;
 
     readonly evolutionChartWidth: number = 1600;
@@ -24,6 +24,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         right: 4,
         bottom: 58,
         left: 52
+    };
+    readonly homeChartPalette: string[] = ['#9fd9c6', '#9ec5fe', '#f8b4d9', '#b7e4c7', '#c7d2fe', '#fbcfe8'];
+    readonly pieChartScheme = {
+        domain: this.homeChartPalette
+    };
+    readonly barChartScheme = {
+        domain: ['#9ec5fe', '#9fd9c6', '#f8b4d9', '#b7e4c7', '#c7d2fe', '#f9c0d8']
     };
 
     loading: boolean = false;
@@ -48,6 +55,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     chartEvolutionDayData: any[] = [];
     chartEvolutionWeekData: any[] = [];
     evolutionMode: 'day' | 'week' = 'week';
+    currentEvolutionSeries: any[] = [];
+    currentEvolutionPoints: any[] = [];
+    evolutionMaxValue: number = 1;
+    evolutionGridValues: number[] = [];
+    evolutionChartPoints: any[] = [];
+    evolutionPolyline: string = '';
+    evolutionAreaPath: string = '';
     statsLoading: boolean = false;
     statsLoaded: boolean = false;
 
@@ -57,13 +71,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         public dialog: MatDialog,
         public appService: AppService,
         public functions: FunctionsService,
-        private notify: NotificationService,
-        private headerService: HeaderService,
-        private featureTourService: FeatureTourService,
-        private sanitizer: DomSanitizer
+        private readonly notify: NotificationService,
+        private readonly headerService: HeaderService,
+        private readonly featureTourService: FeatureTourService,
+        private readonly sanitizer: DomSanitizer
     ) { }
 
-    async ngOnInit(): Promise<void> {
+    ngOnInit(): void {
         this.headerService.setHeader(this.translate.instant('lang.home'));
 
         this.http.get('../rest/home?light=1').pipe(
@@ -85,9 +99,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         if (!this.featureTourService.isComplete()) {
             this.featureTourService.init();
         }
-    }
-
-    ngOnDestroy(): void {
     }
 
     prepareHomeStats(data: any) {
@@ -112,10 +123,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
         const totalResources = normalized.reduce((sum: number, basket: any) => sum + basket.count, 0);
         const nonEmptyBaskets = normalized.filter((basket: any) => basket.count > 0).length;
-        const topBaskets = normalized
-            .sort((a: any, b: any) => b.count - a.count)
-            .slice(0, 6);
+        const sortedBaskets = [...normalized];
+        sortedBaskets.sort((a: any, b: any) => b.count - a.count);
+        const topBaskets = sortedBaskets.slice(0, 6);
         const maxBasketCount = topBaskets.length > 0 ? Math.max(...topBaskets.map((item: any) => item.count), 1) : 1;
+
+        topBaskets.forEach((basket: any) => {
+            basket.width = `${Math.max((basket.count / maxBasketCount) * 100, basket.count > 0 ? 8 : 4)}%`;
+            basket.barColor = this.homeChartPalette[topBaskets.indexOf(basket) % this.homeChartPalette.length];
+        });
 
         this.homeStats = {
             totalBaskets: normalized.length,
@@ -124,11 +140,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             topBaskets,
             maxBasketCount
         };
-    }
-
-    getBarWidth(count: number) {
-        const max = this.homeStats.maxBasketCount || 1;
-        return `${Math.max((count / max) * 100, count > 0 ? 8 : 4)}%`;
     }
 
     prepareHomeCharts(statistics: any) {
@@ -147,57 +158,52 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             name: 'Courriers / semaine',
             series: evolutionWeek
         }];
+        this.updateEvolutionComputedData();
     }
 
-    getCurrentEvolutionSeries() {
-        return this.evolutionMode === 'day' ? this.chartEvolutionDayData : this.chartEvolutionWeekData;
-    }
-
-    getCurrentEvolutionPoints(): any[] {
-        const series = this.getCurrentEvolutionSeries()?.[0]?.series;
-        return Array.isArray(series) ? series : [];
-    }
-
-    getEvolutionMaxValue(): number {
-        const values = this.getCurrentEvolutionPoints().map((item: any) => Number(item?.value || 0));
-        return values.length > 0 ? Math.max(...values, 1) : 1;
+    setEvolutionMode(mode: 'day' | 'week') {
+        if (this.evolutionMode === mode) {
+            return;
+        }
+        this.evolutionMode = mode;
+        this.updateEvolutionComputedData();
     }
 
     getEvolutionBarHeight(value: any): string {
-        const max = this.getEvolutionMaxValue();
+        const max = this.evolutionMaxValue;
         const numericValue = Number(value || 0);
         const ratio = max > 0 ? numericValue / max : 0;
         return `${Math.max(ratio * 100, numericValue > 0 ? 6 : 2)}%`;
     }
 
     isEvolutionPeak(value: any): boolean {
-        return Number(value || 0) === this.getEvolutionMaxValue();
-    }
-
-    getEvolutionGridValues(): number[] {
-        const max = this.getEvolutionMaxValue();
-        const stepCount = 4;
-        return Array.from({ length: stepCount + 1 }, (_, index) => Math.round((max / stepCount) * index));
+        return Number(value || 0) === this.evolutionMaxValue;
     }
 
     getEvolutionGridY(value: number): number {
         const chartHeight = this.evolutionChartHeight - this.evolutionChartPadding.top - this.evolutionChartPadding.bottom;
-        const max = this.getEvolutionMaxValue();
+        const max = this.evolutionMaxValue;
         const ratio = max > 0 ? value / max : 0;
         return this.evolutionChartHeight - this.evolutionChartPadding.bottom - (chartHeight * ratio);
     }
 
-    getEvolutionChartPoints(): any[] {
-        const points = this.getCurrentEvolutionPoints();
+    updateEvolutionComputedData() {
+        this.currentEvolutionSeries = this.evolutionMode === 'day' ? this.chartEvolutionDayData : this.chartEvolutionWeekData;
+        const series = this.currentEvolutionSeries?.[0]?.series;
+        this.currentEvolutionPoints = Array.isArray(series) ? series : [];
+        const values = this.currentEvolutionPoints.map((item: any) => Number(item?.value || 0));
+        this.evolutionMaxValue = values.length > 0 ? Math.max(...values, 1) : 1;
+        const stepCount = 4;
+        this.evolutionGridValues = Array.from({ length: stepCount + 1 }, (_, index) => Math.round((this.evolutionMaxValue / stepCount) * index));
+
         const chartWidth = this.evolutionChartWidth - this.evolutionChartPadding.left - this.evolutionChartPadding.right;
         const chartHeight = this.evolutionChartHeight - this.evolutionChartPadding.top - this.evolutionChartPadding.bottom;
-        const max = this.getEvolutionMaxValue();
-        const count = points.length;
+        const count = this.currentEvolutionPoints.length;
         const stepX = count > 1 ? chartWidth / (count - 1) : 0;
 
-        return points.map((point: any, index: number) => {
+        this.evolutionChartPoints = this.currentEvolutionPoints.map((point: any, index: number) => {
             const numericValue = Number(point?.value || 0);
-            const ratio = max > 0 ? numericValue / max : 0;
+            const ratio = this.evolutionMaxValue > 0 ? numericValue / this.evolutionMaxValue : 0;
             const x = this.evolutionChartPadding.left + (stepX * index);
             const y = this.evolutionChartHeight - this.evolutionChartPadding.bottom - (chartHeight * ratio);
 
@@ -209,16 +215,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
                 rawLabel: point?.name
             };
         });
-    }
+        this.evolutionPolyline = this.evolutionChartPoints.map((point: any) => `${point.x},${point.y}`).join(' ');
 
-    getEvolutionPolyline(): string {
-        return this.getEvolutionChartPoints().map((point: any) => `${point.x},${point.y}`).join(' ');
-    }
-
-    getEvolutionAreaPath(): string {
-        const points = this.getEvolutionChartPoints();
+        const points = this.evolutionChartPoints;
         if (points.length === 0) {
-            return '';
+            this.evolutionAreaPath = '';
+            return;
         }
 
         const baselineY = this.evolutionChartHeight - this.evolutionChartPadding.bottom;
@@ -226,7 +228,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         const lastPoint = points[points.length - 1];
         const linePath = points.map((point: any) => `L ${point.x} ${point.y}`).join(' ');
 
-        return `M ${firstPoint.x} ${baselineY} ${linePath} L ${lastPoint.x} ${baselineY} Z`;
+        this.evolutionAreaPath = `M ${firstPoint.x} ${baselineY} ${linePath} L ${lastPoint.x} ${baselineY} Z`;
     }
 
     loadHomeStatistics() {
@@ -265,7 +267,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
             }
         }
 
-        const weekMatch = raw.match(/S\s?(\d{1,2})$/i) || raw.match(/W(\d{1,2})$/i);
+        const weekMatch = /S\s?(\d{1,2})$/i.exec(raw) || /W(\d{1,2})$/i.exec(raw);
         if (weekMatch) {
             return `S${String(weekMatch[1]).padStart(2, '0')}`;
         }

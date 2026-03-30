@@ -155,9 +155,9 @@
                     (loadingFormEndEvent)="triggerProcessAction()" (reloadBadge)="refreshBadge(1,'linkedResources')"
                     (retrieveDocumentEvent)="appDocumentViewer.saveDocService()" (afterSaveEvent)="refreshData()">
                 </app-indexing-form>
-                <div style="position: sticky;bottom: 0px;text-align:right;">
+                <div class="floating-save-container">
                     <button mat-fab [title]="'lang.saveModifications' | translate" *ngIf="isToolModified() && !isReadOnlyTreated()"
-                        (click)="saveTool()" color="accent">
+                        type="button" class="floating-save-button" (click)="$event.stopPropagation(); saveTool(true)" color="accent">
                         <mat-icon style="height:auto;font-size:20px;" class="fas fa-check"></mat-icon>
                     </button>
                 </div>

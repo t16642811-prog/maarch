@@ -1036,8 +1036,26 @@ export class ProcessComponent implements OnInit, OnDestroy {
         }, 0);
     }
 
-    async saveTool() {
+    async saveTool(stayOnResource: boolean = false) {
         if (this.currentTool === 'info' && this.indexingForm !== undefined) {
+            if (stayOnResource) {
+                if (this.indexingForm.isValidForm()) {
+                    this.currentResourceInformations.categoryId = !this.functions.empty(this.currentCategory) ? this.currentCategory : this.currentResourceInformations.categoryId;
+                    this.prevCategory = this.currentResourceInformations.categoryId;
+                    this.actionService.loading = false;
+                }
+
+                const saved = await this.indexingForm.saveData();
+                if (!saved) {
+                    return;
+                }
+                if (!this.detailMode) {
+                    await this.getActions();
+                }
+                this.reloadOrLeaveAfterSave();
+                return;
+            }
+
             return new Promise<void>((resolve) => {
                 this.appDocumentViewer.getFile().pipe(
                     take(1),
@@ -1057,7 +1075,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
                                 resolve();
                                 return;
                             }
-                            if (this.shouldReturnToBasketAfterSave()) {
+                            if (!stayOnResource && this.shouldReturnToBasketAfterSave()) {
                                 this.router.navigate([`/basketList/users/${this.currentUserId}/groups/${this.currentGroupId}/baskets/${this.currentBasketId}`]);
                                 resolve();
                                 return;

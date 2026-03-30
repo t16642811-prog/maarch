@@ -530,6 +530,20 @@ class ResourceListController
         )";
     }
 
+    private static function getVisibleResourcesForBasket(array $args): array
+    {
+        $whereClause = PreparedClauseController::getPreparedClause(
+            ['clause' => $args['basketClause'], 'userId' => $args['userId']]
+        );
+        $persistentClause = self::getPersistentVisibilityWhereClause((int)$args['currentUserId']);
+
+        return ResModel::getOnView([
+            'select' => $args['select'],
+            'where'  => ["({$whereClause} OR {$persistentClause})", 'res_view_letterbox.res_id in (?)'],
+            'data'   => [$args['resources']]
+        ]);
+    }
+
     /**
      * @param Request $request
      * @param Response $response
@@ -680,13 +694,12 @@ class ResourceListController
         $actionRequiredFields = $action['parameters']['requiredFields'] ?? [];
         $fillRequiredFields = $action['parameters']['fillRequiredFields'] ?? [];
 
-        $whereClause = PreparedClauseController::getPreparedClause(
-            ['clause' => $basket['basket_clause'], 'userId' => $aArgs['userId']]
-        );
-        $resources = ResModel::getOnView([
-            'select' => ['res_id', 'locker_user_id', 'locker_time'],
-            'where'  => [$whereClause, 'res_view_letterbox.res_id in (?)'],
-            'data'   => [$body['resources']]
+        $resources = self::getVisibleResourcesForBasket([
+            'basketClause'  => $basket['basket_clause'],
+            'userId'        => $aArgs['userId'],
+            'currentUserId' => $GLOBALS['id'],
+            'resources'     => $body['resources'],
+            'select'        => ['res_id', 'locker_user_id', 'locker_time']
         ]);
 
         $resourcesInBasket = array_column($resources, 'res_id');
@@ -845,13 +858,12 @@ class ResourceListController
 
         $basket = BasketModel::getById(['id' => $aArgs['basketId'], 'select' => ['basket_clause']]);
 
-        $whereClause = PreparedClauseController::getPreparedClause(
-            ['clause' => $basket['basket_clause'], 'userId' => $aArgs['userId']]
-        );
-        $resources = ResModel::getOnView([
-            'select' => ['res_id', 'locker_user_id', 'locker_time'],
-            'where'  => [$whereClause, 'res_view_letterbox.res_id in (?)'],
-            'data'   => [$body['resources']]
+        $resources = self::getVisibleResourcesForBasket([
+            'basketClause'  => $basket['basket_clause'],
+            'userId'        => $aArgs['userId'],
+            'currentUserId' => $GLOBALS['id'],
+            'resources'     => $body['resources'],
+            'select'        => ['res_id', 'locker_user_id', 'locker_time']
         ]);
 
         $resourcesInBasket = array_column($resources, 'res_id');
@@ -922,13 +934,12 @@ class ResourceListController
 
         $basket = BasketModel::getById(['id' => $aArgs['basketId'], 'select' => ['basket_clause']]);
 
-        $whereClause = PreparedClauseController::getPreparedClause(
-            ['clause' => $basket['basket_clause'], 'userId' => $aArgs['userId']]
-        );
-        $resources = ResModel::getOnView([
-            'select' => ['res_id', 'locker_user_id', 'locker_time'],
-            'where'  => [$whereClause, 'res_view_letterbox.res_id in (?)'],
-            'data'   => [$body['resources']]
+        $resources = self::getVisibleResourcesForBasket([
+            'basketClause'  => $basket['basket_clause'],
+            'userId'        => $aArgs['userId'],
+            'currentUserId' => $GLOBALS['id'],
+            'resources'     => $body['resources'],
+            'select'        => ['res_id', 'locker_user_id', 'locker_time']
         ]);
 
         $resourcesInBasket = array_column($resources, 'res_id');
@@ -987,13 +998,12 @@ class ResourceListController
 
         $basket = BasketModel::getById(['id' => $args['basketId'], 'select' => ['basket_clause']]);
 
-        $whereClause = PreparedClauseController::getPreparedClause(
-            ['clause' => $basket['basket_clause'], 'userId' => $args['userId']]
-        );
-        $resources = ResModel::getOnView([
-            'select' => ['res_id', 'locker_user_id', 'locker_time'],
-            'where'  => [$whereClause, 'res_view_letterbox.res_id in (?)'],
-            'data'   => [$body['resources']]
+        $resources = self::getVisibleResourcesForBasket([
+            'basketClause'  => $basket['basket_clause'],
+            'userId'        => $args['userId'],
+            'currentUserId' => $GLOBALS['id'],
+            'resources'     => $body['resources'],
+            'select'        => ['res_id', 'locker_user_id', 'locker_time']
         ]);
 
         $resourcesInBasket = array_column($resources, 'res_id');

@@ -99,7 +99,7 @@
 
 .graph-card-evolution {
     background:
-        linear-gradient(180deg, rgba(8, 147, 169, 0.03) 0%, rgba(8, 147, 169, 0) 100%),
+        linear-gradient(180deg, rgba(158, 197, 254, 0.12) 0%, rgba(248, 180, 217, 0.04) 52%, rgba(159, 217, 198, 0.03) 100%),
         #ffffff;
 }
 
@@ -162,8 +162,8 @@
 }
 
 .graph-mode-switch button.active {
-    background: #0893a9;
-    color: #fff;
+    background: linear-gradient(135deg, #9ec5fe 0%, #f8b4d9 100%);
+    color: #244b5a;
     box-shadow: none;
 }
 
@@ -210,8 +210,8 @@
     min-width: 110px;
     padding: 10px 12px;
     border-radius: 12px;
-    background: #f7fbfd;
-    border: 1px solid #dbe9f1;
+    background: linear-gradient(180deg, #f8fcff 0%, #fff7fb 100%);
+    border: 1px solid #dbe7f5;
 }
 
 .evolution-summary-label {
@@ -236,7 +236,7 @@
     border: 1px solid #dce8f1;
     border-radius: 16px;
     background:
-        linear-gradient(180deg, rgba(248, 252, 254, 0.96) 0%, rgba(255, 255, 255, 1) 100%);
+        linear-gradient(180deg, rgba(248, 252, 254, 0.96) 0%, rgba(255, 248, 252, 0.98) 55%, rgba(245, 253, 250, 1) 100%);
     overflow: hidden;
     width: min(100%, 1240px);
     margin: 0 auto;
@@ -249,7 +249,7 @@
 }
 
 .evolution-grid-line {
-    stroke: #d7e5ef;
+    stroke: #dbe7f5;
     stroke-width: 1;
 }
 

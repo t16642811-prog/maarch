@@ -221,7 +221,6 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
 
         if (Object.keys(this.lastBasketCounters).length === 0) {
             this.seedBasketNotificationsSummary(baskets);
-            this.refreshDetailedMailNotifications(baskets, false);
             this.lastBasketCounters = basketCounters;
             return;
         }
@@ -231,10 +230,25 @@ export class HeaderRightComponent implements OnInit, OnDestroy {
             return;
         }
 
-        // Refresh detailed notifications at each poll.
-        // Relying only on basket counters misses workflow transitions where
-        // one mail enters a basket while another leaves it during the same interval.
-        this.refreshDetailedMailNotifications(baskets, true);
+        if (this.notificationsDetailLoaded) {
+            this.refreshDetailedMailNotifications(baskets, true);
+        } else {
+            const delta = baskets.reduce((sum: number, basket: any) => {
+                const key = this.getBasketNotificationKey(basket);
+                const previousCount = Number(this.lastBasketCounters[key] || 0);
+                const currentCount = Number(basketCounters[key] || 0);
+                return sum + Math.max(currentCount - previousCount, 0);
+            }, 0);
+
+            if (delta > 0) {
+                this.pushNotification({
+                    type: 'mail',
+                    title: delta === 1 ? 'Nouveau courrier reÃ§u' : `${delta} nouveaux courriers reÃ§us`,
+                    message: delta === 1 ? 'Une bannette a reÃ§u un nouveau courrier' : 'Plusieurs bannettes ont reÃ§u de nouveaux courriers',
+                    createdAt: new Date()
+                });
+            }
+        }
 
         this.lastBasketCounters = basketCounters;
     }

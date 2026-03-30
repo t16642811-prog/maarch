@@ -494,6 +494,7 @@ class PrivilegeController
         $currentUser = UserModel::getById(['id' => $args['userId'], 'select' => ['id', 'user_id']]);
 
         $basketsClause = '';
+        $hasEligibleProcessBasket = false;
 
         $groups = UserGroupModel::get(
             ['select' => ['group_id'], 'where' => ['user_id = ?'], 'data' => [$currentUser['id']]]
@@ -516,6 +517,7 @@ class PrivilegeController
             $baskets = GroupBasketModel::get(['select' => ['basket_id'], 'where' => $where, 'data' => $data]);
             $baskets = array_column($baskets, 'basket_id');
             if (!empty($baskets)) {
+                $hasEligibleProcessBasket = true;
                 $clauses = BasketModel::get(
                     ['select' => ['basket_clause'], 'where' => ['basket_id in (?)'], 'data' => [$baskets]]
                 );
@@ -546,6 +548,7 @@ class PrivilegeController
             }
             $hasSB = GroupBasketModel::get(['select' => [1], 'where' => $where, 'data' => $data]);
             if (!empty($hasSB)) {
+                $hasEligibleProcessBasket = true;
                 $basketClause = PreparedClauseController::getPreparedClause(
                     ['clause' => $basket['basket_clause'], 'userId' => $basket['owner_user_id']]
                 );
@@ -561,7 +564,18 @@ class PrivilegeController
                 ['select' => [1], 'where' => ['res_id = ?', "({$basketsClause})"], 'data' => [$args['resId']]]
             );
             if (empty($res)) {
-                return false;
+                if (!$hasEligibleProcessBasket) {
+                    return false;
+                }
+
+                $persistentResource = DatabaseModel::select([
+                    'select' => [1],
+                    'table'  => ['basket_persistent_mode'],
+                    'where'  => ['user_id = ?', 'res_id = ?', 'is_persistent = ?'],
+                    'data'   => [$args['userId'], $args['resId'], 'Y']
+                ]);
+
+                return !empty($persistentResource);
             }
         } catch (Exception $e) {
             return false;

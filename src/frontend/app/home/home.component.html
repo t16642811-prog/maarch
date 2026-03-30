@@ -34,7 +34,7 @@
                             <div class="stats-bar-row" *ngFor="let basket of homeStats.topBaskets">
                                 <div class="stats-bar-label" [title]="basket.name">{{ basket.name }}</div>
                                 <div class="stats-bar-track">
-                                    <div class="stats-bar-fill" [style.width]="getBarWidth(basket.count)" [style.background]="'#4FC3F7'"></div>
+                                    <div class="stats-bar-fill" [style.width]="basket.width" [style.background]="basket.barColor"></div>
                                 </div>
                                 <div class="stats-bar-value">{{ basket.count }}</div>
                             </div>
@@ -42,22 +42,16 @@
                     </div>
                 </div>
 
-                <div class="stats-chart-card" *ngIf="statsLoading && !(chartPriorityData.length || chartDoctypeData.length || getCurrentEvolutionSeries()[0]?.series?.length)">
+                <div class="stats-chart-card" *ngIf="statsLoading && !(chartPriorityData.length || chartDoctypeData.length || currentEvolutionPoints.length)">
                     <div class="stats-chart-title">Chargement des statistiques...</div>
                 </div>
 
-                <div class="stats-chart-card" *ngIf="!statsLoading && !statsLoaded">
-                    <div class="stats-chart-title">Statistiques avancées</div>
-                    <button mat-stroked-button color="primary" (click)="loadHomeStatistics()">
-                        Charger les graphes
-                    </button>
-                </div>
-
-                <div class="home-graphs" *ngIf="chartPriorityData.length || chartDoctypeData.length || getCurrentEvolutionSeries()[0]?.series?.length">
+                <div class="home-graphs" *ngIf="chartPriorityData.length || chartDoctypeData.length || currentEvolutionPoints.length">
                     <div class="graph-card graph-card-pie" *ngIf="chartPriorityData.length > 0">
                         <div class="graph-title">Statistiques par priorité</div>
                         <ngx-charts-pie-chart
                             [results]="chartPriorityData"
+                            [scheme]="pieChartScheme"
                             [legend]="false"
                             [labels]="false"
                             [doughnut]="true"
@@ -69,6 +63,7 @@
                         <div class="graph-title">Statistiques par type de courrier</div>
                         <ngx-charts-bar-vertical
                             [results]="chartDoctypeData"
+                            [scheme]="barChartScheme"
                             [legend]="false"
                             [xAxis]="true"
                             [yAxis]="true"
@@ -80,23 +75,23 @@
                         </ngx-charts-bar-vertical>
                     </div>
 
-                    <div class="graph-card graph-card-wide graph-card-evolution" *ngIf="getCurrentEvolutionSeries()[0]?.series?.length">
+                    <div class="graph-card graph-card-wide graph-card-evolution" *ngIf="currentEvolutionPoints.length">
                         <div class="graph-head">
                             <div class="graph-title">Evolution des courriers</div>
                             <div class="graph-mode-switch">
-                                <button type="button" [class.active]="evolutionMode === 'day'" (click)="evolutionMode = 'day'">Jour</button>
-                                <button type="button" [class.active]="evolutionMode === 'week'" (click)="evolutionMode = 'week'">Semaine</button>
+                                <button type="button" [class.active]="evolutionMode === 'day'" (click)="setEvolutionMode('day')">Jour</button>
+                                <button type="button" [class.active]="evolutionMode === 'week'" (click)="setEvolutionMode('week')">Semaine</button>
                             </div>
                         </div>
 
                         <div class="evolution-summary">
                             <div class="evolution-summary-item">
                                 <span class="evolution-summary-label">Periodes</span>
-                                <strong class="evolution-summary-value">{{ getCurrentEvolutionPoints().length }}</strong>
+                                <strong class="evolution-summary-value">{{ currentEvolutionPoints.length }}</strong>
                             </div>
                             <div class="evolution-summary-item">
                                 <span class="evolution-summary-label">Pic</span>
-                                <strong class="evolution-summary-value">{{ getEvolutionMaxValue() }}</strong>
+                                <strong class="evolution-summary-value">{{ evolutionMaxValue }}</strong>
                             </div>
                             <div class="evolution-summary-item">
                                 <span class="evolution-summary-label">Mode</span>
@@ -110,7 +105,7 @@
                                 [attr.viewBox]="'0 0 ' + evolutionChartWidth + ' ' + evolutionChartHeight"
                                 preserveAspectRatio="none">
                                 <g class="evolution-grid">
-                                    <ng-container *ngFor="let gridValue of getEvolutionGridValues()">
+                                    <ng-container *ngFor="let gridValue of evolutionGridValues">
                                         <line
                                             class="evolution-grid-line"
                                             [attr.x1]="evolutionChartPadding.left"
@@ -127,11 +122,11 @@
                                     </ng-container>
                                 </g>
 
-                                <path class="evolution-area" [attr.d]="getEvolutionAreaPath()"></path>
-                                <polyline class="evolution-line" [attr.points]="getEvolutionPolyline()"></polyline>
+                                <path class="evolution-area" [attr.d]="evolutionAreaPath"></path>
+                                <polyline class="evolution-line" [attr.points]="evolutionPolyline"></polyline>
 
                                 <g class="evolution-points">
-                                    <ng-container *ngFor="let point of getEvolutionChartPoints(); let i = index">
+                                    <ng-container *ngFor="let point of evolutionChartPoints; let i = index">
                                         <line
                                             class="evolution-guide-line"
                                             [attr.x1]="point.x"
