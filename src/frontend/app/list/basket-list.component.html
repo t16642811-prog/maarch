@@ -70,7 +70,7 @@
                                 <td mat-cell *matCellDef="let row; let rowIndex = index"
                                     style="padding:0;border-top: solid 1px rgba(0, 0, 0, 0.12);"
                                     [class.selected-data]="row.checked">
-<div class="main-info">
+<div class="main-info" (click)="launch(defaultAction,row);">
                                         <span class="mail-col-check">
                                             <mat-checkbox color="primary" [checked]="row.checked"
                                                 (change)="toggleRes($event,row)" (click)="$event.stopPropagation();">
@@ -81,8 +81,8 @@
                                             [title]="row.mailTracking === true ? ('lang.untrackThisMail' | translate) : ('lang.trackThisMail' | translate)">
                                             <mat-icon [ngClass]="[row.mailTracking === true ? 'fas fa-star' : 'far fa-star']"></mat-icon>
                                         </button>
-                                        <span *ngIf="!appService.getViewMode()" class="main-info-status" (click)="launch(defaultAction,row);">
-                                            <mat-icon *ngIf="row.isLocked !== true" title="{{row.statusLabel}}"
+                                        <span *ngIf="!appService.getViewMode()" class="main-info-status">
+                                            <mat-icon *ngIf="row.isLocked !== true" [title]="getStatusTooltip(row)"
                                                 [ngStyle]="{'color': row.anamTreated ? '#17a85d' : row.priorityColor}"
                                                 [class.anam-treated-icon]="row.anamTreated"
                                                 color="primary"
@@ -92,7 +92,7 @@
                                             <mat-icon *ngIf="row.isLocked === true" title="{{'lang.warnLockResInProgress' | translate}} : {{row.locker}}" style="color: red;" class="fa fa-lock fa-2x">
                                             </mat-icon>
                                         </span>
-                                        <span *ngIf="!appService.getViewMode()" class="main-info-data mail-col-chrono" (click)="launch(defaultAction,row);">
+                                        <span *ngIf="!appService.getViewMode()" class="main-info-data mail-col-chrono">
                                             <ng-container
                                                 *ngIf="row.chrono == ('lang.undefined' | translate) && row.barcode != ('lang.undefined' | translate)">
                                                 <span style="color: rgba(0,0,0,0.4);font-size: 90%;"><i
@@ -104,21 +104,25 @@
                                             </ng-container>
                                         </span>
                                         <span class="main-info-data mail-col-sender"
-                                            title="{{ row.senderDisplay }}" (click)="launch(defaultAction,row);">
+                                            title="{{ row.senderDisplay }}">
                                              {{ row.senderDisplay }}
                                         </span>
                                         <span class="main-info-data mail-col-subject"
                                             [class.undefined]="row.subject == ('lang.undefined' | translate)"
-                                            title="{{row.subject}}" (click)="launch(defaultAction,row);">{{row.subject}}</span>
+                                            title="{{row.subject}}">{{row.subject}}</span>
                                         <span class="main-info-data mail-col-date"
-                                            (click)="launch(defaultAction,row);">
+                                            >
                                             
                                             <ng-container *ngIf="row.documentDateDisplay; else noDocDate">
                                                 {{ row.documentDateDisplay | date:'dd/MM/yyyy HH:mm' }}
                                             </ng-container>
                                             <ng-template #noDocDate>{{'lang.undefined' | translate}}</ng-template>
                                         </span>
-                                        <span *ngIf="row.anamTreated" class="anam-treated-badge" title="Courrier traitÃ©">Courrier traitÃ©</span>
+                                        <span *ngIf="row.anamTreated && getRowTreatedDate(row)"
+                                            class="anam-treated-badge"
+                                            [title]="getStatusTooltip(row)">
+                                            {{ getRowTreatedDate(row) | date:'dd/MM/yyyy HH:mm' }}
+                                        </span>
                                         <span class="main-info-action">
     <button mat-icon-button title="{{row.hasDocument ? ('lang.viewResource' | translate) : ('lang.noDocument' | translate)}}" (click)="$event.stopPropagation();viewDocument(row)"
         (mouseenter)="viewThumbnail(row);" (mouseleave)="closeThumbnail();"
@@ -136,6 +140,7 @@
                                 (contextmenu)="open($event,row);" class="rowData" [class.locked]="row.isLocked == true"
                                 [class.read]="row.is_read === 1 || row.is_read === '1'"
                                 [class.unread]="row.is_read !== 1 && row.is_read !== '1'"
+                                [class.anam-treated]="row.anamTreated"
                                 cdkDrag (cdkDragStarted)="selectSpecificRes(row);" [cdkDragData]="row" >
                                 <div class="example-custom-placeholder" *cdkDragPlaceholder></div>
                                 <div class="dragPreview" *cdkDragPreview><i class="fas fa-envelope-open-text fa-2x"></i><br/>{{'lang.classifyInFolder' | translate}} : <b>{{row.chrono}}</b></div>

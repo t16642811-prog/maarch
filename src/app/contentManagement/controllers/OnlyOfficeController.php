@@ -37,6 +37,37 @@ use Template\models\TemplateModel;
 
 class OnlyOfficeController
 {
+    private static function isWindows(): bool
+    {
+        return PHP_OS_FAMILY === 'Windows';
+    }
+
+    private static function shellEscape(string $value): string
+    {
+        if (self::isWindows()) {
+            return '"' . str_replace('"', '\"', $value) . '"';
+        }
+
+        return escapeshellarg($value);
+    }
+
+    private static function getGhostscriptBinary(): ?string
+    {
+        $candidates = [
+            'C:\\Program Files\\gs\\gs10.07.0\\bin\\gswin64c.exe',
+            'C:\\Program Files\\gs\\gs10.06.0\\bin\\gswin64c.exe',
+            'C:\\Program Files\\gs\\gs10.05.1\\bin\\gswin64c.exe'
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
     // List of format convertible by OnlyOffice https://api.onlyoffice.com/editors/conversionapi
     private const CONVERTIBLE_EXTENSIONS = [
         'doc',
@@ -644,11 +675,27 @@ class OnlyOfficeController
         }
 
         $tmpFilename = $tmpPath . "tmp_{$GLOBALS['id']}_" . rand() . ".pdf";
-        $command = "gs -dCompatibilityLevel=1.4 -q -sDEVICE=pdfwrite -dNOPAUSE -dQUIET -dBATCH -o " .
-            "{$tmpFilename} {$filename} 2>&1; mv {$tmpFilename} {$filename}";
-        exec($command, $output, $return);
-        if (!empty($output)) {
-            return ['errors' => implode(",", $output)];
+        if (self::isWindows()) {
+            $ghostscript = self::getGhostscriptBinary();
+            if (!empty($ghostscript)) {
+                $command = self::shellEscape($ghostscript)
+                    . ' -dCompatibilityLevel=1.4 -q -sDEVICE=pdfwrite -dNOPAUSE -dQUIET -dBATCH -o '
+                    . self::shellEscape($tmpFilename)
+                    . ' '
+                    . self::shellEscape($filename);
+                exec($command . ' 2>&1', $output, $return);
+                if ($return !== 0) {
+                    return ['errors' => implode(",", $output)];
+                }
+                rename($tmpFilename, $filename);
+            }
+        } else {
+            $command = "gs -dCompatibilityLevel=1.4 -q -sDEVICE=pdfwrite -dNOPAUSE -dQUIET -dBATCH -o " .
+                "{$tmpFilename} {$filename} 2>&1; mv {$tmpFilename} {$filename}";
+            exec($command, $output, $return);
+            if (!empty($output)) {
+                return ['errors' => implode(",", $output)];
+            }
         }
 
         return true;

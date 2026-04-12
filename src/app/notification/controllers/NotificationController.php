@@ -27,6 +27,23 @@ use SrcCore\models\CoreConfigModel;
 
 class NotificationController
 {
+    protected static function getApplicationRootPath(): string
+    {
+        return dirname(__DIR__, 4) . DIRECTORY_SEPARATOR;
+    }
+
+    protected static function getNotificationScriptsRootPath(): string
+    {
+        $customId = CoreConfigModel::getCustomId();
+        $rootPath = self::getApplicationRootPath();
+
+        if (!empty($customId)) {
+            return $rootPath . 'custom' . DIRECTORY_SEPARATOR . $customId . DIRECTORY_SEPARATOR;
+        }
+
+        return $rootPath;
+    }
+
     /**
      * @param Request $request
      * @param Response $response
@@ -93,21 +110,11 @@ class NotificationController
         }
         $filename .= '_' . $notification['notification_id'] . '.sh';
 
-        $corePath = str_replace(
-            'custom/' . $customId . '/src/app/notification/controllers',
-            '',
-            __DIR__
-        );
-        $corePath = str_replace('src/app/notification/controllers', '', $corePath);
-        if ($customId != '') {
-            $pathToFollow = $corePath . 'custom/' . $customId . '/';
-        } else {
-            $pathToFollow = $corePath;
-        }
+        $pathToFollow = self::getNotificationScriptsRootPath();
 
         $notification['scriptcreated'] = false;
 
-        if (file_exists($pathToFollow . 'bin/notification/scripts/' . $filename)) {
+        if (file_exists($pathToFollow . 'bin' . DIRECTORY_SEPARATOR . 'notification' . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . $filename)) {
             $notification['scriptcreated'] = true;
         }
 

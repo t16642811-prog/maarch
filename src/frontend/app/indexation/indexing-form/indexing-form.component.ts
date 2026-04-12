@@ -790,6 +790,7 @@ export class IndexingFormComponent implements OnInit {
                         await this.calcLimitDate(elem, elem.default_value);
                     }
                     await this.setAllowedValues(elem);
+                    this.applyExternalOutgoingHiddenDefaults(elem);
                     resolve(true);
                 }).catch(() => resolve(false));
         });
@@ -847,6 +848,7 @@ export class IndexingFormComponent implements OnInit {
             await Promise.all(this['indexingModels_' + element].map(async (elem: any) => {
                 if (elem.identifier === 'documentDate') {
                     this.setDocumentDateField(elem);
+                    this.applyExternalOutgoingHiddenDefaults(elem);
 
                 } else if (elem.identifier === 'destination') {
                     await this.setDestinationField(elem);
@@ -1018,6 +1020,65 @@ export class IndexingFormComponent implements OnInit {
         });
     }
 
+    shouldHideExternalOutgoingField(field: any): boolean {
+        if (this.adminMode || this.currentCategory !== 'outgoing' || !field?.identifier) {
+            return false;
+        }
+
+        const isExternalOutgoing = this.isSimplifiedOutgoingIndexingModelV2();
+
+        return isExternalOutgoing && ['doctype', 'documentDate', 'initiator'].includes(field.identifier);
+    }
+
+    private applyExternalOutgoingHiddenDefaults(field: any): void {
+        if (!this.isSimplifiedOutgoingIndexingModelV2() || !field?.identifier) {
+            return;
+        }
+
+        if (field.identifier === 'doctype') {
+            const currentValue = this.arrFormControl['doctype']?.value;
+            if (!this.functions.empty(currentValue)) {
+                return;
+            }
+
+            const firstAllowedDoctype = field.values.find((item: any) => !item.isTitle && !item.disabled)?.id;
+            if (this.functions.empty(firstAllowedDoctype)) {
+                return;
+            }
+
+            field.default_value = firstAllowedDoctype;
+            this.arrFormControl['doctype']?.setValue(firstAllowedDoctype);
+        } else if (field.identifier === 'documentDate') {
+            const currentValue = this.arrFormControl['documentDate']?.value;
+            if (!this.functions.empty(currentValue)) {
+                return;
+            }
+
+            const departureDate = this.arrFormControl['departureDate']?.value;
+            const defaultDate = !this.functions.empty(departureDate) ? new Date(departureDate) : new Date();
+
+            field.default_value = defaultDate;
+            this.arrFormControl['documentDate']?.setValue(defaultDate);
+            this.syncTimeControlFromDate('documentDate');
+        }
+    }
+
+    private isExternalOutgoingIndexingModel(): boolean {
+        const indexingModelLabel = (this.indexingModelClone?.label || '').toLowerCase();
+        return indexingModelLabel.includes('depart externe') || indexingModelLabel.includes('départ externe');
+    }
+
+    private isSimplifiedOutgoingIndexingModel(): boolean {
+        const indexingModelLabel = (this.indexingModelClone?.label || '').toLowerCase();
+        return ['depart externe', 'dÃ©part externe', 'depart interne', 'dÃ©part interne']
+            .some((label: string) => indexingModelLabel.includes(label));
+    }
+
+    private isSimplifiedOutgoingIndexingModelV2(): boolean {
+        const indexingModelLabel = (this.indexingModelClone?.label || '').toLowerCase();
+        return indexingModelLabel.includes('externe') || indexingModelLabel.includes('interne');
+    }
+
     createForm() {
         this.indexingFormGroup = new UntypedFormGroup(this.arrFormControl);
         this.loadingFormEndEvent.emit();
@@ -1122,10 +1183,15 @@ export class IndexingFormComponent implements OnInit {
                             field.default_value = new Date();
                         }
 
-                        if (field.identifier === 'initiator' && this.mode === 'indexation' && this.functions.empty(field.default_value)) {
-                            if (this.headerService.user.entities[0]) {
-                                field.default_value = this.headerService.user.entities.filter((entity: any) => entity.primary_entity === 'Y')[0].id;
+                        if (field.identifier === 'initiator' && this.mode === 'indexation' && this.headerService.user.entities[0]) {
+                            const primaryEntity = this.headerService.user.entities.find((entity: any) => entity.primary_entity === 'Y');
+                            if (primaryEntity && (this.functions.empty(field.default_value) || this.isSimplifiedOutgoingIndexingModelV2())) {
+                                field.default_value = primaryEntity.id;
                             }
+                        }
+
+                        if (field.identifier === 'departureDate' && this.mode === 'indexation' && this.isSimplifiedOutgoingIndexingModelV2() && this.functions.empty(field.default_value)) {
+                            field.default_value = new Date();
                         }
 
                         if (field.identifier === 'diffusionList') {
@@ -1140,6 +1206,7 @@ export class IndexingFormComponent implements OnInit {
                         }
 
                     });
+                    this.ensureIncomingClassifyingFields();
                     this.moveMailFieldAfter('indexingCustomField_4', 'documentDate', 'arrivalDate');
                     this.indexingModelClone = JSON.parse(JSON.stringify(data.indexingModel));
                 }
@@ -1203,6 +1270,35 @@ export class IndexingFormComponent implements OnInit {
         }
 
         mailFields.splice(targetIndex, 0, fieldToMove);
+    }
+
+    private ensureIncomingClassifyingFields() {
+        if (this.currentCategory !== 'incoming') {
+            return;
+        }
+
+        ['folders', 'tags'].forEach((identifier: string) => {
+            const alreadyPresent = this['indexingModels_classifying'].some((field: any) => field.identifier === identifier);
+            if (alreadyPresent) {
+                return;
+            }
+
+            const sourceField = this.availableFields.find((field: any) => field.identifier === identifier)
+                || this.availableFieldsClone?.find((field: any) => field.identifier === identifier)
+                || this.indexingModelsCore.find((field: any) => field.identifier === identifier);
+
+            if (!sourceField) {
+                return;
+            }
+
+            const field = JSON.parse(JSON.stringify(sourceField));
+            field.system = field.system ?? false;
+            field.unit = 'classifying';
+            field.default_value = field.default_value ?? [];
+            field.enabled = field.enabled !== false;
+            this['indexingModels_classifying'].push(field);
+            this.initValidator(field);
+        });
     }
 
     enableField(field: any, enable: boolean) {

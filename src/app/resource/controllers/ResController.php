@@ -36,6 +36,7 @@ use Group\controllers\PrivilegeController;
 use Group\models\GroupModel;
 use History\controllers\HistoryController;
 use IndexingModel\models\IndexingModelFieldModel;
+use IndexingModel\models\IndexingModelModel;
 use MessageExchange\models\MessageExchangeModel;
 use Note\models\NoteModel;
 use Priority\models\PriorityModel;
@@ -1681,6 +1682,8 @@ class ResController extends ResourceControlController
             }
         }
 
+        self::syncExternalOutgoingAssignee($args['resId'], $body);
+
         $resource = ResModel::getById(['resId' => $args['resId'], 'select' => ['custom_fields']]);
         $customFields = json_decode($resource['custom_fields'], true);
 
@@ -1777,6 +1780,183 @@ class ResController extends ResourceControlController
                 );
             }
         }
+
+        self::syncExternalOutgoingAssignee($args['resId'], $body);
+    }
+
+    private static function syncExternalOutgoingAssignee(int $resId, array $body): void
+    {
+        if (!self::isExternalOutgoingIndexingModel($body)) {
+            return;
+        }
+
+        $senderEntity = self::getSenderEntity($body['senders'] ?? []);
+        $directorUserId = self::getExternalOutgoingDirectorUserId($body['senders'] ?? []);
+        if (empty($directorUserId)) {
+            return;
+        }
+
+        $directorPrimaryEntity = UserModel::getPrimaryEntityById([
+            'id'     => $directorUserId,
+            'select' => ['entities.entity_id']
+        ]);
+        $directorEntityId = $directorPrimaryEntity['entity_id'] ?? null;
+
+        $listInstances = ListInstanceModel::get([
+            'select' => ['listinstance_id', 'item_id', 'item_type', 'item_mode'],
+            'where'  => ['res_id = ?'],
+            'data'   => [$resId]
+        ]);
+
+        foreach ($listInstances as $listInstance) {
+            if ($listInstance['item_mode'] != 'dest') {
+                continue;
+            }
+            if (
+                $listInstance['item_type'] == 'user_id' &&
+                (int)$listInstance['item_id'] === $directorUserId
+            ) {
+                continue;
+            }
+
+            ListInstanceModel::update([
+                'set'   => ['item_mode' => 'cc'],
+                'where' => ['listinstance_id = ?'],
+                'data'  => [$listInstance['listinstance_id']]
+            ]);
+        }
+
+        $directorListInstance = null;
+        foreach ($listInstances as $listInstance) {
+            if (
+                $listInstance['item_type'] == 'user_id' &&
+                (int)$listInstance['item_id'] === $directorUserId
+            ) {
+                $directorListInstance = $listInstance;
+                break;
+            }
+        }
+
+        if (!empty($directorListInstance)) {
+            ListInstanceModel::update([
+                'set'   => ['item_mode' => 'dest'],
+                'where' => ['listinstance_id = ?'],
+                'data'  => [$directorListInstance['listinstance_id']]
+            ]);
+        } else {
+            ListInstanceModel::create([
+                'res_id'        => $resId,
+                'sequence'      => 0,
+                'item_id'       => $directorUserId,
+                'item_type'     => 'user_id',
+                'item_mode'     => 'dest',
+                'added_by_user' => $GLOBALS['id'],
+                'viewed'        => 0,
+                'difflist_type' => 'entity_id'
+            ]);
+        }
+
+        $set = ['dest_user' => $directorUserId];
+        if (!empty($senderEntity['entity_id'])) {
+            $set['destination'] = $senderEntity['entity_id'];
+        } elseif (!empty($directorEntityId)) {
+            $set['destination'] = $directorEntityId;
+        }
+
+        ResModel::update([
+            'set'   => $set,
+            'where' => ['res_id = ?'],
+            'data'  => [$resId]
+        ]);
+    }
+
+    private static function isExternalOutgoingIndexingModel(array $body): bool
+    {
+        $modelId = null;
+        if (!empty($body['selectedIndexingModelId']) && is_numeric($body['selectedIndexingModelId'])) {
+            $modelId = (int)$body['selectedIndexingModelId'];
+        } elseif (!empty($body['modelId']) && is_numeric($body['modelId'])) {
+            $modelId = (int)$body['modelId'];
+        }
+
+        if (empty($modelId)) {
+            return false;
+        }
+
+        $indexingModel = IndexingModelModel::getById(['id' => $modelId, 'select' => ['category', 'label']]);
+        $label = mb_strtolower((string)($indexingModel['label'] ?? ''));
+
+        return ($indexingModel['category'] ?? null) == 'outgoing' && str_contains($label, 'externe');
+    }
+
+    private static function getExternalOutgoingDirectorUserId(array $senders): ?int
+    {
+        $senderEntity = self::getSenderEntity($senders);
+        if (empty($senderEntity)) {
+            return null;
+        }
+
+        if (!empty($senderEntity['id'])) {
+            $listTemplate = ListTemplateModel::get([
+                'select' => ['id'],
+                'where'  => ['entity_id = ?', 'type = ?'],
+                'data'   => [$senderEntity['id'], 'diffusionList']
+            ]);
+            $listTemplate = $listTemplate[0] ?? null;
+            if (!empty($listTemplate['id'])) {
+                $listTemplateItems = ListTemplateItemModel::get([
+                    'select'  => ['item_id', 'item_type', 'item_mode', 'sequence'],
+                    'where'   => ['list_template_id = ?', 'item_mode = ?'],
+                    'data'    => [$listTemplate['id'], 'dest'],
+                    'orderBy' => ['sequence']
+                ]);
+                $destItem = $listTemplateItems[0] ?? null;
+                if (($destItem['item_type'] ?? null) == 'user') {
+                    return (int)$destItem['item_id'];
+                }
+            }
+        }
+
+        $directorGroup = GroupModel::getByGroupId(['groupId' => 'DIRECTEUR', 'select' => ['id']]);
+        if (empty($directorGroup['id'])) {
+            return null;
+        }
+
+        $users = GroupModel::getUsersById(['id' => (int)$directorGroup['id'], 'select' => ['users.id']]);
+        foreach ($users as $user) {
+            $primaryEntity = UserModel::getPrimaryEntityById([
+                'id'     => (int)$user['id'],
+                'select' => ['entities.entity_id']
+            ]);
+            if (($primaryEntity['entity_id'] ?? null) === ($senderEntity['entity_id'] ?? null)) {
+                return (int)$user['id'];
+            }
+        }
+
+        return null;
+    }
+
+    private static function getSenderEntity(array $senders): array
+    {
+        $sender = $senders[0] ?? null;
+        if (empty($sender['id']) || empty($sender['type'])) {
+            return [];
+        }
+
+        if ($sender['type'] == 'entity') {
+            $entity = EntityModel::getById(['id' => (int)$sender['id'], 'select' => ['id', 'entity_id']]);
+            return empty($entity) ? [] : $entity;
+        }
+
+        if ($sender['type'] == 'user') {
+            $entity = UserModel::getPrimaryEntityById([
+                'id'     => (int)$sender['id'],
+                'select' => ['entities.id', 'entities.entity_id']
+            ]);
+            return empty($entity) ? [] : $entity;
+        }
+
+        return [];
     }
 
     /**

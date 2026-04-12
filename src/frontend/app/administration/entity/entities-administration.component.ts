@@ -21,6 +21,7 @@ import { EntitiesExportComponent } from './export/entities-export.component';
 import { UntypedFormControl } from '@angular/forms';
 import { InputCorrespondentGroupComponent } from '../contact/group/inputCorrespondent/input-correspondent-group.component';
 import { AuthService } from '@service/auth.service';
+import { MatTabChangeEvent } from '@angular/material/tabs';
 
 declare let $: any;
 @Component({
@@ -57,6 +58,7 @@ export class EntitiesAdministrationComponent implements OnInit {
     creationMode: boolean = false;
     visaCircuitModified: boolean = false;
     opinionCircuitModified: boolean = false;
+    selectedTabIndex: number = 0;
     idVisaCircuit: number;
     idOpinionCircuit: number;
     config: any = {};
@@ -276,10 +278,7 @@ export class EntitiesAdministrationComponent implements OnInit {
         this.http.get('../rest/entities/' + entity_id + '/details')
             .subscribe((data: any) => {
                 this.currentEntity = data['entity'];
-                this.appInputCorrespondentGroup.ngOnInit();
-                this.appDiffusionsList.loadListModel(this.currentEntity.id);
-                this.appVisaWorkflow.loadListModel(this.currentEntity.id);
-                this.appAvisWorkflow.loadListModel(this.currentEntity.id);
+                this.loadSelectedTabData();
 
                 if (this.currentEntity.visaCircuit) {
                     this.idVisaCircuit = this.currentEntity.visaCircuit.id;
@@ -314,6 +313,25 @@ export class EntitiesAdministrationComponent implements OnInit {
             }, (err) => {
                 this.notify.error(err.error.errors);
             });
+    }
+
+    onTabChange(event: MatTabChangeEvent) {
+        this.selectedTabIndex = event.index;
+        this.loadSelectedTabData();
+    }
+
+    private loadSelectedTabData() {
+        if (this.creationMode || !this.currentEntity?.id) {
+            return;
+        }
+
+        if (this.selectedTabIndex === 1 && this.appDiffusionsList) {
+            this.appDiffusionsList.loadListModel(this.currentEntity.id);
+        } else if (this.selectedTabIndex === 2 && this.appVisaWorkflow) {
+            this.appVisaWorkflow.loadListModel(this.currentEntity.id);
+        } else if (this.selectedTabIndex === 3 && this.appAvisWorkflow) {
+            this.appAvisWorkflow.loadListModel(this.currentEntity.id);
+        }
     }
 
     addElemListModelVisa(element: any) {

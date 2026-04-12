@@ -21,7 +21,6 @@ import { PrivilegeService } from '@service/privileges.service';
 export class SelectIndexingModelComponent implements OnInit {
     private static indexingModelsCache: any[] | null = null;
 
-
     @Input() defaultIndexingModelId: number = null;
     @Input() indexingModels: any = [];
     @Input() indexingForm: IndexingFormComponent;
@@ -31,8 +30,6 @@ export class SelectIndexingModelComponent implements OnInit {
     @Output() afterSelectedListModel = new EventEmitter<any>();
 
     loading: boolean = true;
-
-
     currentIndexingModel: any = {};
 
     constructor(
@@ -78,29 +75,55 @@ export class SelectIndexingModelComponent implements OnInit {
             return;
         }
 
+        const selectableModels = this.indexingModels.filter((model: any) => !this.hideFromSelection(model));
         this.currentIndexingModel = this.defaultIndexingModelId === null
-            ? this.indexingModels.filter((model: any) => model.default === true)[0]
-            : this.indexingModels.filter((model: any) => model.id === this.defaultIndexingModelId)[0];
+            ? selectableModels.filter((model: any) => model.default === true)[0]
+            : selectableModels.filter((model: any) => model.id === this.defaultIndexingModelId)[0];
 
         if (this.currentIndexingModel === undefined) {
-            this.currentIndexingModel = this.indexingModels[0];
+            this.currentIndexingModel = selectableModels[0] || this.indexingModels[0];
             this.notify.error(this.translate.instant('lang.noDefaultIndexingModel'));
         }
     }
 
     loadIndexingModelsList() {
-        const tmpIndexingModels: any[] = this.sortPipe.transform(this.indexingModels.filter((elem: any) => elem.master === null), 'label');
-        const privateTmpIndexingModels: any[] = this.sortPipe.transform(this.indexingModels.filter((elem: any) => elem.master !== null), 'label');
+        const visibleMasters: any[] = this.sortPipe.transform(
+            this.indexingModels.filter((elem: any) => elem.master === null && !this.hideFromSelection(elem)),
+            'label'
+        );
+        const hiddenMasterIds = this.indexingModels
+            .filter((elem: any) => elem.master === null && this.hideFromSelection(elem))
+            .map((elem: any) => elem.id);
+        const privateIndexingModels: any[] = this.sortPipe.transform(
+            this.indexingModels.filter((elem: any) => elem.master !== null),
+            'label'
+        );
+
         this.indexingModels = [];
-        tmpIndexingModels.forEach(indexingModel => {
+        visibleMasters.forEach(indexingModel => {
             this.indexingModels.push(indexingModel);
-            privateTmpIndexingModels.forEach(privateIndexingModel => {
+            privateIndexingModels.forEach(privateIndexingModel => {
                 if (privateIndexingModel.master === indexingModel.id) {
                     this.indexingModels.push(privateIndexingModel);
                 }
             });
         });
+
+        privateIndexingModels.forEach(privateIndexingModel => {
+            if (hiddenMasterIds.includes(privateIndexingModel.master)) {
+                this.indexingModels.push(privateIndexingModel);
+            }
+        });
+
         this.afterListModelsLoaded.emit(this.currentIndexingModel);
+    }
+
+    private hideFromSelection(indexingModel: any): boolean {
+        if (!indexingModel || indexingModel.master !== null) {
+            return false;
+        }
+        const label = (indexingModel.label || '').toString().trim().toLowerCase();
+        return label.includes('courrier') && label.includes('depart') && !label.includes('interne') && !label.includes('externe');
     }
 
     resetIndexingModel() {

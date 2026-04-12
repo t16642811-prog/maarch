@@ -594,10 +594,55 @@ export class SearchResultListComponent implements OnInit, OnDestroy {
                 key.displayValue = this.setHighLightData(key);
 
             });
+            element.senderDisplay = this.getRowSender(element);
+            element.searchDateDisplay = this.getRowDate(element);
+            if (Object.keys(this.criteria).indexOf('meta') > -1) {
+                if (!this.functions.empty(element.senderDisplay) && element.senderDisplay !== this.translate.instant('lang.undefined')) {
+                    element.senderDisplay = this.highlightPipe.transform(element.senderDisplay, this.criteria['meta'].values);
+                }
+            }
             element['checked'] = this.selectedRes.indexOf(element['resId']) !== -1;
         });
 
         return data;
+    }
+
+    getRowSender(row: any): string {
+        if (!this.functions.empty(row.senderLabel)) {
+            return row.senderLabel;
+        }
+
+        const senderDisplay = row.display.find((item: any) => item.value === 'getSenders');
+        if (!this.functions.empty(senderDisplay?.displayTitle)) {
+            return senderDisplay.displayTitle;
+        } else if (Array.isArray(senderDisplay?.displayValue)) {
+            return senderDisplay.displayValue.join(' - ');
+        } else if (!this.functions.empty(senderDisplay?.displayValue) && senderDisplay.displayValue !== this.translate.instant('lang.undefined')) {
+            return senderDisplay.displayValue;
+        }
+
+        return this.translate.instant('lang.undefined');
+    }
+
+    getRowDate(row: any): string | null {
+        const directDate = row.creationDate;
+        if (!this.functions.empty(directDate) && directDate !== this.translate.instant('lang.undefined')) {
+            return directDate;
+        }
+
+        const creationDateDisplay = row.display.find((item: any) => item.value === 'getCreationDate');
+        if (!this.functions.empty(creationDateDisplay?.displayTitle)) {
+            return creationDateDisplay.displayTitle;
+        } else if (!this.functions.empty(creationDateDisplay?.displayValue) && creationDateDisplay.displayValue !== this.translate.instant('lang.undefined')) {
+            return creationDateDisplay.displayValue;
+        }
+
+        const creationAndLimitDates = row.display.find((item: any) => item.value === 'getCreationAndProcessLimitDates');
+        if (!this.functions.empty(creationAndLimitDates?.displayValue?.creationDate)) {
+            return creationAndLimitDates.displayValue.creationDate;
+        }
+
+        return null;
     }
 
     setHighLightData(data: any) {

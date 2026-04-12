@@ -25,6 +25,23 @@ use SrcCore\models\CoreConfigModel;
 
 class NotificationScheduleController
 {
+    protected static function getApplicationRootPath(): string
+    {
+        return dirname(__DIR__, 4) . DIRECTORY_SEPARATOR;
+    }
+
+    protected static function getNotificationScriptsRootPath(): string
+    {
+        $customId = CoreConfigModel::getCustomId();
+        $rootPath = self::getApplicationRootPath();
+
+        if (!empty($customId)) {
+            return $rootPath . 'custom' . DIRECTORY_SEPARATOR . $customId . DIRECTORY_SEPARATOR;
+        }
+
+        return $rootPath;
+    }
+
     /**
      * @param Request $request
      * @param Response $response
@@ -95,12 +112,7 @@ class NotificationScheduleController
         ]);
         $notificationsArray = [];
         $customId = CoreConfigModel::getCustomId();
-        $corePath = str_replace(
-            'custom/' . $customId . '/src/app/notification/controllers',
-            '',
-            __DIR__
-        );
-        $corePath = str_replace('src/app/notification/controllers', '', $corePath);
+        $pathToFollow = self::getNotificationScriptsRootPath();
 
         foreach ($aNotification as $result) {
             $filename = 'notification';
@@ -109,13 +121,7 @@ class NotificationScheduleController
             }
             $filename .= '_' . $result['notification_id'] . '.sh';
 
-            if ($customId != '') {
-                $pathToFollow = $corePath . 'custom/' . $customId . '/';
-            } else {
-                $pathToFollow = $corePath;
-            }
-
-            $path = $pathToFollow . 'bin/notification/scripts/' . $filename;
+            $path = $pathToFollow . 'bin' . DIRECTORY_SEPARATOR . 'notification' . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . $filename;
             if (file_exists($path)) {
                 $notificationsArray[] = ['description' => $result['description'], 'path' => $path];
             }
@@ -130,14 +136,8 @@ class NotificationScheduleController
      */
     protected static function checkCrontab($crontabToSave): bool
     {
-        $customId = CoreConfigModel::getCustomId();
         $crontabBeforeSave = NotificationScheduleModel::getCrontab();
-        $corePath = str_replace(
-            'custom/' . $customId . '/src/app/notification/controllers',
-            '',
-            __DIR__
-        );
-        $corePath = str_replace('src/app/notification/controllers', '', $corePath);
+        $pathToFollow = self::getNotificationScriptsRootPath();
 
         $returnValue = false;
         foreach ($crontabToSave as $id => $cronValue) {
@@ -155,13 +155,8 @@ class NotificationScheduleController
                 $returnValue = false;
                 break;
             } elseif ($cronValue['state'] == 'new' || $cronValue['state'] == 'normal') {
-                if ($customId != '') {
-                    $pathToFollow = $corePath . 'custom/' . $customId . '/';
-                } else {
-                    $pathToFollow = $corePath;
-                }
                 $returnValue = true;
-                if (!str_starts_with($cronValue['cmd'], $pathToFollow . 'bin/notification/scripts/')) {
+                if (!str_starts_with($cronValue['cmd'], $pathToFollow . 'bin' . DIRECTORY_SEPARATOR . 'notification' . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR)) {
                     $returnValue = false;
                     break;
                 }

@@ -279,7 +279,9 @@ class DatasourceController
     {
         $customFieldsData = [];
         $resCustomFields = !empty($args['custom_fields']) ? json_decode($args['custom_fields'], true) : [];
-        $resCustomFieldsIds = array_keys($resCustomFields);
+        $resCustomFieldsIds = array_filter(array_keys($resCustomFields), static function ($key) {
+            return is_numeric($key);
+        });
 
         if (!empty($resCustomFieldsIds)) {
             $customFields = CustomFieldModel::get([
@@ -291,6 +293,10 @@ class DatasourceController
             $customFieldsTypes = array_column($customFields, 'type', 'id');
 
             foreach ($resCustomFields as $customId => $customField) {
+                if (!is_numeric($customId) || empty($customFieldsTypes[$customId])) {
+                    continue;
+                }
+
                 if (is_array($customField)) {
                     if ($customFieldsTypes[$customId] == 'banAutocomplete') {
                         $customFieldsData['customField_' .

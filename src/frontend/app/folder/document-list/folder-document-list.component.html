@@ -84,6 +84,14 @@
                     </div>
                 </div>
                 <div style="height:90%;overflow:auto;position:absolute;width:100%;">
+                    <div class="courrier-list-header">
+                        <span class="courrier-list-header__spacer"></span>
+                        <span class="courrier-list-header__chrono">N° chrono</span>
+                        <span class="courrier-list-header__sender">Expéditeur</span>
+                        <span class="courrier-list-header__objet">Objet</span>
+                        <span class="courrier-list-header__date">Date</span>
+                        <span class="courrier-list-header__action">Action</span>
+                    </div>
                     <table #tableBasketListSort="matSort" cdkDropList id="folder-list"
                         [cdkDropListConnectedTo]="listTodrag()" [cdkDropListData]="data"
                         [cdkDropListDisabled]="dragInit || appService.getViewMode()" mat-table [dataSource]="data"
@@ -94,18 +102,17 @@
                                 style="padding:0;border-top: solid 1px rgba(0, 0, 0, 0.12);"
                                 [class.selected-data]="row.checked">
                                 <div class="main-info">
-                                    <span style="width:50px;">
+                                    <span class="mail-col-check">
                                         <mat-checkbox name="toggleRes" color="primary" [checked]="row.checked"
                                             (change)="toggleRes($event,row)" (click)="$event.stopPropagation();">
                                         </mat-checkbox>
                                     </span>
-                                    <button mat-icon-button (click)="$event.stopPropagation();toggleMailTracking(row)" style="margin-left: -25px;"
+                                    <button mat-icon-button (click)="$event.stopPropagation();toggleMailTracking(row)"
                                         class="followIcon"
                                         [title]="row.mailTracking === true ? ('lang.untrackThisMail' | translate) : ('lang.trackThisMail' | translate)">
-                                        <mat-icon [ngClass]="[row.mailTracking === true ? 'fas fa-star' : 'far fa-star']" style="margin-bottom: 5px;"></mat-icon>
+                                        <mat-icon [ngClass]="[row.mailTracking === true ? 'fas fa-star' : 'far fa-star']"></mat-icon>
                                     </button>
-                                    <span *ngIf="!appService.getViewMode()" style="cursor:pointer;"
-                                        class="main-info-status">
+                                    <span *ngIf="!appService.getViewMode()" class="main-info-status">
                                         <mat-icon *ngIf="row.isLocked !== true" title="{{row.statusLabel}}"
                                             [ngStyle]="{'color': row.priorityColor}" color="primary"
                                             class="{{row.statusImage.charAt(0)}}{{row.statusImage.charAt(1)}} {{row.statusImage}} {{row.statusImage.charAt(0)}}{{row.statusImage.charAt(1)}}-2x">
@@ -117,8 +124,7 @@
                                             class="fa fa-lock fa-2x">
                                         </mat-icon>
                                     </span>
-                                    <span *ngIf="!appService.getViewMode()" class="main-info-data"
-                                        style="width:200px;text-align:center;cursor:pointer;">
+                                    <span *ngIf="!appService.getViewMode()" class="main-info-data mail-col-chrono">
                                         <ng-container
                                             *ngIf="row.chrono === ('lang.undefined' | translate) && row.barcode !== ('lang.undefined' | translate)">
                                             <span style="color: rgba(0,0,0,0.4);font-size: 90%;">
@@ -129,9 +135,18 @@
                                             {{row.chrono}}
                                         </ng-container>
                                     </span>
-                                    <span class="main-info-data" style="font-weight:bold;flex:1;cursor:pointer;"
+                                    <span class="main-info-data mail-col-sender"
+                                        title="{{row.senderLabel}}">{{row.senderDisplay}}</span>
+                                    <span class="main-info-data mail-col-subject"
                                         [class.undefined]="row.subject === ('lang.undefined' | translate)"
                                         title="{{row.subject}}">{{row.subject | shorten: 150: '...'}}</span>
+                                    <span class="main-info-data mail-col-date"
+                                        [title]="row.folderDateDisplay ? (row.folderDateDisplay | fullDate) : ('lang.undefined' | translate)">
+                                        <ng-container *ngIf="row.folderDateDisplay; else noFolderDate">
+                                            {{ row.folderDateDisplay | date:'dd/MM/yyyy HH:mm' }}
+                                        </ng-container>
+                                        <ng-template #noFolderDate>{{'lang.undefined' | translate}}</ng-template>
+                                    </span>
                                     <span class="main-info-action">
                                         <div *ngIf="!row.allowed" color="warn">
                                             {{'lang.documentOutOfPerimeter' | translate}}

@@ -445,7 +445,7 @@ class SearchController
                 $body['meta']['values'][strlen($body['meta']['values']) - 1] == '"'
             ) {
                 $quick = trim($body['meta']['values'], '"');
-                $quickWhere = "subject = ? OR replace(alt_identifier, ' ', '') = ? OR barcode = ?";
+                $quickWhere = "subject = ? OR replace(alt_identifier, ' ', '') = ? OR barcode = ? OR custom_fields->>'4' = ? OR custom_fields->>'17' = ?";
                 $quickWhere .= " OR res_id in (select res_id_master from res_attachments 
                 where (title = ? OR identifier = ?) 
                 and status in ('TRA', 'A_TRA', 'FRZ') 
@@ -454,7 +454,7 @@ class SearchController
                 $whiteStrippedChrono = str_replace(' ', '', $quick);
                 $args['searchData'] = array_merge(
                     $args['searchData'],
-                    [$quick, $whiteStrippedChrono, $quick, $quick, $quick]
+                    [$quick, $whiteStrippedChrono, $quick, $quick, $quick, $quick, $quick]
                 );
 
                 if (ctype_digit($quick)) {
@@ -466,6 +466,7 @@ class SearchController
             } else {
                 $quick = trim($body['meta']['values']);
                 $quickWhiteStripped = str_replace(' ', '', $quick);
+                $whereClause = [];
 
                 $fields = ['subject'];
                 $fieldsNumber = count($fields);
@@ -509,6 +510,10 @@ class SearchController
                     $whereClause[] = implode(' AND ', $requestDataDocument['where']);
                     $args['searchData'] = array_merge($args['searchData'], $requestDataDocument['data']);
                 }
+                $whereClause[] = "unaccent(custom_fields->>'4') ilike unaccent(?::text)";
+                $args['searchData'][] = "%{$quick}%";
+                $whereClause[] = "unaccent(custom_fields->>'17') ilike unaccent(?::text)";
+                $args['searchData'][] = "%{$quick}%";
                 if (!empty($requestDataDocumentWhiteStripped['where'])) {
                     $whereClause[] = implode(' AND ', $requestDataDocumentWhiteStripped['where']);
                     $args['searchData'] = array_merge($args['searchData'], $requestDataDocumentWhiteStripped['data']);
@@ -518,6 +523,18 @@ class SearchController
                         implode(' AND ', $requestDataAttachment['where']) .
                         ') and status in (\'TRA\', \'A_TRA\', \'FRZ\') and attachment_type <> \'summary_sheet\')';
                     $args['searchData'] = array_merge($args['searchData'], $requestDataAttachment['data']);
+                }
+
+                $senderResources = SearchController::getQuickSenderResources(['search' => $quick]);
+                if (!empty($senderResources)) {
+                    $whereClause[] = 'res_id in (?)';
+                    $args['searchData'][] = $senderResources;
+                }
+
+                $dateClause = SearchController::getQuickDateClause(['search' => $quick]);
+                if (!empty($dateClause)) {
+                    $whereClause[] = $dateClause['where'];
+                    $args['searchData'] = array_merge($args['searchData'], $dateClause['data']);
                 }
 
                 if (ctype_digit(trim($quick))) {
@@ -532,6 +549,68 @@ class SearchController
         }
 
         return ['searchWhere' => $args['searchWhere'], 'searchData' => $args['searchData']];
+    }
+
+    private static function getQuickSenderResources(array $args): array
+    {
+        if (empty($args['search']) || mb_strlen(trim($args['search'])) < 3) {
+            return [];
+        }
+
+        $searchableParameters = ContactParameterModel::get(
+            ['select' => ['identifier'], 'where' => ['searchable = ?'], 'data' => [true]]
+        );
+        $searchableParameters = array_column($searchableParameters, 'identifier');
+        $searchableParameters = array_map(function ($parameter) {
+            if (str_contains($parameter, 'contactCustomField_')) {
+                $customFieldId = explode('_', $parameter)[1];
+                return "custom_fields->>'{$customFieldId}'";
+            } else {
+                return ContactController::MAPPING_FIELDS[$parameter];
+            }
+        }, $searchableParameters);
+        $fields = AutoCompleteController::getInsensitiveFieldsForRequest(['fields' => $searchableParameters]);
+
+        $requestData = AutoCompleteController::getDataForRequest([
+            'search'       => trim($args['search']),
+            'fields'       => $fields,
+            'fieldsNumber' => count($searchableParameters)
+        ]);
+
+        $contacts = ContactModel::get([
+            'select' => ['id'],
+            'where'  => $requestData['where'],
+            'data'   => $requestData['data']
+        ]);
+        $contactIds = array_column($contacts, 'id');
+        if (empty($contactIds)) {
+            return [];
+        }
+
+        $sendersMatch = ResourceContactModel::get([
+            'select' => ['res_id'],
+            'where'  => ['item_id in (?)', 'type = ?', 'mode = ?'],
+            'data'   => [$contactIds, 'contact', 'sender']
+        ]);
+
+        return array_values(array_unique(array_column($sendersMatch, 'res_id')));
+    }
+
+    private static function getQuickDateClause(array $args): ?array
+    {
+        if (empty($args['search'])) {
+            return null;
+        }
+
+        $search = trim($args['search']);
+        $where = [];
+        $data = [];
+        foreach (['doc_date', 'creation_date', 'admission_date', 'departure_date', 'process_limit_date', 'closing_date'] as $field) {
+            $where[] = "to_char({$field}, 'DD/MM/YYYY HH24:MI') ilike ?";
+            $data[] = "%{$search}%";
+        }
+
+        return ['where' => '(' . implode(' OR ', $where) . ')', 'data' => $data];
     }
 
     /**

@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 import { FunctionsService } from '@service/functions.service';
@@ -20,7 +20,7 @@ import { SortPipe } from '@plugins/sorting.pipe';
     providers: [SortPipe]
 })
 
-export class InputCorrespondentGroupComponent implements OnInit {
+export class InputCorrespondentGroupComponent implements OnInit, OnChanges {
 
     @ViewChild('correspondentGroupsInput') correspondentGroupsInput: ElementRef<HTMLInputElement>;
     @ViewChild('auto') matAutocomplete: MatAutocomplete;
@@ -50,6 +50,18 @@ export class InputCorrespondentGroupComponent implements OnInit {
             map((item: any | null) => item ? this._filter(item) : this.allCorrespondentGroups));
     }
     async ngOnInit(): Promise<void> {
+        await this.loadData();
+    }
+
+    async ngOnChanges(changes: SimpleChanges): Promise<void> {
+        if ((changes['id'] || changes['type']) && !changes['id']?.firstChange) {
+            await this.loadData();
+        }
+    }
+
+    private async loadData(): Promise<void> {
+        this.correspondentGroups = [];
+        this.allCorrespondentGroups = [];
         await this.getAllCorrespondentsGroups();
         if (!this.functionsService.empty(this.id)) {
             await this.getCorrespondentsGroup();

@@ -4,6 +4,17 @@
     color: var(--maarch-color-secondary);
 }
 
+:host {
+    --row-gap: 8px;
+    --col-check: 38px;
+    --col-follow: 34px;
+    --col-status: 56px;
+    --col-chrono: 200px;
+    --col-sender: 360px;
+    --col-date: 150px;
+    --col-action: 240px;
+}
+
 .table-head-main {
     min-height: 64px;
     display: grid;
@@ -155,6 +166,194 @@
     width: 100%;
 }
 
+#document-list {
+    border-collapse: separate;
+    border-spacing: 0 4px;
+}
+
+.courrier-list-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: var(--row-gap);
+    padding: 8px 12px;
+    background: linear-gradient(180deg, #f7fbff 0%, #eef6fc 100%);
+    border-top: 1px solid rgba(19, 95, 127, 0.10);
+    border-bottom: 1px solid rgba(19, 95, 127, 0.20);
+    color: #1f5876;
+    font-size: 12px;
+    font-weight: 800;
+    box-shadow: inset 0 -1px 0 rgba(19, 95, 127, 0.08);
+}
+
+.courrier-list-header__spacer {
+    width: calc(var(--col-check) + var(--col-follow) + var(--col-status) + (2 * var(--row-gap)));
+    flex: 0 0 auto;
+}
+
+.courrier-list-header__chrono,
+.courrier-list-header__sender,
+.courrier-list-header__objet,
+.courrier-list-header__date,
+.courrier-list-header__action {
+    padding: 5px 9px;
+    border-radius: 12px;
+    background: rgba(19, 95, 127, 0.06);
+    flex: 0 0 auto;
+}
+
+.courrier-list-header__chrono {
+    width: var(--col-chrono);
+    text-align: center;
+}
+
+.courrier-list-header__sender {
+    width: var(--col-sender);
+}
+
+.courrier-list-header__objet {
+    min-width: 260px;
+    flex: 1 1 auto;
+}
+
+.courrier-list-header__date {
+    width: var(--col-date);
+    text-align: right;
+}
+
+.courrier-list-header__action {
+    width: var(--col-action);
+    text-align: center;
+}
+
+.main-info {
+    display: grid;
+    grid-template-columns: var(--col-check) var(--col-follow) var(--col-status) var(--col-chrono) var(--col-sender) minmax(260px, 1fr) var(--col-date) var(--col-action);
+    align-items: center;
+    column-gap: var(--row-gap);
+    padding: 8px 12px;
+    min-height: 56px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.rowData:hover .main-info {
+    box-shadow: inset 0 0 0 1px rgba(19, 95, 127, 0.08);
+}
+
+.mail-col-check {
+    width: var(--col-check);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    grid-column: 1;
+}
+
+.mail-col-check ::ng-deep .mat-checkbox-layout {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+}
+
+.mail-col-check ::ng-deep .mat-checkbox-inner-container {
+    width: 18px;
+    height: 18px;
+    margin-right: 0;
+}
+
+.followIcon {
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    justify-self: center;
+    grid-column: 2;
+}
+
+.main-info-status {
+    width: var(--col-status);
+    justify-self: center;
+    grid-column: 3;
+}
+
+.main-info-status .mat-icon {
+    font-size: 19px;
+}
+
+.main-info-data {
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.mail-col-chrono {
+    width: var(--col-chrono);
+    min-width: var(--col-chrono);
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    grid-column: 4;
+    cursor: pointer;
+}
+
+.mail-col-sender {
+    width: var(--col-sender);
+    min-width: var(--col-sender);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    grid-column: 5;
+    cursor: pointer;
+}
+
+.mail-col-subject {
+    min-width: 0;
+    font-weight: 700;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.2;
+    max-height: 2.4em;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    grid-column: 6;
+    cursor: pointer;
+}
+
+.mail-col-date {
+    width: var(--col-date);
+    min-width: var(--col-date);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    grid-column: 7;
+    justify-self: end;
+    text-align: right;
+    cursor: pointer;
+}
+
+.main-info-action {
+    grid-column: 8;
+    width: var(--col-action);
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+}
+
+.main-info-action .mat-icon-button {
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+}
+
+.main-info-action .mat-icon {
+    font-size: 14px;
+}
+
 ::ng-deep .highlightResult {
     background: #FFFF00;
 }
@@ -232,6 +431,7 @@
     color: red;
     font-weight: bold;
     opacity: 0.6;
+    pointer-events: none;
 }
 
 ::ng-deep .table-head {

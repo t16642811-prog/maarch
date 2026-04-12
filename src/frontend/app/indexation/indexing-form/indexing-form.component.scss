@@ -224,6 +224,7 @@
     }*/
 }
 
+
 .maarch-date-inline-meta {
     display: inline-flex;
     align-items: center;
@@ -1221,6 +1222,21 @@
 
 .checkboxInput {
     display: block;
+}
+
+::ng-deep .banner .content app-folder-input,
+::ng-deep .banner .content app-tag-input {
+    display: block;
+    width: 260px;
+    max-width: 260px;
+}
+
+@media (max-width: 768px) {
+    ::ng-deep .banner .content app-folder-input,
+    ::ng-deep .banner .content app-tag-input {
+        width: 100%;
+        max-width: 100%;
+    }
 }
 
 .categoryLabel {

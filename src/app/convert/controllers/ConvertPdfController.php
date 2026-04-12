@@ -34,6 +34,36 @@ use SrcCore\models\ValidatorModel;
 
 class ConvertPdfController
 {
+    private static function isWindows(): bool
+    {
+        return PHP_OS_FAMILY === 'Windows';
+    }
+
+    private static function shellEscape(string $value): string
+    {
+        if (self::isWindows()) {
+            return '"' . str_replace('"', '\"', $value) . '"';
+        }
+
+        return escapeshellarg($value);
+    }
+
+    private static function getLibreOfficeBinary(): ?string
+    {
+        $candidates = [
+            'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+            'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe'
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @param array $aArgs
      * @return array
@@ -95,9 +125,24 @@ class ConvertPdfController
             }
 
             ConvertPdfController::addBom($aArgs['fullFilename']);
-            $command = "timeout 30 unoconv -f pdf " . escapeshellarg($aArgs['fullFilename']);
 
-            exec('export HOME=' . $tmpPath . ' && ' . $command . ' 2>&1', $output, $return);
+            if (self::isWindows()) {
+                $soffice = self::getLibreOfficeBinary();
+                if (!empty($soffice)) {
+                    $command = self::shellEscape($soffice)
+                        . ' --headless --convert-to pdf --outdir '
+                        . self::shellEscape($tmpPath)
+                        . ' '
+                        . self::shellEscape($aArgs['fullFilename']);
+                    exec($command . ' 2>&1', $output, $return);
+                } else {
+                    $output = ['LibreOffice (soffice.exe) is not installed on this Windows server'];
+                    $return = 1;
+                }
+            } else {
+                $command = "timeout 30 unoconv -f pdf " . escapeshellarg($aArgs['fullFilename']);
+                exec('export HOME=' . $tmpPath . ' && ' . $command . ' 2>&1', $output, $return);
+            }
         }
 
         return ['output' => $output, 'return' => $return];

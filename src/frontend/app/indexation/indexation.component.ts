@@ -280,6 +280,43 @@ export class IndexationComponent implements OnInit, OnDestroy {
         this.selectedAction = action;
     }
 
+    private isExternalOutgoingIndexingModel(): boolean {
+        const modelLabel = (this.currentIndexingModel?.label || '').toLowerCase();
+        return this.currentIndexingModel?.category === 'outgoing' &&
+            (modelLabel.includes('depart externe') || modelLabel.includes('départ externe'));
+    }
+
+    private isSimplifiedOutgoingIndexingModel(): boolean {
+        const modelLabel = (this.currentIndexingModel?.label || '').toLowerCase();
+        return this.currentIndexingModel?.category === 'outgoing' &&
+            ['depart externe', 'dÃ©part externe', 'depart interne', 'dÃ©part interne']
+                .some((label: string) => modelLabel.includes(label));
+    }
+
+    private isSimplifiedOutgoingIndexingModelV2(): boolean {
+        const modelLabel = (this.currentIndexingModel?.label || '').toLowerCase();
+        return this.currentIndexingModel?.category === 'outgoing' &&
+            (modelLabel.includes('externe') || modelLabel.includes('interne'));
+    }
+
+    getVisibleActions(): any[] {
+        if (!this.actionsListLoaded || this.indexingForm?.loading) {
+            return [];
+        }
+
+        let visibleActions = this.actionsList.filter(action => action.categoryUse.indexOf(this.indexingForm?.getCategory()) > -1);
+
+        if (this.isSimplifiedOutgoingIndexingModelV2()) {
+            visibleActions = visibleActions.filter(action => (action.label || '').toLowerCase().includes('enregistrer'));
+        }
+
+        if (visibleActions.length > 0 && !visibleActions.some(action => action.id === this.selectedAction?.id)) {
+            this.selectedAction = visibleActions[0];
+        }
+
+        return visibleActions;
+    }
+
 
     ngOnDestroy() {
         // unsubscribe to ensure no memory leaks
@@ -313,7 +350,7 @@ export class IndexationComponent implements OnInit, OnDestroy {
         if (this.indexingForm?.loading) {
             return true;
         } else {
-            return this.actionsList.filter(action => action.categoryUse.indexOf(this.indexingForm?.getCategory()) > -1).length > 0;
+            return this.getVisibleActions().length > 0;
         }
     }
 

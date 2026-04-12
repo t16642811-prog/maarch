@@ -73,7 +73,7 @@
     <mat-sidenav #snav2 [mode]="appService.getViewMode() ? 'over' : 'side'" [fixedInViewport]="appService.getViewMode()"
         fixedTopGap="56" position='end' [opened]="false" class="col-md-5 col-xs-11">
         <mat-nav-list>
-            <mat-tab-group>
+            <mat-tab-group (selectedTabChange)="onTabChange($event)">
                 <mat-tab
                     [label]="creationMode ? ('lang.createNewEntity' | translate) : ('lang.informations' | translate)">
                     <form class="form-horizontal" #entityForm="ngForm" style="overflow:hidden;">

@@ -130,7 +130,7 @@
                         </div>
                     </ng-container>
                     <ng-container *ngFor="let field of this['indexingModels_'+category];let i=index">
-                        <div class="fieldRow" *ngIf="field.unit === category && (!isAnamField(field) || adminMode)" cdkDrag cdkDragLockAxis="y"
+                        <div class="fieldRow" *ngIf="field.unit === category && (!isAnamField(field) || adminMode) && !shouldHideExternalOutgoingField(field)" cdkDrag cdkDragLockAxis="y"
                             [cdkDragData]="field">
                             <div class="fieldLabel" *ngIf="(!adminMode && !appService.getViewMode()) || adminMode">
                                 <i *ngIf="adminMode" [title]="'lang.move' | translate"

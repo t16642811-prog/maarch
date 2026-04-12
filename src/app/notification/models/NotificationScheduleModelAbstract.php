@@ -21,6 +21,23 @@ use SrcCore\models\ValidatorModel;
 
 abstract class NotificationScheduleModelAbstract
 {
+    protected static function getApplicationRootPath(): string
+    {
+        return dirname(__DIR__, 4) . DIRECTORY_SEPARATOR;
+    }
+
+    protected static function getNotificationScriptsRootPath(): string
+    {
+        $customId = CoreConfigModel::getCustomId();
+        $rootPath = self::getApplicationRootPath();
+
+        if (!empty($customId)) {
+            return $rootPath . 'custom' . DIRECTORY_SEPARATOR . $customId . DIRECTORY_SEPARATOR;
+        }
+
+        return $rootPath;
+    }
+
     /**
      * @param array $aArgs
      *
@@ -86,13 +103,7 @@ abstract class NotificationScheduleModelAbstract
         $crontab = shell_exec('crontab -l');
         $lines = explode("\n", $crontab);
         $data = [];
-        $customId = CoreConfigModel::getCustomId();
-        $corePath = str_replace(
-            'custom/' . $customId . '/src/app/notification/models',
-            '',
-            __DIR__
-        );
-        $corePath = str_replace('src/app/notification/models', '', $corePath);
+        $pathToFollow = self::getNotificationScriptsRootPath();
 
         $emptyLine = [
             'm'           => 1,
@@ -123,14 +134,8 @@ abstract class NotificationScheduleModelAbstract
                 list($m, $h, $dom, $mon, $dow, $cmd) = explode(' ', $cronLine, 6);
             }
 
-            if ($customId != '') {
-                $pathToFolow = $corePath . 'custom/' . $customId . '/';
-            } else {
-                $pathToFolow = $corePath;
-            }
-
             $state = 'normal';
-            if (!str_starts_with($cmd, $pathToFolow . 'bin/notification/scripts/') && $aArgs['setHiddenValue']) {
+            if (!str_starts_with($cmd, $pathToFollow . 'bin/notification/scripts/') && $aArgs['setHiddenValue']) {
                 $cmd = 'hidden';
                 $state = 'hidden';
             }
@@ -174,51 +179,41 @@ abstract class NotificationScheduleModelAbstract
         }
         $filename .= '_' . $notification_id . '.sh';
 
-        $corePath = str_replace(
-            'custom/' . $customId . '/src/app/notification/models',
-            '',
-            __DIR__
-        );
-        $corePath = str_replace('src/app/notification/models', '', $corePath);
+        $rootPath = self::getApplicationRootPath();
+        $pathToFollow = self::getNotificationScriptsRootPath();
+        $configNotif = $rootPath . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, CoreConfigModel::getConfigPath());
+        $scriptDirectory = $pathToFollow . 'bin' . DIRECTORY_SEPARATOR . 'notification' . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR;
 
-        $ConfigNotif = $corePath . CoreConfigModel::getConfigPath();
-
-        if ($customId != '') {
-            $pathToFollow = $corePath . 'custom/' . $customId . '/';
-            if (!file_exists($pathToFollow . 'bin/notification/scripts/')) {
-                mkdir($pathToFollow . 'bin/notification/scripts/', 0777, true);
-            }
-            $file_open = fopen($pathToFollow . 'bin/notification/scripts/' . $filename, 'w+');
-        } else {
-            $pathToFollow = $corePath;
-            $file_open = fopen($pathToFollow . 'bin/notification/scripts/' . $filename, 'w+');
+        if (!is_dir($scriptDirectory)) {
+            mkdir($scriptDirectory, 0777, true);
         }
+        $file_open = fopen($scriptDirectory . $filename, 'w+');
 
         fwrite($file_open, '#!/bin/sh');
         fwrite($file_open, "\n");
-        fwrite($file_open, 'path=\'' . $corePath . 'bin/notification/\'');
+        fwrite($file_open, 'path=\'' . $rootPath . 'bin/notification/\'');
         fwrite($file_open, "\n");
         fwrite($file_open, 'cd $path');
         fwrite($file_open, "\n");
         if ($event_id == 'baskets') {
-            fwrite($file_open, 'php \'basket_event_stack.php\' -c ' . $ConfigNotif . ' -n ' . $notification_id);
+            fwrite($file_open, 'php \'basket_event_stack.php\' -c ' . $configNotif . ' -n ' . $notification_id);
         } elseif (
             $notification_id == 'RELANCE1' || $notification_id == 'RELANCE2' || $event_id == 'alert1' ||
             $event_id == 'alert2'
         ) {
-            fwrite($file_open, 'php \'stack_letterbox_alerts.php\' -c ' . $ConfigNotif);
+            fwrite($file_open, 'php \'stack_letterbox_alerts.php\' -c ' . $configNotif);
             fwrite($file_open, "\n");
-            fwrite($file_open, 'php \'process_event_stack.php\' -c ' . $ConfigNotif . ' -n ' . $notification_id);
+            fwrite($file_open, 'php \'process_event_stack.php\' -c ' . $configNotif . ' -n ' . $notification_id);
         } else {
-            fwrite($file_open, 'php \'process_event_stack.php\' -c ' . $ConfigNotif . ' -n ' . $notification_id);
+            fwrite($file_open, 'php \'process_event_stack.php\' -c ' . $configNotif . ' -n ' . $notification_id);
         }
         fwrite($file_open, "\n");
         fwrite($file_open, 'cd $path');
         fwrite($file_open, "\n");
-        fwrite($file_open, 'php \'process_email_stack.php\' -c ' . $ConfigNotif);
+        fwrite($file_open, 'php \'process_email_stack.php\' -c ' . $configNotif);
         fwrite($file_open, "\n");
         fclose($file_open);
-        shell_exec('chmod +x ' . escapeshellarg($pathToFollow . 'bin/notification/scripts/' . $filename));
+        shell_exec('chmod +x ' . escapeshellarg($scriptDirectory . $filename));
 
         HistoryController::add([
             'tableName' => 'notifications',

@@ -335,6 +335,10 @@ export class FolderDocumentListComponent implements OnInit, OnDestroy {
                 }
             });
 
+            element.senderDisplay = !this.functions.empty(element.senderLabel) ? element.senderLabel : this.translate.instant('lang.undefined');
+            element.folderDateDisplay = !this.functions.empty(element.documentDate) && element.documentDate !== this.translate.instant('lang.undefined')
+                ? element.documentDate
+                : (!this.functions.empty(element.creationDate) && element.creationDate !== this.translate.instant('lang.undefined') ? element.creationDate : null);
             element['checked'] = this.selectedRes.indexOf(element['resId']) !== -1;
         });
 

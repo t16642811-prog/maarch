@@ -23,6 +23,7 @@ use Basket\models\BasketModel;
 use Basket\models\GroupBasketModel;
 use Basket\models\RedirectBasketModel;
 use Contact\controllers\ContactController;
+use Contact\models\ContactModel;
 use Convert\models\AdrModel;
 use CustomField\models\CustomFieldModel;
 use Docserver\models\DocserverModel;
@@ -41,6 +42,7 @@ use Priority\models\PriorityModel;
 use RegisteredMail\models\IssuingSiteModel;
 use RegisteredMail\models\RegisteredMailModel;
 use Resource\models\ResModel;
+use Resource\models\ResourceContactModel;
 use Resource\models\ResourceListModel;
 use Resource\models\UserFollowedResourceModel;
 use Respect\Validation\Validator;
@@ -365,15 +367,65 @@ class ResourceListController
             $where[] = 'process_limit_date < CURRENT_TIMESTAMP';
         }
         if (!empty($args['data']['search']) && mb_strlen($args['data']['search']) >= 2) {
-            if (preg_match('/^"([^"]+)"$/', $args['data']['search'], $cleanSearch)) {
-                $where[] = '(alt_identifier like ? OR subject like ?)';
+            $isExactSearch = preg_match('/^"([^"]+)"$/', $args['data']['search'], $cleanSearch) === 1;
+            $searchText = $isExactSearch ? $cleanSearch[1] : $args['data']['search'];
+            $senderResourceIds = self::getSenderResourceIdsBySearch([
+                'search' => $searchText,
+                'exact'  => $isExactSearch
+            ]);
+            if ($isExactSearch) {
+                $searchWhere = [
+                    'alt_identifier like ?',
+                    "custom_fields->>'4' like ?",
+                    "custom_fields->>'17' like ?",
+                    'subject like ?',
+                    "to_char(creation_date, 'DD/MM/YYYY') like ?",
+                    "to_char(creation_date, 'DD/MM/YYYY HH24:MI') like ?",
+                    "to_char(doc_date, 'DD/MM/YYYY') like ?",
+                    "to_char(doc_date, 'DD/MM/YYYY HH24:MI') like ?"
+                ];
+                if (!empty($senderResourceIds)) {
+                    $searchWhere[] = 'res_id in (?)';
+                }
+                $where[] = '(' . implode(' OR ', $searchWhere) . ')';
                 $queryData[] = "{$cleanSearch[1]}";
                 $queryData[] = "{$cleanSearch[1]}";
+                $queryData[] = "{$cleanSearch[1]}";
+                $queryData[] = "{$cleanSearch[1]}";
+                $queryData[] = "{$searchText}";
+                $queryData[] = "{$searchText}";
+                $queryData[] = "{$searchText}";
+                $queryData[] = "{$searchText}";
+                if (!empty($senderResourceIds)) {
+                    $queryData[] = $senderResourceIds;
+                }
             } else {
-                $where[] = "(replace(alt_identifier, ' ', '') ilike ? OR unaccent(subject) ilike unaccent(?::text))";
+                $searchWhere = [
+                    "replace(alt_identifier, ' ', '') ilike ?",
+                    "unaccent(custom_fields->>'4') ilike unaccent(?::text)",
+                    "unaccent(custom_fields->>'17') ilike unaccent(?::text)",
+                    'unaccent(subject) ilike unaccent(?::text)',
+                    "to_char(creation_date, 'DD/MM/YYYY') ilike ?",
+                    "to_char(creation_date, 'DD/MM/YYYY HH24:MI') ilike ?",
+                    "to_char(doc_date, 'DD/MM/YYYY') ilike ?",
+                    "to_char(doc_date, 'DD/MM/YYYY HH24:MI') ilike ?"
+                ];
+                if (!empty($senderResourceIds)) {
+                    $searchWhere[] = 'res_id in (?)';
+                }
+                $where[] = '(' . implode(' OR ', $searchWhere) . ')';
                 $whiteStrippedChrono = str_replace(' ', '', $args['data']['search']);
                 $queryData[] = "%{$whiteStrippedChrono}%";
                 $queryData[] = "%{$args['data']['search']}%";
+                $queryData[] = "%{$args['data']['search']}%";
+                $queryData[] = "%{$args['data']['search']}%";
+                $queryData[] = "%{$searchText}%";
+                $queryData[] = "%{$searchText}%";
+                $queryData[] = "%{$searchText}%";
+                $queryData[] = "%{$searchText}%";
+                if (!empty($senderResourceIds)) {
+                    $queryData[] = $senderResourceIds;
+                }
             }
         }
         if (isset($args['data']['priorities'])) {
@@ -1331,6 +1383,7 @@ class ResourceListController
             $formattedResources[$key]['binding'] = $resource['binding'];
             $formattedResources[$key]['processLimitDate'] = $resource['process_limit_date'];
             $formattedResources[$key]['creationDate'] = $resource['creation_date'];
+            $formattedResources[$key]['documentDate'] = $resource['doc_date'] ?? null;
             $formattedResources[$key]['is_read'] = array_key_exists('is_read', $resource) ? (int)$resource['is_read'] : 0;
             $senders = ContactController::getFormattedContacts(
                 ['resId' => $resource['res_id'], 'mode' => 'sender', 'onlyContact' => true]
@@ -1555,6 +1608,50 @@ class ResourceListController
 
     /**
      * @param array $args
+     * @return array
+     * @throws Exception
+     */
+    private static function getSenderResourceIdsBySearch(array $args): array
+    {
+        ValidatorModel::notEmpty($args, ['search']);
+        ValidatorModel::stringType($args, ['search']);
+
+        $search = trim($args['search']);
+        if ($search === '') {
+            return [];
+        }
+
+        $pattern = !empty($args['exact']) ? $search : "%{$search}%";
+        $contacts = ContactModel::get([
+            'select' => ['id'],
+            'where'  => [
+                '('
+                . "unaccent(coalesce(firstname, '')) ilike unaccent(?::text)"
+                . " OR unaccent(coalesce(lastname, '')) ilike unaccent(?::text)"
+                . " OR unaccent(coalesce(company, '')) ilike unaccent(?::text)"
+                . " OR unaccent(trim(coalesce(firstname, '') || ' ' || coalesce(lastname, ''))) ilike unaccent(?::text)"
+                . " OR unaccent(trim(coalesce(lastname, '') || ' ' || coalesce(firstname, ''))) ilike unaccent(?::text)"
+                . ')'
+            ],
+            'data'   => [$pattern, $pattern, $pattern, $pattern, $pattern]
+        ]);
+
+        $contactIds = array_column($contacts, 'id');
+        if (empty($contactIds)) {
+            return [];
+        }
+
+        $sendersMatch = ResourceContactModel::get([
+            'select' => ['res_id'],
+            'where'  => ['item_id in (?)', 'type = ?', 'mode = ?'],
+            'data'   => [$contactIds, 'contact', 'sender']
+        ]);
+
+        return array_values(array_unique(array_column($sendersMatch, 'res_id')));
+    }
+
+    /**
+     * @param array $args
      * @return array[]
      * @throws Exception
      */
@@ -1571,9 +1668,32 @@ class ResourceListController
             $where[] = 'process_limit_date < CURRENT_TIMESTAMP';
         }
         if (!empty($data['search']) && mb_strlen($data['search']) >= 2) {
-            $where[] = '(alt_identifier ilike ? OR unaccent(subject) ilike unaccent(?::text))';
+            $searchText = trim($data['search']);
+            $senderResourceIds = self::getSenderResourceIdsBySearch([
+                'search' => $searchText,
+                'exact'  => false
+            ]);
+            $searchWhere = [
+                'alt_identifier ilike ?',
+                'unaccent(subject) ilike unaccent(?::text)',
+                "to_char(creation_date, 'DD/MM/YYYY') ilike ?",
+                "to_char(creation_date, 'DD/MM/YYYY HH24:MI') ilike ?",
+                "to_char(doc_date, 'DD/MM/YYYY') ilike ?",
+                "to_char(doc_date, 'DD/MM/YYYY HH24:MI') ilike ?"
+            ];
+            if (!empty($senderResourceIds)) {
+                $searchWhere[] = 'res_id in (?)';
+            }
+            $where[] = '(' . implode(' OR ', $searchWhere) . ')';
             $queryData[] = "%{$data['search']}%";
             $queryData[] = "%{$data['search']}%";
+            $queryData[] = "%{$searchText}%";
+            $queryData[] = "%{$searchText}%";
+            $queryData[] = "%{$searchText}%";
+            $queryData[] = "%{$searchText}%";
+            if (!empty($senderResourceIds)) {
+                $queryData[] = $senderResourceIds;
+            }
         }
 
         $wherePriorities = $where;

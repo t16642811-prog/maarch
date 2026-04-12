@@ -432,6 +432,7 @@ export class BasketListComponent implements OnInit, OnDestroy {
             }
             element['senderDisplay'] = this.computeRowSender(element);
             element['documentDateDisplay'] = this.computeRowDocumentDate(element);
+            element['treatedDateDisplay'] = this.computeRowTreatedDate(element);
             if (this.locallyReadResIds.has(Number(element['resId']))) {
                 element['is_read'] = 1;
             }
@@ -441,24 +442,9 @@ export class BasketListComponent implements OnInit, OnDestroy {
         });
         const currentUnread = new Set<number>(unreadIds);
         const currentBasketSet = new Set<number>(basketResIds);
-        if (!this.firstBasketSnapshot) {
-            const newResIds = basketResIds.filter((id) => !this.previousBasketResIds.has(id));
-            if (newResIds.length > 0) {
-                this.notify.success(newResIds.length === 1 ? 'Nouveau courrier/reponse recu' : `${newResIds.length} nouveaux courriers/reponses recus`);
-                this.tryBrowserNotification(newResIds.length);
-            }
-        } else {
-            this.firstBasketSnapshot = false;
-        }
+        this.firstBasketSnapshot = false;
         this.previousBasketResIds = currentBasketSet;
-        if (!this.firstUnreadCheck) {
-            const newUnread = unreadIds.filter((id) => !this.previousUnreadIds.has(id));
-            if (newUnread.length > 0) {
-                this.notify.success(`Nouveau courrier : ${newUnread.length}`);
-            }
-        } else {
-            this.firstUnreadCheck = false;
-        }
+        this.firstUnreadCheck = false;
         this.previousUnreadIds = currentUnread;
         return data;
     }
@@ -735,6 +721,14 @@ export class BasketListComponent implements OnInit, OnDestroy {
         this.dialog.open(ContactResourceModalComponent, { panelClass: 'maarch-modal', data: { title: `${row.chrono} - ${row.subject}`, mode: mode, resId: row.resId } });
     }
 
+    getStatusTooltip(row: any): string {
+        return row?.anamTreated ? 'Courrier traité' : row?.statusLabel;
+    }
+
+    getRowTreatedDate(row: any): string {
+        return row?.treatedDateDisplay || this.computeRowTreatedDate(row);
+    }
+
     isReadOnlyTreatedRow(row: any): boolean {
         return row?.anamTreated === true || row?.anamWorkflowStep === 'validated';
     }
@@ -824,6 +818,33 @@ export class BasketListComponent implements OnInit, OnDestroy {
             return creationField.displayValue.creationDate;
         }
         return creationField.displayValue || '';
+    }
+
+    private computeRowTreatedDate(row: any): string {
+        const customFieldsRaw = row?.custom_fields ?? row?.customFields;
+        if (!customFieldsRaw) {
+            return '';
+        }
+
+        let customFields: any = customFieldsRaw;
+        if (typeof customFieldsRaw === 'string') {
+            try {
+                customFields = JSON.parse(customFieldsRaw);
+            } catch (e) {
+                return '';
+            }
+        }
+
+        if (!customFields || typeof customFields !== 'object') {
+            return '';
+        }
+
+        const workflow = customFields['_anamWorkflow'];
+        if (!workflow || typeof workflow !== 'object') {
+            return '';
+        }
+
+        return typeof workflow.validatedAt === 'string' ? workflow.validatedAt : '';
     }
 
     trackByResId(_index: number, row: any): number {

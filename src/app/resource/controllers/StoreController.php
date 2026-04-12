@@ -255,7 +255,7 @@ class StoreController
         ValidatorModel::notEmpty($args, ['resId', 'modelId']);
         ValidatorModel::intVal($args, ['resId', 'modelId']);
 
-        $indexingModel = IndexingModelModel::getById(['id' => $args['modelId'], 'select' => ['category']]);
+        $indexingModel = self::getChronoIndexingModel($args);
 
         if (empty($args['typist'])) {
             $args['typist'] = $GLOBALS['id'];
@@ -271,14 +271,12 @@ class StoreController
         }
         $chrono = null;
         if (!empty($args['chrono'])) {
-            $chrono = ChronoModel::getChrono(
-                [
-                    'id'       => $indexingModel['category'],
-                    'entityId' => $args['destination'] ?? null,
-                    'typeId'   => $args['doctype'],
-                    'resId'    => $args['resId']
-                ]
-            );
+            $chrono = self::getResourceChrono([
+                'indexingModel' => $indexingModel,
+                'args'          => $args,
+                'destination'   => $args['destination'] ?? null,
+                'resId'         => $args['resId']
+            ]);
         }
 
         if (!empty($args['processLimitDate']) && !empty($args['priority'])) {
@@ -383,7 +381,7 @@ class StoreController
 
         if (!empty($args['modelId'])) {
             $preparedData['model_id'] = $args['modelId'];
-            $indexingModel = IndexingModelModel::getById(['id' => $args['modelId'], 'select' => ['category']]);
+            $indexingModel = self::getChronoIndexingModel($args);
             $preparedData['category_id'] = $indexingModel['category'];
             $resource['category_id'] = $indexingModel['category'];
 
@@ -408,14 +406,13 @@ class StoreController
             }
         }
         if (empty($resource['alt_identifier'])) {
-            $chrono = ChronoModel::getChrono(
-                [
-                    'id'       => $resource['category_id'],
-                    'entityId' => $resource['destination'],
-                    'typeId'   => $resource['type_id'],
-                    'resId'    => $args['resId']
-                ]
-            );
+            $chrono = self::getResourceChrono([
+                'indexingModel' => $indexingModel ?? ['category' => $resource['category_id'], 'label' => null],
+                'args'          => $args,
+                'destination'   => $resource['destination'],
+                'resId'         => $args['resId'],
+                'typeId'        => $resource['type_id']
+            ]);
             $preparedData['alt_identifier'] = $chrono;
         }
         if (!empty($args['doctype'])) {
@@ -523,6 +520,198 @@ class StoreController
         }
 
         return $preparedData;
+    }
+
+    private static function getResourceChrono(array $args): string
+    {
+        $indexingModel = $args['indexingModel'];
+        $body = $args['args'];
+        $typeId = $body['doctype'] ?? $args['typeId'] ?? null;
+
+        if (self::isMinisterialChronoContext([
+            'category'    => $indexingModel['category'] ?? null,
+            'senders'     => $body['senders'] ?? [],
+            'initiator'   => $body['initiator'] ?? null,
+            'destination' => $args['destination'] ?? null,
+            'typist'      => $body['typist'] ?? null
+        ])) {
+            return self::getMinisterialChrono(['category' => $indexingModel['category']]);
+        }
+
+        if (self::isExternalOutgoingIndexingModel($indexingModel)) {
+            return self::getExternalOutgoingChrono([
+                'senders'   => $body['senders'] ?? [],
+                'initiator' => $body['initiator'] ?? null,
+                'resId'     => $args['resId']
+            ]);
+        }
+
+        return ChronoModel::getChrono(
+            [
+                'id'       => $indexingModel['category'],
+                'entityId' => $args['destination'] ?? null,
+                'typeId'   => $typeId,
+                'resId'    => $args['resId']
+            ]
+        );
+    }
+
+    private static function isExternalOutgoingIndexingModel(array $indexingModel): bool
+    {
+        $label = mb_strtolower((string)($indexingModel['label'] ?? ''));
+        return ($indexingModel['category'] ?? null) == 'outgoing' && str_contains($label, 'externe');
+    }
+
+    private static function getChronoIndexingModel(array $args): array
+    {
+        $selectedModelId = null;
+
+        if (!empty($args['selectedIndexingModelId']) && is_numeric($args['selectedIndexingModelId'])) {
+            $selectedModelId = (int)$args['selectedIndexingModelId'];
+        } elseif (!empty($args['customFields']['_anamOutgoingModelId']) && is_numeric($args['customFields']['_anamOutgoingModelId'])) {
+            $selectedModelId = (int)$args['customFields']['_anamOutgoingModelId'];
+        }
+
+        $modelId = $selectedModelId ?: (int)$args['modelId'];
+
+        return IndexingModelModel::getById(['id' => $modelId, 'select' => ['category', 'label']]);
+    }
+
+    private static function isMinisterialChronoContext(array $args): bool
+    {
+        if (!in_array($args['category'] ?? null, ['incoming', 'outgoing'])) {
+            return false;
+        }
+
+        if (self::isMinisterialEntityId($args['initiator'] ?? null) || self::isMinisterialEntityId($args['destination'] ?? null)) {
+            return true;
+        }
+
+        if (!empty($args['typist'])) {
+            $typistEntityIds = self::getEntityIdsByUserId((int)$args['typist']);
+            foreach ($typistEntityIds as $entityId) {
+                if (self::isMinisterialEntityId($entityId)) {
+                    return true;
+                }
+            }
+        }
+
+        $sender = $args['senders'][0] ?? null;
+        if (!empty($sender['id']) && !empty($sender['type'])) {
+            if ($sender['type'] == 'entity') {
+                return self::isMinisterialEntityId(self::getEntityIdBySerialId((int)$sender['id']));
+            }
+            if ($sender['type'] == 'user') {
+                return self::isMinisterialEntityId(self::getPrimaryEntityIdByUserId((int)$sender['id']));
+            }
+        }
+
+        return false;
+    }
+
+    private static function getMinisterialChrono(array $args): string
+    {
+        $category = $args['category'] ?? null;
+        $suffix = $category == 'incoming' ? 'A' : 'D';
+        $counter = self::getScopedChronoCounter("ministere_mines_{$category}");
+
+        return sprintf('MINISTRE/MINES/%s%s/%s', date('Y'), $suffix, $counter);
+    }
+
+    private static function getExternalOutgoingChrono(array $args): string
+    {
+        $structureCode = self::getOutgoingStructureCode([
+            'senders'   => $args['senders'] ?? [],
+            'initiator' => $args['initiator'] ?? null
+        ]);
+
+        $counter = self::getScopedChronoCounter("external_outgoing_{$structureCode}");
+
+        return sprintf('PCD/%s/ANAM/%sD/%s', $structureCode, date('Y'), $counter);
+    }
+
+    private static function getOutgoingStructureCode(array $args): string
+    {
+        $sender = $args['senders'][0] ?? null;
+        if (!empty($sender['id']) && !empty($sender['type'])) {
+            if ($sender['type'] == 'entity') {
+                return self::normalizeOutgoingStructureCode(
+                    self::getEntityShortLabelBySerialId((int)$sender['id'])
+                );
+            } elseif ($sender['type'] == 'user') {
+                return self::normalizeOutgoingStructureCode(
+                    self::getPrimaryEntityShortLabelByUserId((int)$sender['id'])
+                );
+            }
+        }
+
+        if (!empty($args['initiator'])) {
+            $entity = EntityModel::getById(['id' => (int)$args['initiator'], 'select' => ['short_label']]);
+            return self::normalizeOutgoingStructureCode($entity['short_label'] ?? null);
+        }
+
+        return 'ANAM';
+    }
+
+    private static function getEntityShortLabelBySerialId(int $id): ?string
+    {
+        $entity = EntityModel::getById(['id' => $id, 'select' => ['short_label']]);
+        return $entity['short_label'] ?? null;
+    }
+
+    private static function getEntityIdBySerialId(int $id): ?string
+    {
+        $entity = EntityModel::getById(['id' => $id, 'select' => ['entity_id']]);
+        return $entity['entity_id'] ?? null;
+    }
+
+    private static function getPrimaryEntityShortLabelByUserId(int $id): ?string
+    {
+        $entity = UserModel::getPrimaryEntityById(['id' => $id, 'select' => ['short_label']]);
+        return $entity['short_label'] ?? null;
+    }
+
+    private static function getPrimaryEntityIdByUserId(int $id): ?string
+    {
+        $entity = UserModel::getPrimaryEntityById(['id' => $id, 'select' => ['entities.entity_id']]);
+        return $entity['entity_id'] ?? null;
+    }
+
+    private static function getEntityIdsByUserId(int $id): array
+    {
+        $entities = UserModel::getEntitiesById(['id' => $id, 'select' => ['users_entities.entity_id']]);
+        return array_column($entities, 'entity_id');
+    }
+
+    private static function isMinisterialEntityId(?string $entityId): bool
+    {
+        return in_array(trim((string)$entityId), ['MINES', 'SEC_MIN'], true);
+    }
+
+    private static function getScopedChronoCounter(string $scope): int
+    {
+        $scope = preg_replace('/[^A-Za-z0-9_]/', '_', trim($scope));
+        $chronoIdName = "chrono_{$scope}_" . date('Y');
+        $chronoSeqName = $chronoIdName . '_seq';
+
+        return DatabaseModel::createOrIncreaseChrono([
+            'chronoIdName'  => $chronoIdName,
+            'chronoSeqName' => $chronoSeqName
+        ]);
+    }
+
+    private static function normalizeOutgoingStructureCode(?string $shortLabel): string
+    {
+        $shortLabel = trim((string)$shortLabel);
+        if (empty($shortLabel)) {
+            return 'ANAM';
+        }
+
+        $mapping = [
+            'SI' => 'DSI'
+        ];
+
+        return $mapping[$shortLabel] ?? $shortLabel;
     }
 
     /**
