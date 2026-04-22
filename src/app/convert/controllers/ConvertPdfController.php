@@ -73,6 +73,8 @@ class ConvertPdfController
     {
         $tmpPath = CoreConfigModel::getTmpPath();
         $extension = pathinfo($aArgs['fullFilename'], PATHINFO_EXTENSION);
+        $output = [];
+        $return = 0;
         if (strtolower($extension) == 'html' || strtolower($extension) == 'htm') {
             $pdfFilepath = str_replace('.' . $extension, '', $aArgs['fullFilename']) . '.pdf';
             $command = "wkhtmltopdf -B 10mm -L 10mm -R 10mm -T 10mm --load-error-handling ignore" .
@@ -143,6 +145,9 @@ class ConvertPdfController
                 $command = "timeout 30 unoconv -f pdf " . escapeshellarg($aArgs['fullFilename']);
                 exec('export HOME=' . $tmpPath . ' && ' . $command . ' 2>&1', $output, $return);
             }
+        } else {
+            $output = [];
+            $return = 0;
         }
 
         return ['output' => $output, 'return' => $return];
@@ -301,28 +306,33 @@ class ConvertPdfController
     public static function convertFromEncodedResource(array $aArgs): array
     {
         ValidatorModel::notEmpty($aArgs, ['encodedResource']);
-        ValidatorModel::stringType($aArgs, ['encodedResource', 'context']);
+        ValidatorModel::stringType($aArgs, ['encodedResource', 'context', 'extension']);
 
         $tmpPath = CoreConfigModel::getTmpPath();
         $tmpFilename = 'converting' . rand() . '_' . rand();
+        $sourcePath = $tmpPath . $tmpFilename . '.' . $aArgs['extension'];
+        $pdfPath = $tmpPath . $tmpFilename . '.pdf';
 
         file_put_contents(
-            $tmpPath . $tmpFilename . '.' . $aArgs['extension'],
+            $sourcePath,
             base64_decode($aArgs['encodedResource'])
         );
         $convertedFile = ConvertPdfController::convertInPdf([
-            'fullFilename' => $tmpPath . $tmpFilename . '.' . $aArgs['extension']
+            'fullFilename' => $sourcePath
         ]);
 
-        if (!file_exists($tmpPath . $tmpFilename . '.pdf')) {
+        if (!file_exists($pdfPath)) {
             return ['errors' => '[ConvertPdf]  Conversion failed ! ' . implode(" ", $convertedFile['output'])];
         }
 
-        if (is_file("{$tmpPath}{$tmpFilename}.{$aArgs['extension']}")) {
-            unlink("{$tmpPath}{$tmpFilename}.{$aArgs['extension']}");
+        if (is_file($sourcePath)) {
+            unlink($sourcePath);
         }
 
-        $resource = file_get_contents("{$tmpPath}{$tmpFilename}.pdf");
+        $resource = file_get_contents($pdfPath);
+        if ($resource === false) {
+            return ['errors' => '[ConvertPdf] Converted PDF cannot be read'];
+        }
 
         $aReturn = [];
 
@@ -330,7 +340,9 @@ class ConvertPdfController
             $aReturn["tmpFilename"] = $tmpFilename . '.pdf';
         } else {
             $aReturn["encodedResource"] = base64_encode($resource);
-            unlink("{$tmpPath}{$tmpFilename}.pdf");
+            if (is_file($pdfPath)) {
+                unlink($pdfPath);
+            }
         }
         return $aReturn;
     }

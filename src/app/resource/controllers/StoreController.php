@@ -317,8 +317,10 @@ class StoreController
         }
 
         if (!empty($args['selectedIndexingModelId'])) {
+            $selectedIndexingModelId = (int)$args['selectedIndexingModelId'];
             $args['customFields'] = $args['customFields'] ?? [];
-            $args['customFields']['_anamOutgoingModelId'] = (int)$args['selectedIndexingModelId'];
+            $args['customFields']['_anamSelectedModelId'] = $selectedIndexingModelId;
+            $args['customFields']['_anamOutgoingModelId'] = $selectedIndexingModelId;
         }
 
         $preparedData = [
@@ -506,8 +508,13 @@ class StoreController
             if (!empty($customFields['_anamOutgoingModelId'])) {
                 $args['customFields']['_anamOutgoingModelId'] = $customFields['_anamOutgoingModelId'];
             }
+            if (!empty($customFields['_anamSelectedModelId'])) {
+                $args['customFields']['_anamSelectedModelId'] = $customFields['_anamSelectedModelId'];
+            }
             if (!empty($args['selectedIndexingModelId'])) {
-                $args['customFields']['_anamOutgoingModelId'] = (int)$args['selectedIndexingModelId'];
+                $selectedIndexingModelId = (int)$args['selectedIndexingModelId'];
+                $args['customFields']['_anamSelectedModelId'] = $selectedIndexingModelId;
+                $args['customFields']['_anamOutgoingModelId'] = $selectedIndexingModelId;
             }
             $preparedData['custom_fields'] = json_encode($args['customFields']);
         } elseif (!empty($args['selectedIndexingModelId'])) {
@@ -515,7 +522,9 @@ class StoreController
             if (!is_array($customFields)) {
                 $customFields = [];
             }
-            $customFields['_anamOutgoingModelId'] = (int)$args['selectedIndexingModelId'];
+            $selectedIndexingModelId = (int)$args['selectedIndexingModelId'];
+            $customFields['_anamSelectedModelId'] = $selectedIndexingModelId;
+            $customFields['_anamOutgoingModelId'] = $selectedIndexingModelId;
             $preparedData['custom_fields'] = json_encode($customFields);
         }
 
@@ -568,6 +577,8 @@ class StoreController
 
         if (!empty($args['selectedIndexingModelId']) && is_numeric($args['selectedIndexingModelId'])) {
             $selectedModelId = (int)$args['selectedIndexingModelId'];
+        } elseif (!empty($args['customFields']['_anamSelectedModelId']) && is_numeric($args['customFields']['_anamSelectedModelId'])) {
+            $selectedModelId = (int)$args['customFields']['_anamSelectedModelId'];
         } elseif (!empty($args['customFields']['_anamOutgoingModelId']) && is_numeric($args['customFields']['_anamOutgoingModelId'])) {
             $selectedModelId = (int)$args['customFields']['_anamOutgoingModelId'];
         }

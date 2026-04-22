@@ -34,6 +34,31 @@ interface Privilege {
 @Injectable()
 export class PrivilegeService {
 
+    private getOrderedIndexingGroups(): any[] {
+        const indexingGroups = this.headerService.user.groups
+            .filter((group: any) => group.can_index === true)
+            .map((group: any) => ({
+                id: group.id,
+                label: group.group_desc,
+                groupId: group.group_id
+            }));
+
+        indexingGroups.sort((a: any, b: any) => {
+            const aIsMinister = (a.groupId || '').toString().toLowerCase() === 'secministre';
+            const bIsMinister = (b.groupId || '').toString().toLowerCase() === 'secministre';
+
+            if (aIsMinister && !bIsMinister) {
+                return -1;
+            } else if (!aIsMinister && bIsMinister) {
+                return 1;
+            }
+
+            return a.label.localeCompare(b.label);
+        });
+
+        return indexingGroups;
+    }
+
     shortcuts: any[] = [
         {
             'id': 'followed',
@@ -720,14 +745,7 @@ export class PrivilegeService {
         }
 
         if (this.headerService.user.groups.filter((group: any) => group.can_index === true).length > 0 && (ids === null || ids.indexOf('indexing') > -1)) {
-            const indexingGroups: any[] = [];
-
-            this.headerService.user.groups.filter((group: any) => group.can_index === true).forEach((group: any) => {
-                indexingGroups.push({
-                    id: group.id,
-                    label: group.group_desc
-                });
-            });
+            const indexingGroups: any[] = this.getOrderedIndexingGroups();
 
             const indexingmenu: any = {
                 'id': 'indexing',
@@ -776,14 +794,7 @@ export class PrivilegeService {
         this.shortcuts = this.shortcuts.concat(this.menus.filter(elem => elem.shortcut === true).filter(elem => privileges.indexOf(elem.id) > -1));
 
         if (this.headerService.user.groups.filter((group: any) => group.can_index === true).length > 0) {
-            const indexingGroups: any[] = [];
-
-            this.headerService.user.groups.filter((group: any) => group.can_index === true).forEach((group: any) => {
-                indexingGroups.push({
-                    id: group.id,
-                    label: group.group_desc
-                });
-            });
+            const indexingGroups: any[] = this.getOrderedIndexingGroups();
 
             const indexingShortcut: any = {
                 'id': 'indexing',

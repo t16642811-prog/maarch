@@ -8,6 +8,7 @@ import { AuthService } from '@service/auth.service';
 import { TranslateService } from '@ngx-translate/core';
 import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
 import { tap } from 'rxjs';
+import { IconService } from '@service/icons.service';
 
 /** Custom options the configure the tooltip's default show/hide delays. */
 export const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
@@ -36,8 +37,10 @@ export class AppComponent implements AfterViewInit {
         public appService: AppService,
         public headerService: HeaderService,
         public authService: AuthService,
-        public dialog: MatDialog
+        public dialog: MatDialog,
+        private iconService: IconService
     ) {
+        this.iconService.initializeIcons();
         this.appService.loadAppCore();
         this.appService.catchEvent().pipe(
             tap(() => {

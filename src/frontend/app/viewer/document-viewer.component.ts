@@ -39,6 +39,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
     private static fileInformationsPromise: Promise<any> | null = null;
 
     @ViewChild('templateList', { static: true }) templateList: PluginSelectSearchComponent;
+    @ViewChild('docToUpload', { static: false }) docToUploadRef: any;
     @ViewChild('onlyofficeViewer', { static: false }) onlyofficeViewer: EcplOnlyofficeViewerComponent;
     @ViewChild('collaboraOnlineViewer', { static: false }) collaboraOnlineViewer: CollaboraOnlineViewerComponent;
     @ViewChild('officeSharepointViewer', { static: false }) officeSharepointViewer: Office365SharepointViewerComponent;
@@ -385,6 +386,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
 
                 reader.onload = (value: any) => {
                     this.file.content = this.getBase64Document(value.target.result);
+                    this.isDocModified = true;
                     this.triggerEvent.emit('uploadFile');
                     if (this.file.type !== 'application/pdf') {
                         this.convertDocument(this.file);
@@ -392,6 +394,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
                         this.triggerEvent.emit('launchLad');
                         this.file.src = value.target.result;
                         this.loading = false;
+                        this.persistUploadedMainDocument();
                     }
                 };
             }
@@ -472,6 +475,17 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
         }
     }
 
+    canDeleteMainDocument() {
+        return this.editMode &&
+            this.resId !== null &&
+            this.mode === 'mainDocument' &&
+            !this.loading &&
+            !this.noFile &&
+            this.externalId.signatureBookId === undefined &&
+            !this.isSigned &&
+            ((this.file.contentView !== undefined || this.base64 !== null) || (this.file.content !== null));
+    }
+
 
     initUpload() {
         this.loading = true;
@@ -538,10 +552,12 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
                             } else {
                                 this.file.base64src = res.encodedResource;
                                 this.file.src = this.base64ToArrayBuffer(res.encodedResource);
+                                this.isDocModified = true;
                                 // Appel LAD après conversion
                                 this.triggerEvent.emit('launchLad');
 
                                 this.loading = false;
+                                this.persistUploadedMainDocument();
                             }
                         }
                         resolve(file);
@@ -1334,6 +1350,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
                 }),
                 exhaustMap((data) => this.http.put(`../rest/resources/${this.resId}?onlyDocument=true`, data)),
                 tap(() => {
+                    this.isDocModified = false;
                     this.closeEditor();
                     this.authService.catchEvent().subscribe((res: string) => {
                         if (res === 'login') {
@@ -1355,6 +1372,62 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
                 })
             ).subscribe();
         });
+    }
+
+    deleteMainDocument() {
+        this.dialogRef = this.dialog.open(ConfirmComponent, {
+            panelClass: 'maarch-modal',
+            autoFocus: false,
+            disableClose: true,
+            data: {
+                title: this.translate.instant('lang.delete'),
+                msg: this.translate.instant('lang.confirmAction')
+            }
+        });
+
+        this.dialogRef.afterClosed().pipe(
+            filter((data: string) => data === 'ok'),
+            tap(() => this.loading = true),
+            exhaustMap(() => this.http.delete(`../rest/resources/${this.resId}/content`)),
+            tap(() => {
+                this.resetFileData();
+                this.noConvertedFound = false;
+                this.noFile = true;
+            }),
+            finalize(() => {
+                if (this.resId !== null) {
+                    this.loadRessource(this.resId);
+                }
+                this.loading = false;
+            }),
+            catchError((err: any) => {
+                this.notify.handleSoftErrors(err);
+                this.loading = false;
+                return of(false);
+            })
+        ).subscribe();
+    }
+
+    triggerReplaceMainDocument() {
+        if (
+            this.docToUploadRef === undefined ||
+            this.loading ||
+            this.resId === null ||
+            this.mode !== 'mainDocument' ||
+            this.externalId.signatureBookId !== undefined ||
+            this.isSigned ||
+            this.noConvertedFound
+        ) {
+            return;
+        }
+        this.isNewVersion = true;
+        this.docToUploadRef.nativeElement.click();
+    }
+
+    private persistUploadedMainDocument() {
+        if (this.resId !== null && this.mode === 'mainDocument' && this.editMode && this.isDocModified && !this.loading) {
+            this.saveMainDocument();
+        }
     }
 
     loadTmpDocument(base64Content: string, format: string) {

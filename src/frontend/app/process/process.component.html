@@ -44,6 +44,12 @@
         </div>
         <div class="indexing-form-container">
             <div *ngIf="!isModalOpen() && currentTool !== 'dashboard'" style="display: flex;justify-content: flex-end;">
+                <button *ngIf="currentTool === 'info' && canEditData && currentResourceInformations?.resId" mat-button color="primary"
+                    (click)="appDocumentViewer.triggerReplaceMainDocument()"
+                    [title]="'lang.uploadNewVersion' | translate">
+                    <mat-icon class="fas fa-file-upload"></mat-icon>
+                    {{'lang.uploadNewVersion' | translate}}
+                </button>
                 <button *ngIf="privilegeService.hasCurrentUserPrivilege('view_technical_infos')" mat-icon-button
                     (click)="openTechnicalInfo()" color="primary"
                     [title]="'lang.showTechnicalInfo' | translate">
@@ -143,7 +149,8 @@
                     (reloadBadgeAttachments)="refreshBadge($event,'attachments')">
                 </app-attachments-list>
                 <app-select-indexing-model *ngIf="currentTool === 'info' && !loading" #appSelectIndexingModel
-                    [defaultIndexingModelId]="currentResourceInformations.modelId" [adminMode]="canChangeModel"
+                    [defaultIndexingModelId]="currentResourceInformations.modelId" [adminMode]="false"
+                    [groupId]="currentGroupId"
                     [indexingForm]="indexingForm" (afterSelectedListModel)="setValues($event); indexingForm.loadForm($event.indexingModel.id, false);">
                 </app-select-indexing-model>
                 <div *ngIf="currentTool === 'info' && !loading && !functions.empty(currentResourceInformations.registeredMail_deposit_id)"
@@ -350,6 +357,22 @@
         </div>
         <div class="document-container" [class.fullContainer]="appService.getViewMode()">
             <div class="content" *ngIf="!showResponseSplit">
+                <div *ngIf="currentTool === 'info' && canEditData && currentResourceInformations?.resId"
+                    style="position:absolute;z-index:2;top:12px;right:18px;display:flex;gap:8px;">
+                    <button mat-stroked-button color="primary"
+                        (click)="appDocumentViewer.triggerReplaceMainDocument()"
+                        [title]="'lang.uploadNewVersion' | translate">
+                        <mat-icon class="fas fa-file-upload" style="height:auto;"></mat-icon>
+                        {{'lang.uploadNewVersion' | translate}}
+                    </button>
+                    <button mat-stroked-button color="warn"
+                        *ngIf="appDocumentViewer?.canDeleteMainDocument()"
+                        (click)="appDocumentViewer.deleteMainDocument()"
+                        [title]="'lang.delete' | translate">
+                        <mat-icon class="fas fa-trash-alt" style="height:auto;"></mat-icon>
+                        {{'lang.delete' | translate}}
+                    </button>
+                </div>
                 <app-document-viewer #appDocumentViewer *ngIf="!loading" style="height:100%;width:100%;"
                     [editMode]="canEditData"
                     [resId]="currentResourceInformations.resId"
@@ -439,8 +462,9 @@
                     (reloadBadgeAttachments)="refreshBadge($event,'attachments')">
                 </app-attachments-list>
                 <app-select-indexing-model *ngIf="modal.id === 'info' && !loading" #appSelectIndexingModel
-                    [adminMode]="canChangeModel" [indexingForm]="indexingForm"
+                    [adminMode]="false" [indexingForm]="indexingForm"
                     [defaultIndexingModelId]="currentResourceInformations.modelId"
+                    [groupId]="currentGroupId"
                     (afterSelectedListModel)="setValues($event); indexingForm.loadForm($event.indexingModel.id, false)"></app-select-indexing-model>
                 <div *ngIf="modal.id === 'info' && !loading && !functions.empty(currentResourceInformations.registeredMail_deposit_id)"
                     class="alert-message alert-message-info" style="min-width: 100%;"

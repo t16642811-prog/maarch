@@ -117,7 +117,8 @@ export class IndexingFormComponent implements OnInit {
         'indexingCustomField_16',
         'indexingCustomField_17',
         'indexingCustomField_18',
-        'indexingCustomField_19'
+        'indexingCustomField_19',
+        'indexingCustomField_22'
     ];
     anamFieldIds: any = {
         mode: 'indexingCustomField_6',
@@ -133,8 +134,16 @@ export class IndexingFormComponent implements OnInit {
         classement: 'indexingCustomField_16',
         reference: 'indexingCustomField_17',
         referenceDate: 'indexingCustomField_18',
-        instructionsStructure: 'indexingCustomField_19'
+        instructionsStructure: 'indexingCustomField_19',
+        instructionDate: 'indexingCustomField_22'
     };
+    anamReceptionFieldIds: string[] = [
+        'indexingCustomField_7',
+        'indexingCustomField_8',
+        'indexingCustomField_9',
+        'indexingCustomField_10',
+        'indexingCustomField_11'
+    ];
 
     availableFields: any[] = [
         {
@@ -467,6 +476,8 @@ export class IndexingFormComponent implements OnInit {
                 } else {
                     element.default_value = this.functions.formatDateObjectToDateTimeString(dateValue, 'dd-mm-yyyy');
                 }
+            } else if (this.anamReceptionFieldIds.includes(element.identifier)) {
+                element.default_value = this.composeAnamReceptionFieldValue(element.identifier);
             } else {
                 element.default_value = this.functions.empty(this.arrFormControl[element.identifier].value) ? null : this.arrFormControl[element.identifier].value;
             }
@@ -497,11 +508,14 @@ export class IndexingFormComponent implements OnInit {
         return arrIndexingModels;
     }
 
-    saveData() {
+    saveData(extraDatas: any = {}) {
         return new Promise((resolve) => {
             if (this.isValidForm()) {
                 this.mustFixErrors = false;
-                const formatdatas = this.formatDatas(this.getDatas());
+                const formatdatas = {
+                    ...this.formatDatas(this.getDatas()),
+                    ...extraDatas
+                };
 
                 this.http.put(`../rest/resources/${this.resId}`, formatdatas).pipe(
                     tap(() => {
@@ -698,6 +712,18 @@ export class IndexingFormComponent implements OnInit {
                         elem.values = [... new Set(elem.values)];
                         elem.event = 'loadDiffusionList';
                         elem.allowedEntities = elem.values.filter((val: any) => val.disabled === false).map((entities: any) => entities.id);
+
+                        if (this.isMinisterIncomingIndexingModel()) {
+                            const ministerEntity = myEntities.find((entity: any) => entity.entityId === 'MINES')
+                                ?? myEntities.find((entity: any) => this.normalizeIndexingModelLabel(entity.title).includes('ministre des mines'));
+
+                            if (!this.functions.empty(ministerEntity)) {
+                                elem.default_value = ministerEntity.id;
+                                this.arrFormControl[elem.identifier].setValue(ministerEntity.id);
+                                this.arrFormControl[elem.identifier].disable();
+                                this.loadDiffusionList(elem, ministerEntity.id);
+                            }
+                        }
                     }
                     resolve(true);
                 })
@@ -1021,21 +1047,26 @@ export class IndexingFormComponent implements OnInit {
     }
 
     shouldHideExternalOutgoingField(field: any): boolean {
-        if (this.adminMode || this.currentCategory !== 'outgoing' || !field?.identifier) {
+        if (this.adminMode || !field?.identifier) {
             return false;
         }
 
-        const isExternalOutgoing = this.isSimplifiedOutgoingIndexingModelV2();
+        const isExternalOutgoing = this.currentCategory === 'outgoing' && this.isSimplifiedOutgoingIndexingModelV2();
+        const isMinisterIncoming = this.currentCategory === 'incoming' && this.isMinisterIncomingIndexingModel();
 
-        return isExternalOutgoing && ['doctype', 'documentDate', 'initiator'].includes(field.identifier);
+        return (isExternalOutgoing && ['doctype', 'documentDate', 'initiator'].includes(field.identifier))
+            || (isMinisterIncoming && field.identifier === 'doctype');
     }
 
     private applyExternalOutgoingHiddenDefaults(field: any): void {
-        if (!this.isSimplifiedOutgoingIndexingModelV2() || !field?.identifier) {
+        if (!field?.identifier) {
             return;
         }
 
-        if (field.identifier === 'doctype') {
+        const isExternalOutgoing = this.currentCategory === 'outgoing' && this.isSimplifiedOutgoingIndexingModelV2();
+        const isMinisterIncoming = this.currentCategory === 'incoming' && this.isMinisterIncomingIndexingModel();
+
+        if (field.identifier === 'doctype' && (isExternalOutgoing || isMinisterIncoming)) {
             const currentValue = this.arrFormControl['doctype']?.value;
             if (!this.functions.empty(currentValue)) {
                 return;
@@ -1048,7 +1079,7 @@ export class IndexingFormComponent implements OnInit {
 
             field.default_value = firstAllowedDoctype;
             this.arrFormControl['doctype']?.setValue(firstAllowedDoctype);
-        } else if (field.identifier === 'documentDate') {
+        } else if (field.identifier === 'documentDate' && isExternalOutgoing) {
             const currentValue = this.arrFormControl['documentDate']?.value;
             if (!this.functions.empty(currentValue)) {
                 return;
@@ -1063,20 +1094,29 @@ export class IndexingFormComponent implements OnInit {
         }
     }
 
+    private normalizeIndexingModelLabel(label: string): string {
+        return (label || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
     private isExternalOutgoingIndexingModel(): boolean {
-        const indexingModelLabel = (this.indexingModelClone?.label || '').toLowerCase();
+        const indexingModelLabel = this.normalizeIndexingModelLabel(this.indexingModelClone?.label || '');
         return indexingModelLabel.includes('depart externe') || indexingModelLabel.includes('départ externe');
     }
 
     private isSimplifiedOutgoingIndexingModel(): boolean {
-        const indexingModelLabel = (this.indexingModelClone?.label || '').toLowerCase();
+        const indexingModelLabel = this.normalizeIndexingModelLabel(this.indexingModelClone?.label || '');
         return ['depart externe', 'dÃ©part externe', 'depart interne', 'dÃ©part interne']
             .some((label: string) => indexingModelLabel.includes(label));
     }
 
     private isSimplifiedOutgoingIndexingModelV2(): boolean {
-        const indexingModelLabel = (this.indexingModelClone?.label || '').toLowerCase();
+        const indexingModelLabel = this.normalizeIndexingModelLabel(this.indexingModelClone?.label || '');
         return indexingModelLabel.includes('externe') || indexingModelLabel.includes('interne');
+    }
+
+    private isMinisterIncomingIndexingModel(): boolean {
+        const indexingModelLabel = this.normalizeIndexingModelLabel(this.indexingModelClone?.label || '');
+        return indexingModelLabel.includes('courrier arrivee ministre');
     }
 
     createForm() {
@@ -1218,6 +1258,7 @@ export class IndexingFormComponent implements OnInit {
                         this.indexingModelClone.fields.find((field: any) => field.identifier === 'processLimitDate').enabled = false;
                     }
                 });
+                this.initializeAnamReceptionSplitFields();
                 if (data.indexingModel.master !== null) {
                     await this.getAllowedValues(data.indexingModel.master);
                 }
@@ -1416,8 +1457,26 @@ export class IndexingFormComponent implements OnInit {
             return true;
         }
 
-        // In process mode, destination fields are required for ANAM block.
-        return !!this.getFieldByIdentifier(this.anamFieldIds.destExec);
+        return [
+            this.anamFieldIds.instructionsPcd,
+            this.anamFieldIds.instructionsStructure,
+            ...this.anamReceptionFieldIds,
+            this.anamFieldIds.destExec,
+            this.anamFieldIds.destFollow,
+            this.anamFieldIds.destInfo
+        ].some((identifier: string) => !!this.getFieldByIdentifier(identifier));
+    }
+
+    hasAnamFieldControl(identifier: string): boolean {
+        return !!this.getFieldByIdentifier(identifier) && !!this.arrFormControl[identifier];
+    }
+
+    hasAnamDestinationMatrixFields(): boolean {
+        return [
+            this.anamFieldIds.destExec,
+            this.anamFieldIds.destFollow,
+            this.anamFieldIds.destInfo
+        ].some((identifier: string) => this.hasAnamFieldControl(identifier));
     }
 
     isAnamField(field: any): boolean {
@@ -1455,6 +1514,10 @@ export class IndexingFormComponent implements OnInit {
             nextValue.length = 0;
             nextValue.push(...filtered);
         }
+        if (!this.arrFormControl[fieldId]) {
+            return;
+        }
+
         this.arrFormControl[fieldId].setValue(nextValue);
         this.arrFormControl[fieldId].markAsDirty();
     }
@@ -1473,7 +1536,7 @@ export class IndexingFormComponent implements OnInit {
                 id: this.anamFieldIds.destInfo,
                 label: this.getFieldByIdentifier(this.anamFieldIds.destInfo)?.label || 'Information'
             }
-        ];
+        ].filter((row: any) => this.hasAnamFieldControl(row.id));
     }
 
     getAnamDestRowLabel(label: string): string {
@@ -1484,7 +1547,6 @@ export class IndexingFormComponent implements OnInit {
     }
 
     getAnamDestColumns(): { id: any; label: string }[] {
-        const fallback = ['Recherche', 'Promotion', 'Permis miniers', 'Controle minier', 'DRHL', 'DFC', 'Dcx'];
         const field = this.getFieldByIdentifier(this.anamFieldIds.destExec);
         const values = field?.values ?? [];
         if (Array.isArray(values) && values.length > 0) {
@@ -1493,10 +1555,14 @@ export class IndexingFormComponent implements OnInit {
                 label: value.label
             }));
         }
-        return fallback.map((label) => ({ id: label, label }));
+        return [];
     }
 
     private hasAnamDestinationSelection(): boolean {
+        if (!this.hasAnamDestinationMatrixFields()) {
+            return true;
+        }
+
         const destExec = this.arrFormControl[this.anamFieldIds.destExec]?.value ?? [];
         const destFollow = this.arrFormControl[this.anamFieldIds.destFollow]?.value ?? [];
         const destInfo = this.arrFormControl[this.anamFieldIds.destInfo]?.value ?? [];
@@ -1511,20 +1577,24 @@ export class IndexingFormComponent implements OnInit {
         }
         const errors: string[] = [];
         const instructions = this.arrFormControl[this.anamFieldIds.instructionsPcd]?.value ?? '';
-        if (this.functions.empty(instructions)) {
+        if (this.hasAnamFieldControl(this.anamFieldIds.instructionsPcd) && this.functions.empty(instructions)) {
             errors.push('Veuillez saisir les instructions du PCD.');
         }
-        if (!this.hasAnamDestinationSelection()) {
+        if (this.hasAnamDestinationMatrixFields() && !this.hasAnamDestinationSelection()) {
             errors.push('Veuillez cocher au moins une case dans le tableau des destinataires.');
         }
         return errors;
     }
 
     markAnamProcessTouched(): void {
-        this.arrFormControl[this.anamFieldIds.instructionsPcd]?.markAsTouched();
-        this.arrFormControl[this.anamFieldIds.destExec]?.markAsTouched();
-        this.arrFormControl[this.anamFieldIds.destFollow]?.markAsTouched();
-        this.arrFormControl[this.anamFieldIds.destInfo]?.markAsTouched();
+        if (this.hasAnamFieldControl(this.anamFieldIds.instructionsPcd)) {
+            this.arrFormControl[this.anamFieldIds.instructionsPcd]?.markAsTouched();
+        }
+        if (this.hasAnamDestinationMatrixFields()) {
+            this.arrFormControl[this.anamFieldIds.destExec]?.markAsTouched();
+            this.arrFormControl[this.anamFieldIds.destFollow]?.markAsTouched();
+            this.arrFormControl[this.anamFieldIds.destInfo]?.markAsTouched();
+        }
     }
 
     getAnamStructureAssignErrors(): string[] {
@@ -1533,7 +1603,7 @@ export class IndexingFormComponent implements OnInit {
         }
         const errors: string[] = [];
         const instructions = this.arrFormControl[this.anamFieldIds.instructionsStructure]?.value ?? '';
-        if (this.functions.empty(instructions)) {
+        if (this.hasAnamFieldControl(this.anamFieldIds.instructionsStructure) && this.functions.empty(instructions)) {
             errors.push('Veuillez saisir les instructions de la structure.');
         }
         return errors;
@@ -1568,6 +1638,89 @@ export class IndexingFormComponent implements OnInit {
         };
         const mappedId = map[normalizedMode] ?? this.anamFieldIds.dgm;
         return fieldId === mappedId;
+    }
+
+    getAnamReceptionDateControlName(fieldId: string): string {
+        return `${fieldId}_date`;
+    }
+
+    getAnamModeDisplayLabel(value: any): string {
+        const rawLabel = (value?.label ?? value?.id ?? '').toString().trim();
+        const normalizedLabel = rawLabel.toLowerCase();
+
+        if (normalizedLabel === 'mail') {
+            return 'SG';
+        } else if (normalizedLabel === 'inter') {
+            return 'CC';
+        }
+
+        return rawLabel;
+    }
+
+    private initializeAnamReceptionSplitFields(): void {
+        this.anamReceptionFieldIds.forEach((fieldId: string) => {
+            if (!this.arrFormControl[fieldId]) {
+                return;
+            }
+
+            const dateControlName = this.getAnamReceptionDateControlName(fieldId);
+            const parsedValue = this.parseAnamReceptionFieldValue(this.arrFormControl[fieldId].value);
+
+            this.arrFormControl[fieldId].setValue(parsedValue.number, { emitEvent: false });
+
+            if (!this.arrFormControl[dateControlName]) {
+                this.arrFormControl[dateControlName] = new UntypedFormControl(parsedValue.date);
+            } else {
+                this.arrFormControl[dateControlName].setValue(parsedValue.date, { emitEvent: false });
+            }
+        });
+    }
+
+    private parseAnamReceptionFieldValue(value: any): { number: string; date: Date | null } {
+        if (this.functions.empty(value)) {
+            return { number: '', date: null };
+        }
+
+        const rawValue = String(value).trim();
+        const dateMatch = rawValue.match(/(\d{2}[\/-]\d{2}[\/-]\d{4})(?:\s+\d{2}:\d{2}:\d{2})?$/);
+        if (dateMatch) {
+            const numberPart = rawValue.replace(/\s*-\s*\d{2}[\/-]\d{2}[\/-]\d{4}(?:\s+\d{2}:\d{2}:\d{2})?$/, '').trim();
+            const [day, month, year] = dateMatch[1]
+                .replace(/-/g, '/')
+                .split('/')
+                .map((part: string) => Number(part));
+            const parsedDate = new Date(year, month - 1, day);
+            return {
+                number: numberPart,
+                date: isNaN(parsedDate.getTime()) ? null : parsedDate
+            };
+        }
+
+        return { number: rawValue, date: null };
+    }
+
+    private composeAnamReceptionFieldValue(fieldId: string): string | null {
+        const numberValue = (this.arrFormControl[fieldId]?.value ?? '').toString().trim();
+        const dateValue = this.arrFormControl[this.getAnamReceptionDateControlName(fieldId)]?.value;
+
+        if (this.functions.empty(numberValue) && this.functions.empty(dateValue)) {
+            return null;
+        }
+
+        if (this.functions.empty(dateValue)) {
+            return numberValue;
+        }
+
+        const parsedDate = dateValue instanceof Date ? dateValue : new Date(dateValue);
+        if (isNaN(parsedDate.getTime())) {
+            return numberValue;
+        }
+
+        const day = `${parsedDate.getDate()}`.padStart(2, '0');
+        const month = `${parsedDate.getMonth() + 1}`.padStart(2, '0');
+        const year = `${parsedDate.getFullYear()}`;
+        const formattedDate = `${day}-${month}-${year}`;
+        return this.functions.empty(numberValue) ? formattedDate : `${numberValue} - ${formattedDate}`;
     }
 
     downloadAnamPdf() {

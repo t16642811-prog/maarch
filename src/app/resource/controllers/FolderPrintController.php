@@ -58,12 +58,33 @@ class FolderPrintController
     public function generateFile(Request $request, Response $response): Response
     {
         $body = $request->getParsedBody();
+        try {
+            if (!Validator::notEmpty()->arrayType()->validate($body['resources'])) {
+                return $response->withStatus(400)->withJson(['errors' => 'Body resources is empty']);
+            }
 
-        if (!Validator::notEmpty()->arrayType()->validate($body['resources'])) {
-            return $response->withStatus(400)->withJson(['errors' => 'Body resources is empty']);
-        }
+            $ministerInstructionOnly = true;
+            foreach ($body['resources'] as $resource) {
+                $hasOtherSelection = !empty($resource['document'])
+                    || !empty($resource['attachments'])
+                    || !empty($resource['notes'])
+                    || !empty($resource['emails'])
+                    || !empty($resource['acknowledgementReceipts'])
+                    || !empty($resource['linkedResources'])
+                    || !empty($resource['linkedResourcesAttachments'])
+                    || !empty($resource['summarySheet']);
 
-        $defaultUnits = [
+                if (empty($resource['ministerInstructionSheet']) || $hasOtherSelection) {
+                    $ministerInstructionOnly = false;
+                    break;
+                }
+            }
+
+            if ($ministerInstructionOnly) {
+                return FolderPrintController::generateMinisterInstructionFolder($body['resources'], $response);
+            }
+
+            $defaultUnits = [
             [
                 "unit"  => "qrcode",
                 "label" => ""
@@ -103,8 +124,6 @@ class FolderPrintController
         $unitsSummarySheet = [];
         if (!empty($body['summarySheet'])) {
             $unitsSummarySheet = $body['summarySheet'];
-        } elseif (count($body['resources']) > 1) {
-            $unitsSummarySheet = $defaultUnits;
         }
 
         $resIds = array_column($body['resources'], 'resId');
@@ -128,6 +147,10 @@ class FolderPrintController
                 $documentPaths[] = FolderPrintController::getSummarySheet(
                     ['units' => $units, 'resId' => $resource['resId']]
                 );
+            }
+
+            if (!empty($resource['ministerInstructionSheet'])) {
+                $documentPaths[] = FolderPrintController::getMinisterInstructionSheet(['resId' => $resource['resId']]);
             }
 
             if (!empty($resource['document'])) {
@@ -836,15 +859,15 @@ class FolderPrintController
 
 
             if (!empty($documentPaths)) {
-                if (empty($resource['altIdentifier'] . $resource['subject'])) {
+                if (empty(($resource['altIdentifier'] ?? '') . ($resource['subject'] ?? ''))) {
                     $document = ResModel::getById([
                         'select' => ['alt_identifier', 'subject'],
                         'resId'  => $resource['resId']
                     ]);
-                    $resource['altIdentifier'] = $document['alt_identifier'];
-                    $resource['subject'] = $document['subject'];
+                    $resource['altIdentifier'] = $document['alt_identifier'] ?? '';
+                    $resource['subject'] = $document['subject'] ?? '';
                 }
-                if (empty($resource['altIdentifier'] . $resource['subject'])) {
+                if (empty(($resource['altIdentifier'] ?? '') . ($resource['subject'] ?? ''))) {
                     $resource['altIdentifier'] = 'MAARCH';
                     $resource['subject'] = $resource['resId'];
                 }
@@ -866,8 +889,7 @@ class FolderPrintController
                     unlink($filePathOnTmp);
                 }
 
-                $command = "pdfunite '" . implode("' '", $documentPaths) . "' '" . $filePathOnTmp . "'";
-                exec($command . ' 2>&1', $output, $return);
+                FolderPrintController::mergePdfFiles($documentPaths, $filePathOnTmp);
 
                 if (!file_exists($filePathOnTmp)) {
                     return $response->withStatus(500)->withJson(['errors' => 'Merge PDF file not created']);
@@ -879,6 +901,7 @@ class FolderPrintController
                     if (
                         str_contains($documentPath, "email_") ||
                         str_contains($documentPath, "attachment_") ||
+                        str_contains($documentPath, "ministerInstructionSheet_") ||
                         str_contains($documentPath, "summarySheet_") ||
                         str_contains($documentPath, "convertedAr_") ||
                         str_contains($documentPath, "listNotes_")
@@ -935,8 +958,151 @@ class FolderPrintController
             unlink($folderPrintPath);
         }
 
-        $response = $response->withAddedHeader('Content-Disposition', 'inline; filename=maarch.zip');
+            $response = $response->withAddedHeader('Content-Disposition', 'inline; filename=maarch.zip');
+            return $response->withHeader('Content-Type', $mimeType);
+        } catch (Exception $exception) {
+            @file_put_contents(
+                'C:/apps/maarch/custom/local/logs/folderprint-debug.log',
+                '[' . date('Y-m-d H:i:s') . '] ' . $exception->getMessage() . PHP_EOL,
+                FILE_APPEND
+            );
+            LogsController::add([
+                'isTech'    => true,
+                'moduleId'  => 'folderPrint',
+                'level'     => 'ERROR',
+                'tableName' => '',
+                'recordId'  => '',
+                'eventType' => 'FolderPrint exception: ' . $exception->getMessage(),
+                'eventId'   => 'FolderPrint Error'
+            ]);
+
+            return $response->withStatus(500)->withJson(['errors' => 'Internal server error']);
+        }
+    }
+
+    private static function generateMinisterInstructionFolder(array $resources, Response $response): Response
+    {
+        $tmpDir = CoreConfigModel::getTmpPath();
+        $generatedFiles = [];
+
+        foreach ($resources as $resource) {
+            ValidatorModel::notEmpty($resource, ['resId']);
+            ValidatorModel::intVal($resource, ['resId']);
+
+            $filePath = FolderPrintController::getMinisterInstructionSheet(['resId' => (int)$resource['resId']]);
+            $generatedFiles[] = $filePath;
+        }
+
+        if (count($generatedFiles) === 1) {
+            $fileContent = file_get_contents($generatedFiles[0]);
+            $mimeType = (new finfo(FILEINFO_MIME_TYPE))->buffer($fileContent);
+            @unlink($generatedFiles[0]);
+
+            $response->write($fileContent);
+            $response = $response->withAddedHeader('Content-Disposition', 'inline; filename=fiche_suivi_ministre.pdf');
+            return $response->withHeader('Content-Type', $mimeType);
+        }
+
+        $zipPath = str_replace('//', '/', $tmpDir) . 'folderPrint_minister_' . $GLOBALS['id'] . '.zip';
+        if (file_exists($zipPath)) {
+            unlink($zipPath);
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new Exception('Minister instruction ZIP file not created');
+        }
+
+        foreach ($generatedFiles as $generatedFile) {
+            $zip->addFile($generatedFile, basename($generatedFile));
+        }
+        $zip->close();
+
+        if (!file_exists($zipPath)) {
+            throw new Exception('Minister instruction ZIP file not created');
+        }
+
+        $fileContent = file_get_contents($zipPath);
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->buffer($fileContent);
+
+        @unlink($zipPath);
+        foreach ($generatedFiles as $generatedFile) {
+            @unlink($generatedFile);
+        }
+
+        $response->write($fileContent);
+        $response = $response->withAddedHeader('Content-Disposition', 'inline; filename=fiche_suivi_ministre.zip');
         return $response->withHeader('Content-Type', $mimeType);
+    }
+
+    /**
+     * @throws Exception
+     */
+    private static function getMinisterInstructionSheet(array $args): string
+    {
+        ValidatorModel::notEmpty($args, ['resId']);
+        ValidatorModel::intVal($args, ['resId']);
+
+        $tmpDir = CoreConfigModel::getTmpPath();
+        $filePathOnTmp = str_replace('//', '/', $tmpDir . 'ministerInstructionSheet_' . $args['resId'] . '_' . $GLOBALS['id'] . '.pdf');
+        if (file_exists($filePathOnTmp)) {
+            unlink($filePathOnTmp);
+        }
+
+        $fileContent = AnamFormController::generatePdfContentByResId((int)$args['resId']);
+        file_put_contents($filePathOnTmp, $fileContent);
+
+        if (!file_exists($filePathOnTmp)) {
+            throw new Exception('Minister instruction sheet file not created');
+        }
+
+        return $filePathOnTmp;
+    }
+
+    /**
+     * Merge PDF files without relying on external binaries such as pdfunite.
+     * This keeps folder print working on Windows deployments.
+     *
+     * @param array $documentPaths
+     * @param string $outputPath
+     * @return void
+     * @throws Exception
+     */
+    private static function mergePdfFiles(array $documentPaths, string $outputPath): void
+    {
+        ValidatorModel::notEmpty($documentPaths, ['0']);
+        ValidatorModel::stringType(['outputPath' => $outputPath], ['outputPath']);
+
+        if (count($documentPaths) === 1) {
+            copy($documentPaths[0], $outputPath);
+            return;
+        }
+
+        $libPath = CoreConfigModel::getFpdiPdfParserLibrary();
+        if (file_exists($libPath)) {
+            require_once($libPath);
+        }
+
+        $pdf = new Fpdi();
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetAutoPageBreak(false);
+
+        foreach ($documentPaths as $documentPath) {
+            if (!is_file($documentPath)) {
+                throw new Exception("PDF file not found for merge: {$documentPath}");
+            }
+
+            $pageCount = $pdf->setSourceFile($documentPath);
+            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                $templateId = $pdf->importPage($pageNo);
+                $size = $pdf->getTemplateSize($templateId);
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useImportedPage($templateId);
+            }
+        }
+
+        $pdf->Output($outputPath, 'F');
     }
 
     /**

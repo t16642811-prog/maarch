@@ -26,6 +26,269 @@ use SrcCore\http\Response;
 class AnamFormController
 {
     /**
+     * @throws \Exception
+     */
+    public static function generatePdfContentByResId(int $resId, bool $debug = false): string
+    {
+        $resource = ResModel::getById([
+            'select' => [
+                'subject',
+                'doc_date',
+                'admission_date',
+                'creation_date',
+                'alt_identifier',
+                'custom_fields'
+            ],
+            'resId'  => $resId
+        ]);
+
+        if (empty($resource)) {
+            throw new \Exception('Document does not exist');
+        }
+
+        $isMinisterIncoming = !empty($resource['alt_identifier']) && str_starts_with((string)$resource['alt_identifier'], 'MINISTRE/MINES/');
+        $templateFileName = $isMinisterIncoming ? 'template_suivi.pdf' : 'courrier.pdf';
+        $templatePath = dirname(__DIR__, 4) . DIRECTORY_SEPARATOR . $templateFileName;
+        if (!is_file($templatePath)) {
+            throw new \Exception('Template file not found');
+        }
+
+        /** @var array<string, mixed> $customFields */
+        $customFields = !empty($resource['custom_fields']) ? json_decode($resource['custom_fields'], true) : [];
+        $getCustomValue = static function (array $customFields, int $id, $default = '') {
+            return $customFields[(string)$id] ?? $default;
+        };
+
+        $senders = ContactController::getFormattedContacts([
+            'resId'       => $resId,
+            'mode'        => 'sender',
+            'onlyContact' => true
+        ]);
+        $senderLabel = $senders[0] ?? '';
+
+        $modeReception = $getCustomValue($customFields, 6, '');
+        $bog = $getCustomValue($customFields, 7, '');
+        $mem = $getCustomValue($customFields, 8, '');
+        $sg = $getCustomValue($customFields, 9, '');
+        $cc = $getCustomValue($customFields, 10, '');
+        $dgm = $getCustomValue($customFields, 11, '');
+        $destExec = (array)$getCustomValue($customFields, 12, []);
+        $destFollow = (array)$getCustomValue($customFields, 13, []);
+        $destInfo = (array)$getCustomValue($customFields, 14, []);
+        $instructionsPcd = $getCustomValue($customFields, 15, '');
+        $classement = $getCustomValue($customFields, 16, '');
+        $reference = $getCustomValue($customFields, 17, '');
+        $referenceDate = $getCustomValue($customFields, 18, '');
+        $instructionsStructure = $getCustomValue($customFields, 19, '');
+
+        $dateReception = $resource['admission_date'] ?? $resource['creation_date'] ?? null;
+        $dateReception = !empty($dateReception) ? (new DateTime($dateReception))->format('d/m/Y H:i') : '';
+        $docDate = !empty($resource['doc_date']) ? (new DateTime($resource['doc_date']))->format('d/m/Y') : '';
+
+        $pdf = new Fpdi();
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetAutoPageBreak(false);
+        $pdf->setSourceFile($templatePath);
+        $tplIdx = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplIdx);
+        $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+        $pdf->useImportedPage($tplIdx);
+        $pdf->SetFont('helvetica', '', 9);
+
+        $pdf->SetXY(25, 60.1);
+        $pdf->Cell(85, 4.5, (string)$resource['alt_identifier'], 0, 0);
+        $pdf->SetXY(31.9, 66.2);
+        $pdf->Cell(95, 4.5, $dateReception, 0, 0);
+        $pdf->SetXY(30, 80.8);
+        $pdf->MultiCell(148, 4.5, $senderLabel, 0, 'L');
+        $pdf->SetXY(20, 99.6);
+        $pdf->MultiCell(172, 4.8, $resource['subject'] ?? '', 0, 'L');
+
+        $fieldX = 154;
+        $fieldY = 34.5;
+        $lineGap = 6.1;
+        foreach ([$bog, $mem, $sg, $cc, $dgm] as $value) {
+            $pdf->SetXY($fieldX, $fieldY);
+            $pdf->Cell(60, 5, (string)$value, 0, 0);
+            $fieldY += $lineGap;
+        }
+
+        $checkboxY = 72;
+        $checkboxesX = [132, 150.5, 170, 193.2];
+        $modes = ['B.O.G', 'F.A.X', 'Mail', 'Inter'];
+        foreach ($modes as $idx => $mode) {
+            if ($modeReception === $mode) {
+                $pdf->SetXY($checkboxesX[$idx], $checkboxY);
+                $pdf->Cell(4, 4, 'X', 0, 0);
+            }
+        }
+
+        $destColumns = ['Recherche', 'Promotion', 'Permis miniers', 'Controle minier', 'DRHL', 'DFC', 'Dcx'];
+        $rows = [$destExec, $destFollow, $destInfo];
+        $rowPositions = [133, 140, 147];
+        $columnPositions = [
+            'Recherche'       => 50,
+            'Promotion'       => 77,
+            'Permis miniers'  => 106,
+            'Controle minier' => 136,
+            'DRHL'            => 160,
+            'DFC'             => 176,
+            'Dcx'             => 192.5
+        ];
+        foreach ($rows as $rowIndex => $rowValues) {
+            $rowY = $rowPositions[$rowIndex] ?? null;
+            if ($rowY === null) {
+                continue;
+            }
+            foreach ($destColumns as $col) {
+                if (!in_array($col, $rowValues, true)) {
+                    continue;
+                }
+                $colX = $columnPositions[$col] ?? null;
+                if ($colX === null) {
+                    continue;
+                }
+                $pdf->SetXY($colX, $rowY);
+                $pdf->Cell(4, 4, 'X', 0, 0);
+            }
+        }
+
+        $wrapText = static function (Fpdi $pdf, string $text, float $width): array {
+            $lines = [];
+            $paragraphs = preg_split("/\\r\\n|\\r|\\n/", $text);
+            foreach ($paragraphs as $paragraph) {
+                $paragraph = trim($paragraph);
+                if ($paragraph === '') {
+                    $lines[] = '';
+                    continue;
+                }
+                $words = preg_split('/\\s+/', $paragraph);
+                $line = '';
+                foreach ($words as $word) {
+                    $test = $line === '' ? $word : $line . ' ' . $word;
+                    if ($pdf->GetStringWidth($test) <= $width) {
+                        $line = $test;
+                    } else {
+                        if ($line !== '') {
+                            $lines[] = $line;
+                        }
+                        $line = $word;
+                    }
+                }
+                if ($line !== '') {
+                    $lines[] = $line;
+                }
+            }
+            return $lines;
+        };
+
+        $pdf->setCellHeightRatio(1);
+        $pdf->setCellPaddings(0, 0, 0, 0);
+        if ($isMinisterIncoming) {
+            $ministerInstructionX = 8;
+            $ministerInstructionY = 140;
+            $ministerInstructionW = 82;
+            $ministerInstructionLineHeight = 6.6;
+            $ministerInstructionLines = array_slice($wrapText($pdf, (string)$instructionsStructure, $ministerInstructionW), 0, 5);
+            foreach ($ministerInstructionLines as $index => $line) {
+                $pdf->SetXY($ministerInstructionX, $ministerInstructionY + ($index * $ministerInstructionLineHeight));
+                $pdf->Cell($ministerInstructionW, $ministerInstructionLineHeight, $line, 0, 0);
+            }
+        } else {
+            $pcdX = 9;
+            $pcdY = 163;
+            $pcdW = 65;
+            $pcdLineHeight = 6.1;
+            $pcdLines = $wrapText($pdf, (string)$instructionsPcd, $pcdW);
+            foreach ($pcdLines as $index => $line) {
+                $pdf->SetXY($pcdX, $pcdY + ($index * $pcdLineHeight));
+                $pdf->Cell($pcdW, $pcdLineHeight, $line, 0, 0);
+            }
+        }
+
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetXY(115, 186);
+        $pdf->MultiCell(80, 4.2, $classement, 0, 'L');
+        $pdf->SetXY(125, 228);
+        $pdf->Cell(40, 5, $reference, 0, 0);
+        $refDate = !empty($referenceDate) ? (new DateTime($referenceDate))->format('d/m/Y') : '';
+        $pdf->SetXY(175, 228);
+        $pdf->Cell(25, 5, $refDate, 0, 0);
+
+        if (!$isMinisterIncoming) {
+            $instructionStructurePositions = [
+                ['x' => 117, 'y' => 194.5, 'width' => 80],
+                ['x' => 80, 'y' => 201, 'width' => 117],
+                ['x' => 80, 'y' => 207.5, 'width' => 117],
+                ['x' => 80, 'y' => 214.5, 'width' => 117],
+                ['x' => 80, 'y' => 221, 'width' => 117],
+                ['x' => 80, 'y' => 227.5, 'width' => 117],
+                ['x' => 80, 'y' => 234, 'width' => 117],
+                ['x' => 80, 'y' => 240, 'width' => 117],
+                ['x' => 80, 'y' => 246, 'width' => 117]
+            ];
+            $instructionStructureLines = [];
+            $remainingInstructionStructure = trim((string)$instructionsStructure);
+            foreach ($instructionStructurePositions as $lineIndex => $position) {
+                if ($remainingInstructionStructure === '') {
+                    break;
+                }
+                $line = '';
+                foreach (preg_split('/\s+/', $remainingInstructionStructure) as $word) {
+                    $candidate = $line === '' ? $word : $line . ' ' . $word;
+                    if ($pdf->GetStringWidth($candidate) <= $position['width']) {
+                        $line = $candidate;
+                    } else {
+                        if ($line === '') {
+                            $line = $word;
+                        }
+                        break;
+                    }
+                }
+                if ($lineIndex === count($instructionStructurePositions) - 1 && $line !== $remainingInstructionStructure) {
+                    $line = $remainingInstructionStructure;
+                }
+                $instructionStructureLines[] = ['x' => $position['x'], 'y' => $position['y'], 'text' => $line];
+                $remainingInstructionStructure = trim(substr($remainingInstructionStructure, strlen($line)));
+            }
+            foreach ($instructionStructureLines as $line) {
+                $pdf->SetXY($line['x'], $line['y']);
+                $pdf->Cell(117, 4.2, $line['text'], 0, 0);
+            }
+        }
+
+        $pdf->SetXY(10, 286);
+        $pdf->Cell(60, 4, $docDate, 0, 0);
+
+        if ($debug) {
+            $size = $pdf->getTemplateSize($tplIdx);
+            $pdf->SetDrawColor(200, 200, 200);
+            $pdf->SetTextColor(120, 120, 120);
+            $pdf->SetFont('helvetica', '', 6);
+            $step = 10;
+            for ($x = 0; $x <= $size['width']; $x += $step) {
+                $pdf->Line($x, 0, $x, $size['height']);
+                $pdf->SetXY($x + 0.5, 1);
+                $pdf->Cell(0, 2, (string)$x, 0, 0);
+            }
+            for ($y = 0; $y <= $size['height']; $y += $step) {
+                $pdf->Line(0, $y, $size['width'], $y);
+                $pdf->SetXY(1, $y + 0.5);
+                $pdf->Cell(0, 2, (string)$y, 0, 0);
+            }
+            $pdf->SetTextColor(255, 0, 0);
+            $pdf->SetFont('helvetica', 'B', 7);
+            foreach ([['I', 8, 142], ['H', 90, 142]] as $m) {
+                $pdf->SetXY($m[1], $m[2]);
+                $pdf->Cell(6, 4, $m[0], 0, 0);
+            }
+        }
+
+        return $pdf->Output('', 'S');
+    }
+
+    /**
      * @param Request $request
      * @param Response $response
      * @param array $args
@@ -58,7 +321,9 @@ class AnamFormController
                 return $response->withStatus(400)->withJson(['errors' => 'Document does not exist']);
             }
 
-            $templatePath = dirname(__DIR__, 4) . DIRECTORY_SEPARATOR . 'courrier.pdf';
+            $isMinisterIncoming = !empty($resource['alt_identifier']) && str_starts_with((string)$resource['alt_identifier'], 'MINISTRE/MINES/');
+            $templateFileName = $isMinisterIncoming ? 'template_suivi.pdf' : 'courrier.pdf';
+            $templatePath = dirname(__DIR__, 4) . DIRECTORY_SEPARATOR . $templateFileName;
             if (!is_file($templatePath)) {
                 return $response->withStatus(400)->withJson(['errors' => 'Template file not found']);
             }
@@ -131,8 +396,8 @@ class AnamFormController
             $pdf->Cell(95, 4.5, $dateReception, 0, 0);
 
             // Expediteur
-            $pdf->SetXY(30, 80.6);
-            $pdf->Cell(155, 4.5, $senderLabel, 0, 0);
+            $pdf->SetXY(30, 80.8);
+            $pdf->MultiCell(148, 4.5, $senderLabel, 0, 'L');
 
             // Objet
             $pdf->SetXY(20, 99.6);
@@ -226,10 +491,29 @@ class AnamFormController
             $pcdLineHeight = 6.1;
             $pdf->setCellHeightRatio(1);
             $pdf->setCellPaddings(0, 0, 0, 0);
-            $pcdLines = $wrapText($pdf, (string)$instructionsPcd, $pcdW);
-            foreach ($pcdLines as $index => $line) {
-                $pdf->SetXY($pcdX, $pcdY + ($index * $pcdLineHeight));
-                $pdf->Cell($pcdW, $pcdLineHeight, $line, 0, 0);
+
+            if ($isMinisterIncoming) {
+                // On the minister template, "Notes / Instructions" feeds the
+                // dedicated "Instructions du MINISTRE" zone highlighted by debug marker I.
+                $ministerInstructionX = 8;
+                $ministerInstructionY = 140;
+                // Keep the first line inside the debug area from I (8,140) to H (90,140),
+                // then wrap on the following lines in the same minister instruction block.
+                $ministerInstructionW = 82;
+                $ministerInstructionLineHeight = 6.6;
+                $ministerInstructionLines = $wrapText($pdf, (string)$instructionsStructure, $ministerInstructionW);
+                $ministerInstructionLines = array_slice($ministerInstructionLines, 0, 5);
+
+                foreach ($ministerInstructionLines as $index => $line) {
+                    $pdf->SetXY($ministerInstructionX, $ministerInstructionY + ($index * $ministerInstructionLineHeight));
+                    $pdf->Cell($ministerInstructionW, $ministerInstructionLineHeight, $line, 0, 0);
+                }
+            } else {
+                $pcdLines = $wrapText($pdf, (string)$instructionsPcd, $pcdW);
+                foreach ($pcdLines as $index => $line) {
+                    $pdf->SetXY($pcdX, $pcdY + ($index * $pcdLineHeight));
+                    $pdf->Cell($pcdW, $pcdLineHeight, $line, 0, 0);
+                }
             }
             $pdf->setCellHeightRatio(1.25);
             $pdf->SetXY(115, 186);
@@ -242,55 +526,57 @@ class AnamFormController
             $pdf->SetXY(175, 228);
             $pdf->Cell(25, 5, $refDate, 0, 0);
             
-            // Instructions structure: first line starts after the label, following lines align on the dedicated grid.
-            $instructionStructurePositions = [
-                ['x' => 117, 'y' => 194.5, 'width' => 80],
-                ['x' => 80, 'y' => 201, 'width' => 117],
-                ['x' => 80, 'y' => 207.5, 'width' => 117],
-                ['x' => 80, 'y' => 214.5, 'width' => 117],
-                ['x' => 80, 'y' => 221, 'width' => 117],
-                ['x' => 80, 'y' => 227.5, 'width' => 117],
-                ['x' => 80, 'y' => 234, 'width' => 117],
-                ['x' => 80, 'y' => 240, 'width' => 117],
-                ['x' => 80, 'y' => 246, 'width' => 117]
-            ];
-            $instructionStructureLines = [];
-            $remainingInstructionStructure = trim((string)$instructionsStructure);
+            // The standard ANAM form still keeps the old lower instructions block.
+            if (!$isMinisterIncoming) {
+                $instructionStructurePositions = [
+                    ['x' => 117, 'y' => 194.5, 'width' => 80],
+                    ['x' => 80, 'y' => 201, 'width' => 117],
+                    ['x' => 80, 'y' => 207.5, 'width' => 117],
+                    ['x' => 80, 'y' => 214.5, 'width' => 117],
+                    ['x' => 80, 'y' => 221, 'width' => 117],
+                    ['x' => 80, 'y' => 227.5, 'width' => 117],
+                    ['x' => 80, 'y' => 234, 'width' => 117],
+                    ['x' => 80, 'y' => 240, 'width' => 117],
+                    ['x' => 80, 'y' => 246, 'width' => 117]
+                ];
+                $instructionStructureLines = [];
+                $remainingInstructionStructure = trim((string)$instructionsStructure);
 
-            foreach ($instructionStructurePositions as $lineIndex => $position) {
-                if ($remainingInstructionStructure === '') {
-                    break;
-                }
-
-                $line = '';
-                foreach (preg_split('/\s+/', $remainingInstructionStructure) as $word) {
-                    $candidate = $line === '' ? $word : $line . ' ' . $word;
-                    if ($pdf->GetStringWidth($candidate) <= $position['width']) {
-                        $line = $candidate;
-                    } else {
-                        if ($line === '') {
-                            $line = $word;
-                        }
+                foreach ($instructionStructurePositions as $lineIndex => $position) {
+                    if ($remainingInstructionStructure === '') {
                         break;
                     }
+
+                    $line = '';
+                    foreach (preg_split('/\s+/', $remainingInstructionStructure) as $word) {
+                        $candidate = $line === '' ? $word : $line . ' ' . $word;
+                        if ($pdf->GetStringWidth($candidate) <= $position['width']) {
+                            $line = $candidate;
+                        } else {
+                            if ($line === '') {
+                                $line = $word;
+                            }
+                            break;
+                        }
+                    }
+
+                    if ($lineIndex === count($instructionStructurePositions) - 1 && $line !== $remainingInstructionStructure) {
+                        $line = $remainingInstructionStructure;
+                    }
+
+                    $instructionStructureLines[] = [
+                        'x' => $position['x'],
+                        'y' => $position['y'],
+                        'text' => $line
+                    ];
+
+                    $remainingInstructionStructure = trim(substr($remainingInstructionStructure, strlen($line)));
                 }
 
-                if ($lineIndex === count($instructionStructurePositions) - 1 && $line !== $remainingInstructionStructure) {
-                    $line = $remainingInstructionStructure;
+                foreach ($instructionStructureLines as $line) {
+                    $pdf->SetXY($line['x'], $line['y']);
+                    $pdf->Cell(117, 4.2, $line['text'], 0, 0);
                 }
-
-                $instructionStructureLines[] = [
-                    'x' => $position['x'],
-                    'y' => $position['y'],
-                    'text' => $line
-                ];
-
-                $remainingInstructionStructure = trim(substr($remainingInstructionStructure, strlen($line)));
-            }
-
-            foreach ($instructionStructureLines as $line) {
-                $pdf->SetXY($line['x'], $line['y']);
-                $pdf->Cell(117, 4.2, $line['text'], 0, 0);
             }
 
             // Date du courrier
@@ -341,7 +627,7 @@ class AnamFormController
                     ['H', 72, 164],
                     ['P', 142, 164],
                     ['Q', 142, 188.5],
-                    ['1', 8, 202],
+                    ['1', 8, 145],
                     ['l', 80, 201],
                     ['a', 80, 207.5],
                     ['b', 80, 214.5],
@@ -350,13 +636,23 @@ class AnamFormController
                     ['e', 80, 234],
                     ['f', 80, 240],
                     ['g', 80, 246],
-                    ['2', 8, 208],
+                    ['2', 200, 80.8],
                     ['3', 8, 214.5],
                     ['4', 8, 221],
                     ['5', 8, 227.5],
                     ['6', 8, 234],
                     ['7', 8, 240.5],
                     ['8', 8, 247],
+                    ['9', 8, 253],
+                    ['I', 117, 194.5],
+                    ['S', 8, 145],
+                    ['T', 80, 207.5],
+                    ['R', 80, 214.5],
+                    ['U', 80, 221],
+                    ['C', 80, 227.5],
+                    ['T', 80, 234],
+                    ['U', 80, 240],
+                    ['R', 80, 246]
 
                 ];
                 foreach ($markers as $m) {

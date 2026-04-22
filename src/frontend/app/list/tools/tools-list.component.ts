@@ -103,7 +103,8 @@ export class ToolsListComponent {
                 width: '800px',
                 data: {
                     resId: this.selectedRes,
-                    multiple: this.selectedRes.length > 1
+                    multiple: this.selectedRes.length > 1,
+                    currentBasketInfo: this.currentBasketInfo
                 }
             });
     }

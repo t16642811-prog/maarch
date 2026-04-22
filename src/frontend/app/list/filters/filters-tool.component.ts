@@ -70,6 +70,13 @@ export class FiltersToolComponent implements OnInit {
 
     }
 
+    getOrderLabel(columnId: string): string {
+        if (columnId === 'alt_identifier') {
+            return this.translate.instant('lang.chronoNumber');
+        }
+        return this.translate.instant('lang.' + columnId);
+    }
+
     changeOrderDir() {
         if (this.listProperties.orderDir === 'ASC') {
             this.listProperties.orderDir = 'DESC';

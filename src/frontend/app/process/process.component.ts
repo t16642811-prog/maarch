@@ -1038,6 +1038,13 @@ export class ProcessComponent implements OnInit, OnDestroy {
 
     async saveTool(stayOnResource: boolean = false) {
         if (this.currentTool === 'info' && this.indexingForm !== undefined) {
+            const mainDocument: any = await this.appDocumentViewer.getFile().pipe(take(1)).toPromise();
+            const extraDatas: any = {};
+            if (!this.functions.empty(mainDocument?.content)) {
+                extraDatas.encodedFile = mainDocument.content;
+                extraDatas.format = mainDocument.format;
+            }
+
             if (stayOnResource) {
                 if (this.indexingForm.isValidForm()) {
                     this.currentResourceInformations.categoryId = !this.functions.empty(this.currentCategory) ? this.currentCategory : this.currentResourceInformations.categoryId;
@@ -1045,7 +1052,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
                     this.actionService.loading = false;
                 }
 
-                const saved = await this.indexingForm.saveData();
+                const saved = await this.indexingForm.saveData(extraDatas);
                 if (!saved) {
                     return;
                 }
@@ -1070,7 +1077,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
                                 this.actionService.loading = false;
                             }
                             this.markResourceAsTransferredPending();
-                            const saved = await this.indexingForm.saveData();
+                            const saved = await this.indexingForm.saveData(extraDatas);
                             if (!saved) {
                                 resolve();
                                 return;

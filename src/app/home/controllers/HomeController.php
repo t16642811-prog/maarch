@@ -102,6 +102,8 @@ class HomeController
 
             foreach ($baskets as $kBasket => $basket) {
                 $baskets[$kBasket]['owner_user_id'] = $GLOBALS['id'];
+                $baskets[$kBasket]['groupSerialId'] = $group['id'];
+                $baskets[$kBasket]['group_id'] = $group['id'];
                 if (!empty($basket['pcolor'])) {
                     $baskets[$kBasket]['color'] = $basket['pcolor'];
                 }

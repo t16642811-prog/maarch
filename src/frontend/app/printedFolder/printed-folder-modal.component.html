@@ -25,6 +25,11 @@
                 <mat-slide-toggle color="primary" [(ngModel)]="withSeparator">{{'lang.generateSeparators' | translate}}
                 </mat-slide-toggle>
             </div>
+            <div style="padding: 10px;" *ngIf="isMinisterIncomingBasket">
+                <mat-slide-toggle color="primary" [(ngModel)]="ministerInstructionSheet">
+                    Fiche de suivi
+                </mat-slide-toggle>
+            </div>
             <div class="printedFolderContainer">
                 <mat-expansion-panel *ngIf="mainDocumentInformation.format !== null" hideToggle disabled
                     [title]="!mainDocumentInformation.canConvert ? 'Aucune version pdf trouvé!' : ''">
@@ -103,7 +108,7 @@
     </mat-dialog-content>
     <span class="divider-modal"></span>
     <div mat-dialog-actions class="actions">
-        <button mat-raised-button color="primary" [disabled]="isLoadingResults || isEmptySelection() || (!summarySheet && data.multiple)"
+        <button mat-raised-button color="primary" [disabled]="!canSubmit()"
             (click)="onSubmit()">{{'lang.validate' | translate}}</button>
     </div>
 </div>

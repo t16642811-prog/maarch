@@ -22,6 +22,7 @@ export class PrintedFolderModalComponent implements OnInit {
     document: any[] = [];
 
     mainDocument: boolean = false;
+    ministerInstructionSheet: boolean = false;
     summarySheet: boolean = false;
     withSeparator: boolean = false;
     isLoadingResults: boolean = false;
@@ -65,6 +66,12 @@ export class PrintedFolderModalComponent implements OnInit {
         }
 
         this.loading = false;
+    }
+
+    get isMinisterIncomingBasket(): boolean {
+        return this.data?.currentBasketInfo?.basket_id === 'IncomingMinistre'
+            || this.data?.currentBasketInfo?.basketId === 'IncomingMinistre'
+            || this.data?.currentBasketInfo?.basket_name === 'Courrier Arrivée Ministre';
     }
 
     getMainDocInfo() {
@@ -310,7 +317,8 @@ export class PrintedFolderModalComponent implements OnInit {
         this.data.resId.forEach((id: any) => {
             resource = {
                 resId: id,
-                document: this.mainDocument
+                document: this.mainDocument,
+                ministerInstructionSheet: this.ministerInstructionSheet
             };
             if (!this.data.multiple) {
                 Object.keys(this.printedFolderElement).forEach(element => {
@@ -358,10 +366,22 @@ export class PrintedFolderModalComponent implements OnInit {
             }
         });
 
-        if (this.summarySheet || this.mainDocument) {
+        if (this.summarySheet || this.mainDocument || this.ministerInstructionSheet) {
             state = false;
         }
 
         return state;
+    }
+
+    canSubmit(): boolean {
+        if (this.isLoadingResults || this.isEmptySelection()) {
+            return false;
+        }
+
+        if (this.data.multiple && !this.summarySheet && !this.ministerInstructionSheet) {
+            return false;
+        }
+
+        return true;
     }
 }

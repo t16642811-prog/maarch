@@ -1,6 +1,6 @@
 <mat-sidenav-container class="maarch-container">
     <ng-template #adminMenuTemplate>
-        <app-select-indexing-model #appSelectIndexingModel [adminMode]="true" [indexingForm]="indexingForm"
+        <app-select-indexing-model #appSelectIndexingModel [adminMode]="true" [indexingForm]="indexingForm" [groupId]="currentGroupId"
             (afterListModelsLoaded)="loadIndexingModel($event)"
             (afterSelectedListModel)="this.currentIndexingModel = $event.indexingModel; indexingForm.loadForm($event.indexingModel.id)">
         </app-select-indexing-model>

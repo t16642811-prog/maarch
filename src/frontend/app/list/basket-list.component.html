@@ -58,7 +58,7 @@
                         <div class="courrier-list-header" *ngIf="!appService.getViewMode()">
                             <span class="courrier-list-header__spacer"></span>
                             <span class="courrier-list-header__chrono">N° chrono</span>
-                            <span class="courrier-list-header__sender">Expéditeur</span>
+                            <span class="courrier-list-header__sender">{{ getMainPartyHeaderLabel() }}</span>
                             <span class="courrier-list-header__objet">Objet</span>
                             <span class="courrier-list-header__date">Date du courrier</span>
                             <span class="courrier-list-header__action">Action</span>
@@ -104,8 +104,8 @@
                                             </ng-container>
                                         </span>
                                         <span class="main-info-data mail-col-sender"
-                                            title="{{ row.senderDisplay }}">
-                                             {{ row.senderDisplay }}
+                                            title="{{ getRowSender(row) }}">
+                                             {{ getRowSender(row) }}
                                         </span>
                                         <span class="main-info-data mail-col-subject"
                                             [class.undefined]="row.subject == ('lang.undefined' | translate)"

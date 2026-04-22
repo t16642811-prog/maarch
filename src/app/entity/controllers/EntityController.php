@@ -236,10 +236,22 @@ class EntityController
             ],
             'data'   => [$entity['entity_id'], IndexingModelController::ALL_ENTITIES]
         ]);
-        foreach ($tmpModels as $key => $model) {
-            $models[$key]['indexingModelId'] = $model['id'];
-            $models[$key]['indexingModelLabel'] = $model['label'];
-            $models[$key]['indexingModelCategory'] = $model['category'];
+        foreach ($tmpModels as $model) {
+            // MINES should only expose the minister-specific registration models
+            // in the entity administration screen, even if generic departure models
+            // are inherited globally through ALL_ENTITIES.
+            if (
+                in_array($entity['entity_id'], ['MINES', 'BOG_MIN'])
+                && in_array($model['label'], ['Courrier Départ externe', 'Courrier Départ interne'])
+            ) {
+                continue;
+            }
+
+            $models[] = [
+                'indexingModelId'       => $model['id'],
+                'indexingModelLabel'    => $model['label'],
+                'indexingModelCategory' => $model['category']
+            ];
         }
         $entity['indexingModels'] = $models;
 

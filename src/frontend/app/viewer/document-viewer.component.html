@@ -11,9 +11,27 @@
 </ng-container>
 <ng-container *ngIf="!editInProgress">
     <ng-container *ngIf="noFile; else elseHaveFile">
-        <div class="noFile">
+        <div class="noFile" *ngIf="!editMode">
             <i class="far fa-times-circle"></i>
             {{'lang.noFile' | translate}}
+        </div>
+        <div *ngIf="editMode" class="view-doc-container" appUploadFileDragDrop
+            (fileDropped)="dndUploadFile($event)" [disabled]="!editMode">
+            <i class="fa fa-file-upload upload-icon"></i><br />
+            {{'lang.dragAndDrop' | translate}}<br />{{'lang.or' | translate}}
+            <div style="display: flex;">
+                <div
+                    style="margin-right:20px;align-items: center;justify-content: center;text-align: center;display: flex;">
+                    <app-plugin-select-search #templateList *ngIf="listTemplates.length > 0" [label]="'lang.chooseModel' | translate"
+                        [placeholderLabel]="'lang.chooseModel' | translate" [datas]="listTemplates" [class]="'input-form-filled'"
+                        [formControlSelect]="templateListForm" (afterSelected)="editTemplate($event)"
+                        style="width: 240px;text-align: left;font-weight:normal;font-size: 13px;">
+                    </app-plugin-select-search>
+                </div>
+                <button mat-button (click)="emptyDocToUpload.click()" class="button-form-primary-alt"
+                    style="align-items: center;justify-content: center;text-align: center;display: flex;">{{'lang.chooseFile' | translate}}</button>
+            </div>
+            <input type="file" #emptyDocToUpload [ngModel]="docToUploadValue" name="files[]" (change)="uploadTrigger($event)" style="display:none;">
         </div>
     </ng-container>
     <ng-template #elseHaveFile>
@@ -92,6 +110,10 @@
                         [matTooltip]="functions.empty(file.subinfos) || (!functions.empty(file.subinfos) && !file.subinfos.signedDocVersions) ? '' : ('lang.documentSignedMsg' | translate)">
                         <i class="fa fa-edit" style="font-size: 14px;padding-right: 5px;"></i><span>{{'lang.editDocument' | translate}}</span>
                     </button>
+                    <button *ngIf="canDeleteMainDocument()" mat-button color="warn"
+                        [title]="'lang.removeFile' | translate" (click)="deleteMainDocument()">
+                        <i class="fa fa-trash" style="font-size: 14px;padding-right: 5px;"></i><span>{{'lang.removeFile' | translate}}</span>
+                    </button>
                 </ng-container>
                 <div class="divider"></div>
                 <button mat-icon-button [matMenuTriggerFor]="menuOptions">
@@ -107,6 +129,11 @@
                         [title]="'lang.uploadNewVersion' | translate" (click)="isNewVersion = true; docToUpload.click()" >
                         <mat-icon color="primary" class="fas fa-file-upload"></mat-icon>
                         <span style="white-space: pre-wrap;">{{'lang.uploadNewVersion' | translate}}</span>
+                    </button>
+                    <button mat-menu-item *ngIf="canDeleteMainDocument()"
+                        [title]="'lang.removeFile' | translate" (click)="deleteMainDocument()">
+                        <mat-icon class="fa fa-trash" color="warn"></mat-icon>
+                        <span>{{'lang.removeFile' | translate}}</span>
                     </button>
                     <button mat-menu-item *ngIf="(file.contentView !== undefined || base64 !== null) && resId != null && mode !== 'attachment' && externalId.signatureBookId && !functions.empty(externalSignatoryBook.signatoryBookEnabled)"
                         [disabled]="!externalSignatoryBook.canViewWorkflow()"

@@ -13,6 +13,10 @@ export class FiltersListService {
 
     constructor() { }
 
+    private isMinisterIncomingBasket(targetId: number | string | null): boolean {
+        return String(targetId) === 'IncomingMinistre';
+    }
+
     initListsProperties(userId: number, groupId: number, targetId: number | null, mode: string, specificChrono: string = '') {
 
         this.listsProperties = JSON.parse(sessionStorage.getItem('propertyList' + mode));
@@ -39,7 +43,7 @@ export class FiltersListService {
                 'targetId': targetId,
                 'page': '0',
                 'pageSize': 10,
-                'order': mode === 'basket' ? 'creation_date' : '',
+                'order': mode === 'basket' ? (this.isMinisterIncomingBasket(targetId) ? 'alt_identifier' : 'creation_date') : '',
                 'orderDir': 'DESC',
                 'search': specificChrono,
                 'delayed': false,
@@ -55,8 +59,13 @@ export class FiltersListService {
             this.listsPropertiesIndex = this.listsProperties.length - 1;
             this.saveListsProperties();
         } else if (mode === 'basket' && (!listProperties.order || listProperties.order === '')) {
-            listProperties.order = 'creation_date';
+            listProperties.order = this.isMinisterIncomingBasket(targetId) ? 'alt_identifier' : 'creation_date';
             listProperties.orderDir = listProperties.orderDir || 'DESC';
+            this.listsProperties[this.listsPropertiesIndex] = listProperties;
+            this.saveListsProperties();
+        } else if (mode === 'basket' && this.isMinisterIncomingBasket(targetId) && listProperties.order === 'creation_date') {
+            listProperties.order = 'alt_identifier';
+            listProperties.orderDir = 'DESC';
             this.listsProperties[this.listsPropertiesIndex] = listProperties;
             this.saveListsProperties();
         }

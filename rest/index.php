@@ -466,6 +466,7 @@ $app->put('/resources/external', \Resource\controllers\ResController::class . ':
 $app->get('/resources/{resId}', \Resource\controllers\ResController::class . ':getById');
 $app->get('/resources/{resId}/anamFormPdf', \Resource\controllers\AnamFormController::class . ':getPdf');
 $app->put('/resources/{resId}', \Resource\controllers\ResController::class . ':update');
+$app->delete('/resources/{resId}/content', \Resource\controllers\ResController::class . ':deleteMainDocument');
 $app->get('/resources/{resId}/content', \Resource\controllers\ResController::class . ':getFileContent');
 $app->get('/resources/{resId}/versionsInformations', \Resource\controllers\ResController::class . ':getVersionsInformations');
 $app->get('/resources/{resId}/content/{version}', \Resource\controllers\ResController::class . ':getVersionFileContent');

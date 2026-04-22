@@ -34,7 +34,7 @@
                                         [formControl]="arrFormControl[anamFieldIds.mode]">
                                         <mat-radio-button *ngFor="let value of (getFieldByIdentifier(anamFieldIds.mode)?.values || [])"
                                             [value]="value.id">
-                                            {{value.label}}
+                                            {{getAnamModeDisplayLabel(value)}}
                                         </mat-radio-button>
                                     </mat-radio-group>
                                 </div>
@@ -43,43 +43,73 @@
                                 <div class="anam-row-grid">
                                     <div class="anam-row" *ngIf="shouldShowReceptionField(anamFieldIds.bog)">
                                         <div class="anam-label">N° et date BOG</div>
-                                        <mat-form-field class="input-form" [floatLabel]="appService.getViewMode() ? '' : 'never'">
-                                            <input matInput [formControl]="arrFormControl[anamFieldIds.bog]"
-                                                [placeholder]="'lang.typeValue' | translate">
-                                        </mat-form-field>
+                                        <div class="anam-reception-fields">
+                                            <mat-form-field class="input-form anam-reception-number" [floatLabel]="appService.getViewMode() ? '' : 'never'">
+                                                <input matInput [formControl]="arrFormControl[anamFieldIds.bog]" placeholder="NÂ°">
+                                            </mat-form-field>
+                                            <mat-form-field class="input-form input-date anam-reception-date" [floatLabel]="appService.getViewMode() ? '' : 'never'" (click)="bogPicker.open()" style="cursor:pointer;">
+                                                <input matInput [matDatepicker]="bogPicker" [formControl]="arrFormControl[getAnamReceptionDateControlName(anamFieldIds.bog)]" [placeholder]="'lang.chooseDate' | translate" readonly style="cursor:pointer;">
+                                                <mat-datepicker-toggle matSuffix [for]="bogPicker"></mat-datepicker-toggle>
+                                                <mat-datepicker #bogPicker [touchUi]="appService.getViewMode()"></mat-datepicker>
+                                            </mat-form-field>
+                                        </div>
                                     </div>
                                     <div class="anam-row" *ngIf="shouldShowReceptionField(anamFieldIds.mem)">
                                         <div class="anam-label">N° et date MEM</div>
-                                        <mat-form-field class="input-form" [floatLabel]="appService.getViewMode() ? '' : 'never'">
-                                            <input matInput [formControl]="arrFormControl[anamFieldIds.mem]"
-                                                [placeholder]="'lang.typeValue' | translate">
-                                        </mat-form-field>
+                                        <div class="anam-reception-fields">
+                                            <mat-form-field class="input-form anam-reception-number" [floatLabel]="appService.getViewMode() ? '' : 'never'">
+                                                <input matInput [formControl]="arrFormControl[anamFieldIds.mem]" placeholder="NÂ°">
+                                            </mat-form-field>
+                                            <mat-form-field class="input-form input-date anam-reception-date" [floatLabel]="appService.getViewMode() ? '' : 'never'" (click)="memPicker.open()" style="cursor:pointer;">
+                                                <input matInput [matDatepicker]="memPicker" [formControl]="arrFormControl[getAnamReceptionDateControlName(anamFieldIds.mem)]" [placeholder]="'lang.chooseDate' | translate" readonly style="cursor:pointer;">
+                                                <mat-datepicker-toggle matSuffix [for]="memPicker"></mat-datepicker-toggle>
+                                                <mat-datepicker #memPicker [touchUi]="appService.getViewMode()"></mat-datepicker>
+                                            </mat-form-field>
+                                        </div>
                                     </div>
                                     <div class="anam-row" *ngIf="shouldShowReceptionField(anamFieldIds.sg)">
                                         <div class="anam-label">N° et date SG</div>
-                                        <mat-form-field class="input-form" [floatLabel]="appService.getViewMode() ? '' : 'never'">
-                                            <input matInput [formControl]="arrFormControl[anamFieldIds.sg]"
-                                                [placeholder]="'lang.typeValue' | translate">
-                                        </mat-form-field>
+                                        <div class="anam-reception-fields">
+                                            <mat-form-field class="input-form anam-reception-number" [floatLabel]="appService.getViewMode() ? '' : 'never'">
+                                                <input matInput [formControl]="arrFormControl[anamFieldIds.sg]" placeholder="NÂ°">
+                                            </mat-form-field>
+                                            <mat-form-field class="input-form input-date anam-reception-date" [floatLabel]="appService.getViewMode() ? '' : 'never'" (click)="sgPicker.open()" style="cursor:pointer;">
+                                                <input matInput [matDatepicker]="sgPicker" [formControl]="arrFormControl[getAnamReceptionDateControlName(anamFieldIds.sg)]" [placeholder]="'lang.chooseDate' | translate" readonly style="cursor:pointer;">
+                                                <mat-datepicker-toggle matSuffix [for]="sgPicker"></mat-datepicker-toggle>
+                                                <mat-datepicker #sgPicker [touchUi]="appService.getViewMode()"></mat-datepicker>
+                                            </mat-form-field>
+                                        </div>
                                     </div>
                                     <div class="anam-row" *ngIf="shouldShowReceptionField(anamFieldIds.cc)">
                                         <div class="anam-label">N° et date CC</div>
-                                        <mat-form-field class="input-form" [floatLabel]="appService.getViewMode() ? '' : 'never'">
-                                            <input matInput [formControl]="arrFormControl[anamFieldIds.cc]"
-                                                [placeholder]="'lang.typeValue' | translate">
-                                        </mat-form-field>
+                                        <div class="anam-reception-fields">
+                                            <mat-form-field class="input-form anam-reception-number" [floatLabel]="appService.getViewMode() ? '' : 'never'">
+                                                <input matInput [formControl]="arrFormControl[anamFieldIds.cc]" placeholder="NÂ°">
+                                            </mat-form-field>
+                                            <mat-form-field class="input-form input-date anam-reception-date" [floatLabel]="appService.getViewMode() ? '' : 'never'" (click)="ccPicker.open()" style="cursor:pointer;">
+                                                <input matInput [matDatepicker]="ccPicker" [formControl]="arrFormControl[getAnamReceptionDateControlName(anamFieldIds.cc)]" [placeholder]="'lang.chooseDate' | translate" readonly style="cursor:pointer;">
+                                                <mat-datepicker-toggle matSuffix [for]="ccPicker"></mat-datepicker-toggle>
+                                                <mat-datepicker #ccPicker [touchUi]="appService.getViewMode()"></mat-datepicker>
+                                            </mat-form-field>
+                                        </div>
                                     </div>
                                     <div class="anam-row" *ngIf="shouldShowReceptionField(anamFieldIds.dgm)">
                                         <div class="anam-label">N° et date DGM</div>
-                                        <mat-form-field class="input-form" [floatLabel]="appService.getViewMode() ? '' : 'never'">
-                                            <input matInput [formControl]="arrFormControl[anamFieldIds.dgm]"
-                                                [placeholder]="'lang.typeValue' | translate">
-                                        </mat-form-field>
+                                        <div class="anam-reception-fields">
+                                            <mat-form-field class="input-form anam-reception-number" [floatLabel]="appService.getViewMode() ? '' : 'never'">
+                                                <input matInput [formControl]="arrFormControl[anamFieldIds.dgm]" placeholder="NÂ°">
+                                            </mat-form-field>
+                                            <mat-form-field class="input-form input-date anam-reception-date" [floatLabel]="appService.getViewMode() ? '' : 'never'" (click)="dgmPicker.open()" style="cursor:pointer;">
+                                                <input matInput [matDatepicker]="dgmPicker" [formControl]="arrFormControl[getAnamReceptionDateControlName(anamFieldIds.dgm)]" [placeholder]="'lang.chooseDate' | translate" readonly style="cursor:pointer;">
+                                                <mat-datepicker-toggle matSuffix [for]="dgmPicker"></mat-datepicker-toggle>
+                                                <mat-datepicker #dgmPicker [touchUi]="appService.getViewMode()"></mat-datepicker>
+                                            </mat-form-field>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             <ng-container *ngIf="mode === 'process'">
-                                <div class="anam-section">
+                                <div class="anam-section" *ngIf="hasAnamFieldControl(anamFieldIds.instructionsPcd)">
                                     <div class="anam-section-title">Instructions du PCD</div>
                                     <mat-form-field class="input-form anam-instructions" [floatLabel]="appService.getViewMode() ? '' : 'never'">
                                         <textarea matInput cdkTextareaAutosize cdkAutosizeMinRows="3" cdkAutosizeMaxRows="12"
@@ -87,15 +117,23 @@
                                             [placeholder]="'lang.typeValue' | translate"></textarea>
                                     </mat-form-field>
                                 </div>
-                                <div class="anam-section">
-                                    <div class="anam-section-title">Instructions de la structure</div>
+                                <div class="anam-section" *ngIf="hasAnamFieldControl(anamFieldIds.instructionsStructure)">
+                                    <div class="anam-section-title">Notes / Instructions</div>
                                     <mat-form-field class="input-form anam-instructions" [floatLabel]="appService.getViewMode() ? '' : 'never'">
                                         <textarea matInput cdkTextareaAutosize cdkAutosizeMinRows="3" cdkAutosizeMaxRows="12"
                                             [formControl]="arrFormControl[anamFieldIds.instructionsStructure]"
                                             [placeholder]="'lang.typeValue' | translate"></textarea>
                                     </mat-form-field>
                                 </div>
-                                <div class="anam-section">
+                                <div class="anam-section" *ngIf="hasAnamFieldControl(anamFieldIds.instructionDate)">
+                                    <div class="anam-section-title">Date d'instruction</div>
+                                    <mat-form-field class="input-form input-date" [floatLabel]="appService.getViewMode() ? '' : 'never'" (click)="instructionDatePicker.open()" style="cursor:pointer;">
+                                        <input matInput [matDatepicker]="instructionDatePicker" [formControl]="arrFormControl[anamFieldIds.instructionDate]" [placeholder]="'lang.chooseDate' | translate" readonly style="cursor:pointer;">
+                                        <mat-datepicker-toggle matSuffix [for]="instructionDatePicker"></mat-datepicker-toggle>
+                                        <mat-datepicker #instructionDatePicker [touchUi]="appService.getViewMode()"></mat-datepicker>
+                                    </mat-form-field>
+                                </div>
+                                <div class="anam-section" *ngIf="hasAnamDestinationMatrixFields()">
                                     <div class="anam-section-title">Destinataires</div>
                                     <div class="anam-dest-grid anam-dest-grid-inverted">
                                         <div class="anam-grid-row anam-grid-header">
@@ -115,6 +153,24 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </ng-container>
+                            <ng-container *ngIf="mode !== 'process' && hasAnamFieldControl(anamFieldIds.instructionsStructure)">
+                                <div class="anam-section">
+                                    <div class="anam-section-title">Notes / Instructions</div>
+                                    <mat-form-field class="input-form anam-instructions" [floatLabel]="appService.getViewMode() ? '' : 'never'">
+                                        <textarea matInput cdkTextareaAutosize cdkAutosizeMinRows="3" cdkAutosizeMaxRows="12"
+                                            [formControl]="arrFormControl[anamFieldIds.instructionsStructure]"
+                                            placeholder="Saisissez l'instruction du courrier"></textarea>
+                                    </mat-form-field>
+                                </div>
+                                <div class="anam-section" *ngIf="hasAnamFieldControl(anamFieldIds.instructionDate)">
+                                    <div class="anam-section-title">Date d'instruction</div>
+                                    <mat-form-field class="input-form input-date" [floatLabel]="appService.getViewMode() ? '' : 'never'" (click)="instructionDateIndexPicker.open()" style="cursor:pointer;">
+                                        <input matInput [matDatepicker]="instructionDateIndexPicker" [formControl]="arrFormControl[anamFieldIds.instructionDate]" [placeholder]="'lang.chooseDate' | translate" readonly style="cursor:pointer;">
+                                        <mat-datepicker-toggle matSuffix [for]="instructionDateIndexPicker"></mat-datepicker-toggle>
+                                        <mat-datepicker #instructionDateIndexPicker [touchUi]="appService.getViewMode()"></mat-datepicker>
+                                    </mat-form-field>
                                 </div>
                             </ng-container>
                             <div class="anam-actions">

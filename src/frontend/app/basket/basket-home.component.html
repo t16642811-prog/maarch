@@ -44,12 +44,12 @@
                         </p>
                     </a>
                     <a mat-list-item
-                        [ngClass]="{'selectedBasket': headerService.currentBasketInfo.basketId === basket.id && headerService.currentBasketInfo.ownerId === basket.owner_user_id && headerService.currentBasketInfo.groupId === regroupedBasket.groupSerialId}"
+                        [ngClass]="{'selectedBasket': headerService.currentBasketInfo.basketId === basket.id && headerService.currentBasketInfo.ownerId === basket.owner_user_id && headerService.currentBasketInfo.groupId === (basket.groupSerialId || regroupedBasket.groupSerialId)}"
                         *ngIf="!basket.redirected" (click)="refreshDatas(basket);closePanelLeft();"
-                        routerLink="/basketList/users/{{basket.owner_user_id}}/groups/{{regroupedBasket.groupSerialId}}/baskets/{{basket.id}}"
+                        routerLink="/basketList/users/{{basket.owner_user_id}}/groups/{{basket.groupSerialId || regroupedBasket.groupSerialId}}/baskets/{{basket.id}}"
                         style="cursor:pointer;"
                         [ngStyle]="{'opacity': basket.resourceNumber === 0 ? '0.5' : '1', 'height': appService.getViewMode() ? '50px' : '38px'}"
-                        [attr.aria-current]="(headerService.currentBasketInfo.basketId === basket.id && headerService.currentBasketInfo.ownerId === basket.owner_user_id && headerService.currentBasketInfo.groupId === regroupedBasket.groupSerialId) ? 'true' : null">
+                        [attr.aria-current]="(headerService.currentBasketInfo.basketId === basket.id && headerService.currentBasketInfo.ownerId === basket.owner_user_id && headerService.currentBasketInfo.groupId === (basket.groupSerialId || regroupedBasket.groupSerialId)) ? 'true' : null">
                         <span *ngIf="basket.resourceNumber === 0" class="nbResZero" [style.color]="basket.color">{{basket.resourceNumber}}</span>
                         <span *ngIf="basket.resourceNumber !== 0" class="nbRes" [ngStyle]="{'color': basket.color !== '#666666' ? basket.color : ''}" [class.defaultColor]="basket.color === '#666666'">{{basket.resourceNumber}}</span>
                         <p mat-line title="{{basket.basket_name}}" [ngStyle]="{'color': basket.color}">

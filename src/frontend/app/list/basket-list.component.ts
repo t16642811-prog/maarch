@@ -431,7 +431,11 @@ export class BasketListComponent implements OnInit, OnDestroy {
                 element['checked'] = true;
             }
             element['senderDisplay'] = this.computeRowSender(element);
-            element['documentDateDisplay'] = this.computeRowDocumentDate(element);
+            if (this.isMinisterIncomingBasket() || this.isMinisterIncomingResource(element)) {
+                element['documentDateDisplay'] = element['arrival_date'] || element['arrivalDate'] || element['creation_date'] || element['creationDate'];
+            } else {
+                element['documentDateDisplay'] = this.computeRowDocumentDate(element);
+            }
             element['treatedDateDisplay'] = this.computeRowTreatedDate(element);
             if (this.locallyReadResIds.has(Number(element['resId']))) {
                 element['is_read'] = 1;
@@ -783,6 +787,9 @@ export class BasketListComponent implements OnInit, OnDestroy {
     }
 
     getRowSender(row: any): string {
+        if (this.isMinisterOutgoingBasket()) {
+            return row?.recipientDisplay || this.computeRowRecipient(row);
+        }
         return row?.senderDisplay || this.computeRowSender(row);
     }
 
@@ -796,11 +803,44 @@ export class BasketListComponent implements OnInit, OnDestroy {
         return String(value).replace(/<[^>]*>/g, '').trim() || this.translate.instant('lang.undefined');
     }
 
+    getMainPartyHeaderLabel(): string {
+        return this.isMinisterOutgoingBasket() ? 'Destinataire' : 'Expéditeur';
+    }
+
+    private computeRowRecipient(row: any): string {
+        const recipients = Array.isArray(row?.display) ? row.display.find((item: any) => item?.value === 'getRecipients') : null;
+        if (!recipients) {
+            return this.translate.instant('lang.undefined');
+        }
+        const value = recipients.displayTitle || recipients.displayValue || this.translate.instant('lang.undefined');
+        return String(value).replace(/<[^>]*>/g, '').trim() || this.translate.instant('lang.undefined');
+    }
+
+    private isMinisterOutgoingBasket(): boolean {
+        return this.currentBasketInfo?.basketId === 'OutgoingExternalMinistre' || this.currentBasketInfo?.basket_id === 'OutgoingExternalMinistre';
+    }
+
+    private isMinisterIncomingBasket(): boolean {
+        return this.currentBasketInfo?.basketId === 'IncomingMinistre' || this.currentBasketInfo?.basket_id === 'IncomingMinistre';
+    }
+
+    private isMinisterIncomingResource(row: any): boolean {
+        const chrono = String(row?.chrono || row?.alt_identifier || '').toUpperCase();
+        return chrono.startsWith('MINISTRE/MINES/') && chrono.includes('A/');
+    }
+
     getRowDocumentDate(row: any): string {
         return row?.documentDateDisplay || this.computeRowDocumentDate(row);
     }
 
     private computeRowDocumentDate(row: any): string {
+        if (this.isMinisterIncomingBasket() || this.isMinisterIncomingResource(row)) {
+            const arrivalDate = row?.arrival_date || row?.arrivalDate;
+            if (arrivalDate) {
+                return arrivalDate;
+            }
+        }
+
         const creationDate = row?.creation_date || row?.creationDate;
         if (creationDate) {
             return creationDate;

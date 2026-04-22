@@ -198,9 +198,20 @@ class ResController extends ResourceControlController
             return $response->withStatus(400)->withJson(['errors' => 'Document does not exist']);
         }
 
+        $effectiveModelId = (int)$document['model_id'];
+        $customFields = json_decode($document['custom_fields'] ?? '{}', true);
+        if (!is_array($customFields)) {
+            $customFields = [];
+        }
+        if (!empty($customFields['_anamSelectedModelId']) && is_numeric($customFields['_anamSelectedModelId'])) {
+            $effectiveModelId = (int)$customFields['_anamSelectedModelId'];
+        } elseif (!empty($customFields['_anamOutgoingModelId']) && is_numeric($customFields['_anamOutgoingModelId'])) {
+            $effectiveModelId = (int)$customFields['_anamOutgoingModelId'];
+        }
+
         $unchangeableData = [
             'resId'            => (int)$args['resId'],
-            'modelId'          => $document['model_id'],
+            'modelId'          => $effectiveModelId,
             'typist'           => $document['typist'],
             'categoryId'       => $document['category_id'],
             'chrono'           => $document['alt_identifier'],
@@ -234,7 +245,7 @@ class ResController extends ResourceControlController
         $modelFields = IndexingModelFieldModel::get([
             'select' => ['identifier'],
             'where'  => ['model_id = ?'],
-            'data'   => [$document['model_id']]
+            'data'   => [$effectiveModelId]
         ]);
         $modelFields = array_column($modelFields, 'identifier');
 
@@ -573,6 +584,79 @@ class ResController extends ResourceControlController
                 'eventId'   => 'resourceModification'
             ]);
         }
+
+        return $response->withStatus(204);
+    }
+
+    /**
+     * Remove the current main document from a resource without deleting the resource itself.
+     *
+     * @param Request $request
+     * @param Response $response
+     * @param array $args
+     * @return Response
+     * @throws Exception
+     */
+    public function deleteMainDocument(Request $request, Response $response, array $args): Response
+    {
+        if (!Validator::intVal()->validate($args['resId'])) {
+            return $response->withStatus(400)->withJson(['errors' => 'Route resId is not an integer']);
+        } elseif (!PrivilegeController::canUpdateResource(['userId' => $GLOBALS['id'], 'resId' => $args['resId']])) {
+            return $response->withStatus(403)->withJson(['errors' => 'Service forbidden']);
+        }
+
+        $resource = ResModel::getById([
+            'resId'  => $args['resId'],
+            'select' => [
+                'alt_identifier',
+                'status',
+                'filename',
+                'format',
+                'external_id->>\'signatureBookId\' as signaturebookid'
+            ]
+        ]);
+
+        if (empty($resource)) {
+            return $response->withStatus(400)->withJson(['errors' => 'Document does not exist']);
+        } elseif (empty($resource['filename'])) {
+            return $response->withStatus(204);
+        }
+
+        $status = StatusModel::getById(['id' => $resource['status'], 'select' => ['can_be_modified']]);
+        if (empty($status) || $status['can_be_modified'] != 'Y') {
+            return $response->withStatus(400)->withJson(['errors' => 'Resource can not be modified because of status']);
+        } elseif (!empty($resource['signaturebookid'])) {
+            return $response->withStatus(400)->withJson(['errors' => 'Resource is in external signature book, file can not be modified']);
+        } elseif (ResourceControlController::isSigned(['resId' => $args['resId']])) {
+            return $response->withStatus(400)->withJson(['errors' => 'Resource is signed, file can not be modified']);
+        }
+
+        ResModel::update([
+            'set'   => [
+                'filename'     => null,
+                'docserver_id' => null,
+                'path'         => null,
+                'fingerprint'  => null,
+                'filesize'     => null,
+                'format'       => null
+            ],
+            'where' => ['res_id = ?'],
+            'data'  => [$args['resId']]
+        ]);
+
+        AdrModel::deleteDocumentAdr([
+            'where' => ['res_id = ?', 'type in (?)'],
+            'data'  => [$args['resId'], ['DOC', 'PDF', 'SIGN', 'NOTE']]
+        ]);
+
+        HistoryController::add([
+            'tableName' => 'res_letterbox',
+            'recordId'  => $args['resId'],
+            'eventType' => 'UP',
+            'info'      => "Fichier supprimé : {$resource['alt_identifier']}",
+            'moduleId'  => 'resource',
+            'eventId'   => 'fileDeletion'
+        ]);
 
         return $response->withStatus(204);
     }

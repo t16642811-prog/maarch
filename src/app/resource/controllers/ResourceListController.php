@@ -200,7 +200,8 @@ class ResourceListController
                 'attachments'  => $attachments,
                 'checkLocked'  => true,
                 'listDisplay'  => $listDisplay,
-                'trackedMails' => $trackedMails
+                'trackedMails' => $trackedMails,
+                'basketId'     => $basket['basket_id']
             ]);
             $anamSteps = ResourceListController::getAnamWorkflowStepsByResIds($resIds);
             foreach ($formattedResources as &$formattedResource) {
@@ -255,7 +256,8 @@ class ResourceListController
             'res_letterbox.retention_frozen',
             'res_letterbox.binding',
             'res_letterbox.process_limit_date',
-            'res_letterbox.creation_date'
+            'res_letterbox.creation_date',
+            'res_letterbox.admission_date'
         ];
         $tableFunction = ['status', 'priorities'];
         $leftJoinFunction = ['res_letterbox.status = status.id', 'res_letterbox.priority = priorities.id'];
@@ -321,10 +323,11 @@ class ResourceListController
         }
 
         $basket = BasketModel::getById(['id' => $aArgs['basketId'], 'select' => ['basket_clause']]);
-        $whereClause = PreparedClauseController::getPreparedClause(
-            ['clause' => $basket['basket_clause'], 'userId' => $aArgs['userId']]
-        );
-        $where = [$whereClause];
+        $where = [self::getBasketVisibilityWhereClause(
+            $basket['basket_clause'],
+            (int)$aArgs['userId'],
+            (int)$GLOBALS['id']
+        )];
         $queryData = [];
 
         $queryParams = $request->getQueryParams();
@@ -351,13 +354,13 @@ class ResourceListController
         $where = [];
         if (!empty($args['basketClause'])) {
             $user = UserModel::getByLogin(['login' => $args['login'], 'select' => ['id']]);
-            $whereClause = PreparedClauseController::getPreparedClause(
-                ['clause' => $args['basketClause'], 'userId' => $user['id']]
-            );
-            $persistentClause = self::getPersistentVisibilityWhereClause((int)$args['currentUserId']);
-            $where = ["({$whereClause} OR {$persistentClause})"];
+            $where = [self::getBasketVisibilityWhereClause(
+                $args['basketClause'],
+                (int)$user['id'],
+                (int)$args['currentUserId']
+            )];
         }
-        if (!empty($args['currentUserId'])) {
+        if (!empty($args['currentUserId']) && !self::isStrictMinisterBasketClause((string)($args['basketClause'] ?? ''))) {
             $where[] = self::getAnamWorkflowVisibilityWhereClause((int)$args['currentUserId']);
         }
         $queryData = [];
@@ -582,16 +585,37 @@ class ResourceListController
         )";
     }
 
-    private static function getVisibleResourcesForBasket(array $args): array
+    private static function isStrictMinisterBasketClause(string $basketClause): bool
+    {
+        return str_contains($basketClause, "MINISTRE/MINES/%A/%") || str_contains($basketClause, "MINISTRE/MINES/%D/%");
+    }
+
+    private static function getBasketVisibilityWhereClause(string $basketClause, int $userId, int $currentUserId): string
     {
         $whereClause = PreparedClauseController::getPreparedClause(
-            ['clause' => $args['basketClause'], 'userId' => $args['userId']]
+            ['clause' => $basketClause, 'userId' => $userId]
         );
-        $persistentClause = self::getPersistentVisibilityWhereClause((int)$args['currentUserId']);
+
+        if (self::isStrictMinisterBasketClause($basketClause)) {
+            return "({$whereClause})";
+        }
+
+        $persistentClause = self::getPersistentVisibilityWhereClause($currentUserId);
+
+        return "({$whereClause} OR {$persistentClause})";
+    }
+
+    private static function getVisibleResourcesForBasket(array $args): array
+    {
+        $visibilityClause = self::getBasketVisibilityWhereClause(
+            (string)$args['basketClause'],
+            (int)$args['userId'],
+            (int)$args['currentUserId']
+        );
 
         return ResModel::getOnView([
             'select' => $args['select'],
-            'where'  => ["({$whereClause} OR {$persistentClause})", 'res_view_letterbox.res_id in (?)'],
+            'where'  => [$visibilityClause, 'res_view_letterbox.res_id in (?)'],
             'data'   => [$args['resources']]
         ]);
     }
@@ -1361,7 +1385,17 @@ class ResourceListController
         $customFieldsLabels = array_column($customFields, 'label', 'id');
         $customFields = array_column($customFields, 'type', 'id');
 
+        $isMinisterIncomingBasket = !empty($args['basketId']) && $args['basketId'] === 'IncomingMinistre';
+
         foreach ($resources as $key => $resource) {
+            $isMinisterIncomingResource = !empty($resource['alt_identifier']) &&
+                stripos((string)$resource['alt_identifier'], 'MINISTRE/MINES/') === 0 &&
+                strpos((string)$resource['alt_identifier'], 'A/') !== false;
+            $effectiveArrivalDate = $resource['admission_date'] ?? null;
+            $effectiveCreationDate = ($isMinisterIncomingBasket || $isMinisterIncomingResource) && !empty($effectiveArrivalDate)
+                ? $effectiveArrivalDate
+                : $resource['creation_date'];
+
             $formattedResources[$key]['resId'] = $resource['res_id'];
             $formattedResources[$key]['chrono'] = $resource['alt_identifier'];
             $formattedResources[$key]['barcode'] = $resource['barcode'] ?? null;
@@ -1382,13 +1416,15 @@ class ResourceListController
             $formattedResources[$key]['retentionFrozen'] = $resource['retention_frozen'];
             $formattedResources[$key]['binding'] = $resource['binding'];
             $formattedResources[$key]['processLimitDate'] = $resource['process_limit_date'];
-            $formattedResources[$key]['creationDate'] = $resource['creation_date'];
+            $formattedResources[$key]['creationDate'] = $effectiveCreationDate;
             $formattedResources[$key]['documentDate'] = $resource['doc_date'] ?? null;
+            $formattedResources[$key]['arrivalDate'] = $effectiveArrivalDate;
             $formattedResources[$key]['is_read'] = array_key_exists('is_read', $resource) ? (int)$resource['is_read'] : 0;
-            $senders = ContactController::getFormattedContacts(
-                ['resId' => $resource['res_id'], 'mode' => 'sender', 'onlyContact' => true]
+            $contactMode = !empty($args['basketId']) && $args['basketId'] === 'OutgoingExternalMinistre' ? 'recipient' : 'sender';
+            $contacts = ContactController::getFormattedContacts(
+                ['resId' => $resource['res_id'], 'mode' => $contactMode, 'onlyContact' => true]
             );
-            $formattedResources[$key]['senderLabel'] = empty($senders) ? '' : implode(' - ', array_filter($senders));
+            $formattedResources[$key]['senderLabel'] = empty($contacts) ? '' : implode(' - ', array_filter($contacts));
             foreach ($attachments as $attachment) {
                 if ($attachment['res_id_master'] == $resource['res_id']) {
                     $formattedResources[$key]['countAttachments'] = $attachment['count'];
@@ -1503,12 +1539,12 @@ class ResourceListController
                                 $display[] = $value;
                             } elseif ($value['value'] == 'getCreationAndProcessLimitDates') {
                                 $value['displayValue'] = [
-                                    'creationDate'     => $resource['creation_date'],
+                                    'creationDate'     => $effectiveCreationDate,
                                     'processLimitDate' => $resource['process_limit_date']
                                 ];
                                 $display[] = $value;
                             } elseif ($value['value'] == 'getCreationDate') {
-                                $value['displayValue'] = $resource['creation_date'];
+                                $value['displayValue'] = $effectiveCreationDate;
                                 $display[] = $value;
                             } elseif ($value['value'] == 'getProcessLimitDate') {
                                 $value['displayValue'] = $resource['process_limit_date'];

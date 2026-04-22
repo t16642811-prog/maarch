@@ -38,7 +38,7 @@
             <mat-select [(ngModel)]="this.listProperties.order" (selectionChange)="updateFilters()">
                 <mat-option value="" style="text-align: center;">{{'lang.defaultOrder' | translate}}</mat-option>
                 <mat-option [value]="column.id" *ngFor="let column of displayColsOrder">
-                    {{'lang.' + column.id | translate}}
+                    {{ getOrderLabel(column.id) }}
                 </mat-option>
             </mat-select>
         </mat-form-field>

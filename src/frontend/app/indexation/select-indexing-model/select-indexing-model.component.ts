@@ -25,6 +25,7 @@ export class SelectIndexingModelComponent implements OnInit {
     @Input() indexingModels: any = [];
     @Input() indexingForm: IndexingFormComponent;
     @Input() adminMode: boolean = false;
+    @Input() groupId: number | null = null;
 
     @Output() afterListModelsLoaded = new EventEmitter<any>();
     @Output() afterSelectedListModel = new EventEmitter<any>();
@@ -76,13 +77,20 @@ export class SelectIndexingModelComponent implements OnInit {
         }
 
         const selectableModels = this.indexingModels.filter((model: any) => !this.hideFromSelection(model));
+        const ministerDefault = selectableModels.find((model: any) =>
+            ((model.label || '')
+                .toString()
+                .trim()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')) === 'courrier arrivee ministre'
+        );
         this.currentIndexingModel = this.defaultIndexingModelId === null
-            ? selectableModels.filter((model: any) => model.default === true)[0]
+            ? this.indexingModels.filter((model: any) => model.default === true)[0]
             : selectableModels.filter((model: any) => model.id === this.defaultIndexingModelId)[0];
 
-        if (this.currentIndexingModel === undefined) {
-            this.currentIndexingModel = selectableModels[0] || this.indexingModels[0];
-            this.notify.error(this.translate.instant('lang.noDefaultIndexingModel'));
+        if (this.currentIndexingModel === undefined || this.hideFromSelection(this.currentIndexingModel)) {
+            this.currentIndexingModel = ministerDefault || selectableModels[0] || this.indexingModels[0];
         }
     }
 
@@ -115,19 +123,61 @@ export class SelectIndexingModelComponent implements OnInit {
             }
         });
 
+        if (this.indexingModels.length > 0 && this.hideFromSelection(this.currentIndexingModel)) {
+            this.currentIndexingModel = this.indexingModels[0];
+        }
+
         this.afterListModelsLoaded.emit(this.currentIndexingModel);
     }
 
     private hideFromSelection(indexingModel: any): boolean {
-        if (!indexingModel || indexingModel.master !== null) {
+        if (!indexingModel) {
             return false;
         }
-        const label = (indexingModel.label || '').toString().trim().toLowerCase();
+
+        const label = (indexingModel.label || '')
+            .toString()
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+
+        if (this.isMinisterSecretariatIndexingContext()) {
+            return !['courrier arrivee ministre', 'courrier depart externe ministre'].includes(label);
+        }
+
+        if (indexingModel.master !== null) {
+            return false;
+        }
+
         return label.includes('courrier') && label.includes('depart') && !label.includes('interne') && !label.includes('externe');
     }
 
+    private isMinisterSecretariatIndexingContext(): boolean {
+        if (this.groupId === null || !Array.isArray(this.headerService.user?.groups)) {
+            return false;
+        }
+
+        const currentGroup = this.headerService.user.groups.find((group: any) => Number(group.id) === Number(this.groupId));
+        if (!currentGroup) {
+            return false;
+        }
+
+        return (currentGroup.group_id || '').toString().toLowerCase() === 'secministre';
+    }
+
     resetIndexingModel() {
-        this.currentIndexingModel = this.indexingModels.filter((model: any) => model.default === true)[0];
+        const selectableModels = this.indexingModels.filter((model: any) => !this.hideFromSelection(model));
+        const ministerDefault = selectableModels.find((model: any) =>
+            ((model.label || '')
+                .toString()
+                .trim()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')) === 'courrier arrivee ministre'
+        );
+
+        this.currentIndexingModel = ministerDefault || selectableModels[0] || this.indexingModels.filter((model: any) => model.default === true)[0];
         this.afterSelectedListModel.emit(this.currentIndexingModel);
     }
 
