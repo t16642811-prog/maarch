@@ -121,8 +121,9 @@ class FolderPrintController
 
         $withSeparators = !empty($body['withSeparator']);
 
+        $summarySheetEnabled = !empty($body['summarySheet']);
         $unitsSummarySheet = [];
-        if (!empty($body['summarySheet'])) {
+        if (is_array($body['summarySheet'] ?? null)) {
             $unitsSummarySheet = $body['summarySheet'];
         }
 
@@ -135,13 +136,15 @@ class FolderPrintController
             // Array containing all paths to the pdf files to merge for this resource
             $documentPaths = [];
 
-            $withSummarySheet = !empty($unitsSummarySheet) || !empty($resource['summarySheet']);
+            $withSummarySheet = $summarySheetEnabled || !empty($resource['summarySheet']);
 
             if ($withSummarySheet) {
                 if (!empty($resource['summarySheet']) && is_array($resource['summarySheet'])) {
                     $units = $resource['summarySheet'];
-                } else {
+                } elseif (!empty($unitsSummarySheet)) {
                     $units = $unitsSummarySheet;
+                } else {
+                    $units = $defaultUnits;
                 }
 
                 $documentPaths[] = FolderPrintController::getSummarySheet(
@@ -917,10 +920,8 @@ class FolderPrintController
             return $response->withStatus(400)->withJson(['errors' => 'No document to merge']);
         }
         if (count($folderPrintPaths) == 1) {
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-
             $fileContent = file_get_contents($folderPrintPaths[0]);
-            $mimeType = $finfo->buffer($fileContent);
+            $mimeType = self::detectMimeType($fileContent, 'pdf');
 
             $response->write($fileContent);
 
@@ -946,9 +947,8 @@ class FolderPrintController
             return $response->withStatus(500)->withJson(['errors' => 'Merged ZIP file not created']);
         }
 
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
         $fileContent = file_get_contents($filePathOnTmp);
-        $mimeType = $finfo->buffer($fileContent);
+        $mimeType = self::detectMimeType($fileContent, 'zip');
 
         $response->write($fileContent);
 
@@ -960,10 +960,12 @@ class FolderPrintController
 
             $response = $response->withAddedHeader('Content-Disposition', 'inline; filename=maarch.zip');
             return $response->withHeader('Content-Type', $mimeType);
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
             @file_put_contents(
                 'C:/apps/maarch/custom/local/logs/folderprint-debug.log',
-                '[' . date('Y-m-d H:i:s') . '] ' . $exception->getMessage() . PHP_EOL,
+                '[' . date('Y-m-d H:i:s') . '] ' . $exception->getMessage() . PHP_EOL
+                . $exception->getTraceAsString() . PHP_EOL
+                . str_repeat('-', 80) . PHP_EOL,
                 FILE_APPEND
             );
             LogsController::add([
@@ -995,7 +997,7 @@ class FolderPrintController
 
         if (count($generatedFiles) === 1) {
             $fileContent = file_get_contents($generatedFiles[0]);
-            $mimeType = (new finfo(FILEINFO_MIME_TYPE))->buffer($fileContent);
+            $mimeType = self::detectMimeType($fileContent, 'pdf');
             @unlink($generatedFiles[0]);
 
             $response->write($fileContent);
@@ -1023,7 +1025,7 @@ class FolderPrintController
         }
 
         $fileContent = file_get_contents($zipPath);
-        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->buffer($fileContent);
+        $mimeType = self::detectMimeType($fileContent, 'zip');
 
         @unlink($zipPath);
         foreach ($generatedFiles as $generatedFile) {
@@ -1103,6 +1105,23 @@ class FolderPrintController
         }
 
         $pdf->Output($outputPath, 'F');
+    }
+
+    private static function detectMimeType(string $fileContent, string $fallbackExtension = 'pdf'): string
+    {
+        if (class_exists('finfo')) {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->buffer($fileContent);
+            if (!empty($mimeType)) {
+                return $mimeType;
+            }
+        }
+
+        if ($fallbackExtension === 'zip') {
+            return 'application/zip';
+        }
+
+        return 'application/pdf';
     }
 
     /**

@@ -587,7 +587,11 @@ class ResourceListController
 
     private static function isStrictMinisterBasketClause(string $basketClause): bool
     {
-        return str_contains($basketClause, "MINISTRE/MINES/%A/%") || str_contains($basketClause, "MINISTRE/MINES/%D/%");
+        return str_contains($basketClause, "MINISTRE/MINES/%A/%")
+            || str_contains($basketClause, "MINISTRE/MINES/%A-INT/%")
+            || str_contains($basketClause, "MINISTRE/MINES/%D/%")
+            || str_contains($basketClause, "MINISTRE/MINES/%D-EXT/%")
+            || str_contains($basketClause, "MINISTRE/MINES/%D-INT/%");
     }
 
     private static function getBasketVisibilityWhereClause(string $basketClause, int $userId, int $currentUserId): string

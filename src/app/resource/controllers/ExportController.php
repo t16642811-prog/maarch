@@ -21,7 +21,6 @@ use CustomField\models\CustomFieldModel;
 use Entity\models\EntityModel;
 use Entity\models\ListInstanceModel;
 use Exception;
-use finfo;
 use Folder\controllers\FolderController;
 use Folder\models\FolderModel;
 use Resource\models\ExportTemplateModel;
@@ -255,8 +254,7 @@ class ExportController
             );
 
             $fileContent = $pdf->Output('', 'S');
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $contentType = $finfo->buffer($fileContent);
+            $contentType = 'application/pdf';
 
             $response->write($fileContent);
             $response = $response->withAddedHeader('Content-Disposition', "inline; filename=maarch.pdf");
@@ -510,10 +508,8 @@ class ExportController
         ValidatorModel::arrayType($aArgs, ['data', 'resources', 'chunkedResIds']);
 
         $columnsNumber = count($aArgs['data']);
-        $orientation = 'P';
-        if ($columnsNumber > 5) {
-            $orientation = 'L';
-        }
+        // Export des données : toujours en paysage pour garder un rendu imprimable lisible.
+        $orientation = 'L';
 
         $libPath = CoreConfigModel::getFpdiPdfParserLibrary();
         if (file_exists($libPath)) {

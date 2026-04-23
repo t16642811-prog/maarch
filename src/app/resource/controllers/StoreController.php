@@ -544,7 +544,10 @@ class StoreController
             'destination' => $args['destination'] ?? null,
             'typist'      => $body['typist'] ?? null
         ])) {
-            return self::getMinisterialChrono(['category' => $indexingModel['category']]);
+            return self::getMinisterialChrono([
+                'category'      => $indexingModel['category'] ?? null,
+                'indexingModel' => $indexingModel
+            ]);
         }
 
         if (self::isExternalOutgoingIndexingModel($indexingModel)) {
@@ -569,6 +572,18 @@ class StoreController
     {
         $label = mb_strtolower((string)($indexingModel['label'] ?? ''));
         return ($indexingModel['category'] ?? null) == 'outgoing' && str_contains($label, 'externe');
+    }
+
+    private static function isInternalOutgoingIndexingModel(array $indexingModel): bool
+    {
+        $label = mb_strtolower((string)($indexingModel['label'] ?? ''));
+        return ($indexingModel['category'] ?? null) == 'outgoing' && str_contains($label, 'interne');
+    }
+
+    private static function isInternalIncomingIndexingModel(array $indexingModel): bool
+    {
+        $label = mb_strtolower((string)($indexingModel['label'] ?? ''));
+        return ($indexingModel['category'] ?? null) == 'incoming' && str_contains($label, 'interne');
     }
 
     private static function getChronoIndexingModel(array $args): array
@@ -623,8 +638,23 @@ class StoreController
     private static function getMinisterialChrono(array $args): string
     {
         $category = $args['category'] ?? null;
-        $suffix = $category == 'incoming' ? 'A' : 'D';
-        $counter = self::getScopedChronoCounter("ministere_mines_{$category}");
+        $indexingModel = $args['indexingModel'] ?? [];
+
+        if ($category == 'incoming') {
+            if (self::isInternalIncomingIndexingModel($indexingModel)) {
+                $suffix = 'A-INT';
+                $counter = self::getScopedChronoCounter('ministere_mines_incoming_internal');
+            } else {
+                $suffix = 'A';
+                $counter = self::getScopedChronoCounter('ministere_mines_incoming');
+            }
+        } elseif (self::isInternalOutgoingIndexingModel($indexingModel)) {
+            $suffix = 'D-INT';
+            $counter = self::getScopedChronoCounter('ministere_mines_outgoing_internal');
+        } else {
+            $suffix = 'D-EXT';
+            $counter = self::getScopedChronoCounter('ministere_mines_outgoing');
+        }
 
         return sprintf('MINISTRE/MINES/%s%s/%s', date('Y'), $suffix, $counter);
     }

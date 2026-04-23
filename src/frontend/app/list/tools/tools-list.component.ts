@@ -3,10 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 import { MatLegacyAutocompleteTrigger as MatAutocompleteTrigger } from '@angular/material/legacy-autocomplete';
 import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError, finalize, tap } from 'rxjs/operators';
 import { ExportComponent } from '../export/export.component';
 import { SummarySheetComponent } from '../summarySheet/summary-sheet.component';
 import { PrintedFolderModalComponent } from '@appRoot/printedFolder/printed-folder-modal.component';
+import { NotificationService } from '@service/notification/notification.service';
+import { FunctionsService } from '@service/functions.service';
 
 
 export interface StateGroup {
@@ -49,6 +52,13 @@ export class ToolsListComponent {
             click: () => this.openExport()
         },
         {
+            id: 'exportCsv',
+            label: `${this.translate.instant('lang.exportDatas')} CSV`,
+            icon: 'fas fa-file-csv',
+            allowedSources: ['basket', 'search', 'folder'],
+            click: () => this.exportCsv()
+        },
+        {
             id: 'printedFolder',
             label: this.translate.instant('lang.printedFolder'),
             icon: 'fa fa-print',
@@ -71,7 +81,9 @@ export class ToolsListComponent {
     constructor(
         public translate: TranslateService,
         public http: HttpClient,
-        public dialog: MatDialog
+        public dialog: MatDialog,
+        private notify: NotificationService,
+        private functionsService: FunctionsService
     ) { }
 
     openExport(): void {
@@ -107,5 +119,86 @@ export class ToolsListComponent {
                     currentBasketInfo: this.currentBasketInfo
                 }
             });
+    }
+
+    exportCsv(): void {
+        if (!Array.isArray(this.selectedRes) || this.selectedRes.length === 0) {
+            return;
+        }
+
+        this.isLoading = true;
+        this.http.put('../rest/resourcesList/exports', this.buildCsvExportModel(), { responseType: 'blob' }).pipe(
+            tap((data: Blob) => {
+                if (data.type === 'text/html') {
+                    alert(this.translate.instant('lang.tooMuchDatas'));
+                    return;
+                }
+                const downloadLink = document.createElement('a');
+                downloadLink.href = window.URL.createObjectURL(data);
+                downloadLink.setAttribute('download', this.functionsService.getFormatedFileName('export_courriers', 'csv'));
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                downloadLink.remove();
+            }),
+            finalize(() => this.isLoading = false),
+            catchError((err: any) => {
+                this.notify.handleBlobErrors(err);
+                return of(false);
+            })
+        ).subscribe();
+    }
+
+    private buildCsvExportModel(): any {
+        const partyField = this.isMinisterOutgoingBasket()
+            ? {
+                value: 'getRecipients',
+                label: this.translate.instant('lang.getRecipients'),
+                isFunction: true
+            }
+            : {
+                value: 'getSenders',
+                label: this.translate.instant('lang.getSenders'),
+                isFunction: true
+            };
+
+        const dateField = this.isMinisterIncomingBasket()
+            ? {
+                value: 'admission_date',
+                label: this.translate.instant('lang.arrivalDate'),
+                isFunction: false
+            }
+            : {
+                value: 'doc_date',
+                label: this.translate.instant('lang.docDate'),
+                isFunction: false
+            };
+
+        return {
+            format: 'csv',
+            delimiter: ';',
+            resources: this.selectedRes,
+            data: [
+                {
+                    value: 'alt_identifier',
+                    label: this.translate.instant('lang.chronoNumber'),
+                    isFunction: false
+                },
+                partyField,
+                {
+                    value: 'subject',
+                    label: this.translate.instant('lang.subject'),
+                    isFunction: false
+                },
+                dateField
+            ]
+        };
+    }
+
+    private isMinisterIncomingBasket(): boolean {
+        return this.currentBasketInfo?.basketId === 'IncomingMinistre' || this.currentBasketInfo?.basket_id === 'IncomingMinistre';
+    }
+
+    private isMinisterOutgoingBasket(): boolean {
+        return this.currentBasketInfo?.basketId === 'OutgoingExternalMinistre' || this.currentBasketInfo?.basket_id === 'OutgoingExternalMinistre';
     }
 }
