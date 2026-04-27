@@ -27,7 +27,7 @@ table tr:not(.filters) .mat-form-field {
 }
 
 .modal-body .list-group li {
-    /*border-color: #0893a9 !important;*/
+    /*border-color: var(--maarch-color-primary) !important;*/
     font-weight: bold;
 }
 
@@ -164,7 +164,7 @@ table tr:not(.filters) .mat-form-field {
 }
 
 .headerMaarch.mat-menu-panel {
-    background: #0893a9 !important;
+    background: var(--maarch-color-primary) !important;
 }
 
 .headerMaarchShortcut.mat-menu-panel {

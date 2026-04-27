@@ -27,14 +27,14 @@
 
 .droptarget {
     position: relative;
-    background-color: #0893a933;
+    background-color: var(--maarch-color-primary-opacity-20);
     display: table;
     margin: 10px;
     padding: 5px;
     text-align: left;
     width: 95%;
     cursor: default;
-    border: dashed 2px #0893a933
+    border: dashed 2px var(--maarch-color-primary-opacity-20)
 }
 
 .droptarget_arrow {

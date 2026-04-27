@@ -14,6 +14,7 @@ export class IconService {
     initializeIcons(): void {
         this.matIconRegistry.addSvgIcon('maarchLogo', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/logo_only.svg'));
         this.matIconRegistry.addSvgIcon('maarchLogoFull', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/logo.svg'));
+        this.matIconRegistry.addSvgIcon('ministereLogoFull', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/ministre-logo.svg'));
         this.matIconRegistry.addSvgIcon('maarchLogoWhite', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/logo_only_white.svg'));
         this.matIconRegistry.addSvgIcon('maarchLogoWhiteFull', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/logo_white.svg'));
         this.matIconRegistry.addSvgIcon('alfresco', this.domSanitizer.bypassSecurityTrustResourceUrl('assets/alfresco.svg'));

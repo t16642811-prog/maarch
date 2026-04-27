@@ -27,7 +27,6 @@ use Doctype\models\DoctypeModel;
 use Email\models\EmailModel;
 use Entity\models\EntityModel;
 use Exception;
-use finfo;
 use IndexingModel\models\IndexingModelFieldModel;
 use Note\models\NoteEntityModel;
 use Note\models\NoteModel;
@@ -1109,14 +1108,6 @@ class FolderPrintController
 
     private static function detectMimeType(string $fileContent, string $fallbackExtension = 'pdf'): string
     {
-        if (class_exists('finfo')) {
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $mimeType = $finfo->buffer($fileContent);
-            if (!empty($mimeType)) {
-                return $mimeType;
-            }
-        }
-
         if ($fallbackExtension === 'zip') {
             return 'application/zip';
         }

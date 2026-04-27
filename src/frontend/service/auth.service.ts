@@ -245,6 +245,7 @@ export class AuthService {
                     externalId: data.external_id,
                 };
                 this.headerService.nbResourcesFollowed = data.nbFollowedResources;
+                this.headerService.applyUserTheme();
                 this.privilegeService.resfreshUserShortcuts();
             })
         );

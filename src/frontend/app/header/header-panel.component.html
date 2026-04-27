@@ -7,7 +7,7 @@
     </div>
     <div class="panelHeader-logo" [class.text-center]="headerService.sideBarButton !== null">
         <button mat-button style="margin-right: 30px;" (click)="goToHome()" title="{{'lang.home' | translate}}">
-            <mat-icon class="maarchLogo" svgIcon="maarchLogoFull"></mat-icon>
+            <mat-icon class="maarchLogo" [svgIcon]="headerService.useMinisterLogo() ? 'ministereLogoFull' : 'maarchLogoFull'"></mat-icon>
         </button>
     </div>
     <div class="panelHeader-button">

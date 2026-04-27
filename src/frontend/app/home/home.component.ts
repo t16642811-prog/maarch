@@ -117,7 +117,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         const normalized = allBaskets.map((basket: any) => ({
             name: basket.basket_name || this.translate.instant('lang.undefined'),
             count: Number(basket.resourceNumber || 0),
-            color: basket.color || '#0893a9',
+            color: basket.color || 'var(--maarch-color-primary)',
             groupDesc: basket.groupDesc || basket.group_desc || ''
         }));
 

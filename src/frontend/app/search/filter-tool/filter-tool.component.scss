@@ -16,7 +16,7 @@
 }
 
 .catBadge {
-    color: #0893a9;
+    color: var(--maarch-color-primary);
     font-size: 14px;
     font-weight: bold !important;
     min-width: auto;
@@ -37,7 +37,7 @@
     }
 
     .mat-expansion-panel-header-title {
-        color: #0893a9;
+        color: var(--maarch-color-primary);
         display: flex;
         align-items: center;
         font-size: 14px;

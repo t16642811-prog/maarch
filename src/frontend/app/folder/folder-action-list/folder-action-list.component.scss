@@ -5,8 +5,8 @@
 
 .mat-stroked-button {
     border-radius: 20px;
-    border-color: #0893a9;
-    color: #0893a9;
+    border-color: var(--maarch-color-primary);
+    color: var(--maarch-color-primary);
 }
 
 ::ng-deep.actionListMenu {

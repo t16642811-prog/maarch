@@ -8,7 +8,7 @@
 
 ::ng-deep.mat-step-icon {
     background-color: white;
-    color: #0893a9;
+    color: var(--maarch-color-primary);
 }
 
 ::ng-deep.mat-step-label-active {

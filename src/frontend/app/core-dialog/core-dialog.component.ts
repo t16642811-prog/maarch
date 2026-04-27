@@ -110,6 +110,28 @@ export class CoreDialogComponent implements OnInit {
         this.loadIcon = false;
     }
 
+    loadingLogoIcon(): string {
+        return this.headerService.useMinisterLogo() || this.isMinisterLoginFromToken()
+            ? 'ministereLogoFull'
+            : 'maarchLogoFull';
+    }
+
+    private isMinisterLoginFromToken(): boolean {
+        const token = this.authService.getToken();
+        if (this.functionsService.empty(token)) {
+            return false;
+        }
+
+        try {
+            const tokenData = JSON.parse(atob(token.split('.')[1]));
+            const userLogin = (tokenData?.user?.user_id || tokenData?.user?.userId || '').toString().toUpperCase();
+
+            return ['BOUACHOUR.HOURIA', 'SAMIA.TRABELSI'].includes(userLogin);
+        } catch (e) {
+            return false;
+        }
+    }
+
     getLoggedUserInfo() {
         return new Promise((resolve) => {
             this.authService

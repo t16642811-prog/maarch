@@ -10,6 +10,13 @@ import { DomPortalOutlet, TemplatePortal } from '@angular/cdk/portal';
     providedIn: 'root'
 })
 export class HeaderService {
+    private readonly defaultTheme = {
+        primary: '#0893a9',
+        secondary: '#f99830',
+        success: '#006841',
+        danger: '#8e3e52'
+    };
+
     sideBarForm: boolean = false;
     sideBarAdmin: boolean = false;
     hideSideBar: boolean = false;
@@ -64,6 +71,7 @@ export class HeaderService {
                             externalId: data.external_id
                         };
                         this.nbResourcesFollowed = data.nbFollowedResources;
+                        this.applyUserTheme();
                         resolve(data);
                     })
                 ).subscribe();
@@ -73,6 +81,111 @@ export class HeaderService {
 
     setUser(user: any = { firstname: '', lastname: '', groups: [], privileges: [] }) {
         this.user = user;
+        this.applyUserTheme();
+    }
+
+    applyUserTheme() {
+        const root = document.documentElement;
+        if (!root) {
+            return;
+        }
+
+        const primary = this.isMinisterUser() ? this.defaultTheme.primary : '#691743';
+
+        this.setThemeColors(root, {
+            primary,
+            secondary: this.defaultTheme.secondary,
+            success: this.defaultTheme.success,
+            danger: this.defaultTheme.danger
+        });
+    }
+
+    private setThemeColors(root: HTMLElement, colors: { primary: string, secondary: string, success: string, danger: string }) {
+        this.setColorFamily(root, 'primary', colors.primary);
+        this.setColorFamily(root, 'secondary', colors.secondary);
+        this.setColorFamily(root, 'success', colors.success);
+        this.setColorFamily(root, 'danger', colors.danger);
+    }
+
+    private isMinisterUser() {
+        const ministerLogins = ['SUPERADMIN', 'BOUACHOUR.HOURIA', 'SAMIA.TRABELSI'];
+        const userLogin = (this.user?.userId || '').toString().toUpperCase();
+
+        return ministerLogins.includes(userLogin);
+    }
+
+    useMinisterLogo() {
+        const ministerLogins = ['BOUACHOUR.HOURIA', 'SAMIA.TRABELSI'];
+        const ministerGroups = ['BOG MINISTRE', 'SECMINISTRE', 'SECRÉTARIAT DU MINISTRE', 'SECRETARIAT DU MINISTRE'];
+        const userLogin = (this.user?.userId || '').toString().toUpperCase();
+        const groups = Array.isArray(this.user?.groups) ? this.user.groups : [];
+
+        return ministerLogins.includes(userLogin) || groups.some((group: any) => {
+            const groupValues = [
+                group?.id,
+                group?.group_id,
+                group?.label,
+                group?.description,
+                group?.groupDesc,
+                group?.group_desc
+            ];
+
+            return groupValues.some((value: any) => ministerGroups.includes((value || '').toString().toUpperCase()));
+        });
+    }
+
+    private setColorFamily(root: HTMLElement, family: string, hex: string) {
+        root.style.setProperty(`--maarch-color-${family}`, hex);
+        root.style.setProperty(`--maarch-color-${family}-light`, this.adjustColor(hex, 0.1));
+        root.style.setProperty(`--maarch-color-${family}-dark`, this.adjustColor(hex, -0.1));
+        [0.1, 0.2, 0.3, 0.4, 0.5, 0.6].forEach((opacity) => {
+            root.style.setProperty(
+                `--maarch-color-${family}-opacity-${Math.round(opacity * 100)}`,
+                this.hexToRgba(hex, opacity)
+            );
+        });
+    }
+
+    private adjustColor(hex: string, amount: number) {
+        const rgb = this.hexToRgb(hex);
+        const ratio = amount >= 0 ? amount : 1 + amount;
+        const adjusted = {
+            r: Math.round(amount >= 0 ? rgb.r + (255 - rgb.r) * ratio : rgb.r * ratio),
+            g: Math.round(amount >= 0 ? rgb.g + (255 - rgb.g) * ratio : rgb.g * ratio),
+            b: Math.round(amount >= 0 ? rgb.b + (255 - rgb.b) * ratio : rgb.b * ratio)
+        };
+
+        return this.rgbToHex(
+            this.clampColor(adjusted.r),
+            this.clampColor(adjusted.g),
+            this.clampColor(adjusted.b)
+        );
+    }
+
+    private hexToRgba(hex: string, opacity: number) {
+        const rgb = this.hexToRgb(hex);
+        return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
+    }
+
+    private hexToRgb(hex: string) {
+        const normalized = hex.replace('#', '');
+        const safeHex = normalized.length === 3
+            ? normalized.split('').map((char) => char + char).join('')
+            : normalized;
+
+        return {
+            r: parseInt(safeHex.substring(0, 2), 16),
+            g: parseInt(safeHex.substring(2, 4), 16),
+            b: parseInt(safeHex.substring(4, 6), 16)
+        };
+    }
+
+    private rgbToHex(r: number, g: number, b: number) {
+        return `#${[r, g, b].map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+    }
+
+    private clampColor(value: number) {
+        return Math.max(0, Math.min(255, value));
     }
 
     getLastLoadedFile() {
