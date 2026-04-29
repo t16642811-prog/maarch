@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, Input, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 import { NotificationService } from '@service/notification/notification.service';
@@ -32,7 +32,7 @@ interface DisplayContactList {
     providers: [SortPipe, ContactService]
 })
 
-export class ContactAutocompleteComponent implements OnInit {
+export class ContactAutocompleteComponent implements OnInit, OnChanges {
 
     /**
      * FormControl used when autocomplete is used in form and must be catched in a form control.
@@ -45,6 +45,7 @@ export class ContactAutocompleteComponent implements OnInit {
     @Input() singleMode: boolean = false;
     @Input() inputMode: boolean = false;
     @Input() fromExternalWorkflow: boolean = false;
+    @Input() onlyEntities: boolean = false;
 
     @Output() retrieveDocumentEvent = new EventEmitter<string>();
     @Output() afterSelected = new EventEmitter<any>();
@@ -94,11 +95,19 @@ export class ContactAutocompleteComponent implements OnInit {
 
     ngOnInit() {
         this.controlAutocomplete.setValue(this.controlAutocomplete.value === null || this.controlAutocomplete.value === '' ? [] : this.controlAutocomplete.value);
-        this.canAdd = this.privilegeService.hasCurrentUserPrivilege('create_contacts');
-        this.canUpdate = this.privilegeService.hasCurrentUserPrivilege('update_contacts');
+        this.refreshContactPrivileges();
         this.getCustomFields();
         this.initFormValue();
         this.initAutocompleteRoute();
+    }
+
+    ngOnChanges() {
+        this.refreshContactPrivileges();
+    }
+
+    refreshContactPrivileges() {
+        this.canAdd = !this.onlyEntities && this.privilegeService.hasCurrentUserPrivilege('create_contacts');
+        this.canUpdate = !this.onlyEntities && this.privilegeService.hasCurrentUserPrivilege('update_contacts');
     }
 
     initAutocompleteRoute() {
@@ -117,6 +126,7 @@ export class ContactAutocompleteComponent implements OnInit {
                 tap(() => this.loading = true),
                 switchMap((data: any) => this.getDatas(data)),
                 map((data: any) => {
+                    data = data.filter((contact: any) => !this.onlyEntities || contact.type === 'entity');
                     data = data.filter((contact: any) => !this.singleMode || (contact.type !== 'entity' && contact.type !== 'contactGroup' && this.singleMode));
                     data = data.map((contact: any) => ({
                         ...contact,
@@ -166,7 +176,8 @@ export class ContactAutocompleteComponent implements OnInit {
     }
 
     getDatas(data: string) {
-        return this.http.get('../rest/autocomplete/correspondents' + this.exclusion, { params: { 'search': data } });
+        const exclusion = this.onlyEntities ? '?noUsers=true&noContacts=true&noContactsGroups=true' : this.exclusion;
+        return this.http.get('../rest/autocomplete/correspondents' + exclusion, { params: { 'search': data } });
     }
 
     selectOpt(ev: any) {

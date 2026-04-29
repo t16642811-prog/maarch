@@ -405,6 +405,8 @@
                                 <ng-container *ngIf="['senders','recipients'].indexOf(field.identifier) > -1">
                                     <app-contact-autocomplete #appContactAutocomplete [id]="field.identifier"
                                         [control]="arrFormControl[field.identifier]" style="width:100%;"
+                                        [exclusion]="field.onlyEntities ? '?noUsers=true&noContacts=true&noContactsGroups=true' : getContactAutocompleteExclusion(field)"
+                                        [onlyEntities]="field.onlyEntities === true || isAnamPcdExternalOutgoingSenderField(field)"
                                         (retrieveDocumentEvent)="retrieveDocumentEvent.emit()"
                                         (afterContactSelected)="selectedContact($event, field.identifier)" (removeContactEvent)="checkRemovedItem($event)">
                                     </app-contact-autocomplete>

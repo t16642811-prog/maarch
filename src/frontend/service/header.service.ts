@@ -24,7 +24,7 @@ export class HeaderService {
     showMenuShortcut: boolean = true;
     showMenuNav: boolean = true;
 
-    sideNavLeft: MatSidenav = null;
+    sideNavLeft: MatSidenav | null = null;
     sideBarButton: any = null;
 
     currentBasketInfo: any = {
@@ -38,17 +38,17 @@ export class HeaderService {
     subHeaderMessage: string = '';
     user: any = { firstname: '', lastname: '', groups: [], privileges: [], preferences: [], featureTour: [], externalId: null };
     nbResourcesFollowed: number = 0;
-    base64: string = null;
+    base64: string | null = null;
 
-    private portalHost: DomPortalOutlet;
+    private portalHost!: DomPortalOutlet;
 
     constructor(
         public translate: TranslateService,
         public http: HttpClient,
         public foldersService: FoldersService,
-        private componentFactoryResolver: ComponentFactoryResolver,
-        private injector: Injector,
-        private appRef: ApplicationRef,
+        private readonly componentFactoryResolver: ComponentFactoryResolver,
+        private readonly injector: Injector,
+        private readonly appRef: ApplicationRef,
     ) { }
 
     resfreshCurrentUser() {
@@ -116,7 +116,7 @@ export class HeaderService {
 
     useMinisterLogo() {
         const ministerLogins = ['BOUACHOUR.HOURIA', 'SAMIA.TRABELSI'];
-        const ministerGroups = ['BOG MINISTRE', 'SECMINISTRE', 'SECRÉTARIAT DU MINISTRE', 'SECRETARIAT DU MINISTRE'];
+        const ministerGroups = new Set(['BOG MINISTRE', 'SECMINISTRE', 'SECRÉTARIAT DU MINISTRE', 'SECRETARIAT DU MINISTRE']);
         const userLogin = (this.user?.userId || '').toString().toUpperCase();
         const groups = Array.isArray(this.user?.groups) ? this.user.groups : [];
 
@@ -130,7 +130,7 @@ export class HeaderService {
                 group?.group_desc
             ];
 
-            return groupValues.some((value: any) => ministerGroups.includes((value || '').toString().toUpperCase()));
+            return groupValues.some((value: any) => ministerGroups.has((value || '').toString().toUpperCase()));
         });
     }
 
@@ -174,9 +174,9 @@ export class HeaderService {
             : normalized;
 
         return {
-            r: parseInt(safeHex.substring(0, 2), 16),
-            g: parseInt(safeHex.substring(2, 4), 16),
-            b: parseInt(safeHex.substring(4, 6), 16)
+            r: Number.parseInt(safeHex.substring(0, 2), 16),
+            g: Number.parseInt(safeHex.substring(2, 4), 16),
+            b: Number.parseInt(safeHex.substring(4, 6), 16)
         };
     }
 
@@ -256,9 +256,14 @@ export class HeaderService {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     initTemplate(template: TemplateRef<any>, viewContainerRef: ViewContainerRef, id: string = 'adminMenu', mode: string = '') {
+        const division = document.querySelector(`#${id}`);
+        if (division === null) {
+            return;
+        }
+
         // Create a portalHost from a DOM element
         this.portalHost = new DomPortalOutlet(
-            document.querySelector(`#${id}`),
+            division,
             this.componentFactoryResolver,
             this.appRef,
             this.injector

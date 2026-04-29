@@ -102,7 +102,7 @@
                 <mat-spinner diameter="20"></mat-spinner>
             </mat-option>
             <div class="autoCompleteInfoResult smallInputInfo create-contact"
-                *ngIf="canAdd && (noResultFound !== null || options?.length > 0) && !loading && !fromExternalWorkflow" disabled>
+                *ngIf="!onlyEntities && canAdd && (noResultFound !== null || options?.length > 0) && !loading && !fromExternalWorkflow" disabled>
                 <a style="cursor: pointer;" (click)="$event.stopPropagation();openContact()">
                     <mat-icon matSuffix class="fas fa-plus-circle" style="padding-top: 5px"></mat-icon>
                     {{'lang.createContact' | translate}}

@@ -269,8 +269,17 @@ class StoreController
             $entity = EntityModel::getById(['id' => $args['destination'], 'select' => ['entity_id']]);
             $args['destination'] = $entity['entity_id'];
         }
+
+        if (self::isPresidentExternalOutgoingIndexingModel($indexingModel)) {
+            $args['destination'] = 'SEC';
+        }
+
         $chrono = null;
-        if (!empty($args['chrono'])) {
+        if (
+            !empty($args['chrono'])
+            || self::isPresidentIncomingIndexingModel($indexingModel)
+            || self::isPresidentExternalOutgoingIndexingModel($indexingModel)
+        ) {
             $chrono = self::getResourceChrono([
                 'indexingModel' => $indexingModel,
                 'args'          => $args,
@@ -550,6 +559,29 @@ class StoreController
             ]);
         }
 
+        if (self::isPresidentInternalIncomingIndexingModel($indexingModel)) {
+            return self::getPresidentInternalIncomingChrono();
+        }
+
+        if (self::isPresidentIncomingIndexingModel($indexingModel)) {
+            return self::getPresidentIncomingChrono();
+        }
+
+        if (self::isPresidentInternalOutgoingIndexingModel($indexingModel)) {
+            return self::getPresidentInternalOutgoingChrono();
+        }
+
+        if (self::isPresidentExternalOutgoingIndexingModel($indexingModel)) {
+            return self::getPresidentExternalOutgoingChrono([
+                'senders'   => $body['senders'] ?? [],
+                'initiator' => $body['initiator'] ?? null
+            ]);
+        }
+
+        if (self::isDcmIndexingModel($indexingModel)) {
+            return self::getDcmChrono($indexingModel);
+        }
+
         if (self::isExternalOutgoingIndexingModel($indexingModel)) {
             return self::getExternalOutgoingChrono([
                 'senders'   => $body['senders'] ?? [],
@@ -570,20 +602,68 @@ class StoreController
 
     private static function isExternalOutgoingIndexingModel(array $indexingModel): bool
     {
-        $label = mb_strtolower((string)($indexingModel['label'] ?? ''));
+        $label = self::normalizeChronoLabel((string)($indexingModel['label'] ?? ''));
         return ($indexingModel['category'] ?? null) == 'outgoing' && str_contains($label, 'externe');
     }
 
     private static function isInternalOutgoingIndexingModel(array $indexingModel): bool
     {
-        $label = mb_strtolower((string)($indexingModel['label'] ?? ''));
+        $label = self::normalizeChronoLabel((string)($indexingModel['label'] ?? ''));
         return ($indexingModel['category'] ?? null) == 'outgoing' && str_contains($label, 'interne');
     }
 
     private static function isInternalIncomingIndexingModel(array $indexingModel): bool
     {
-        $label = mb_strtolower((string)($indexingModel['label'] ?? ''));
+        $label = self::normalizeChronoLabel((string)($indexingModel['label'] ?? ''));
         return ($indexingModel['category'] ?? null) == 'incoming' && str_contains($label, 'interne');
+    }
+
+    private static function isPresidentIncomingIndexingModel(array $indexingModel): bool
+    {
+        $label = self::normalizeChronoLabel((string)($indexingModel['label'] ?? ''));
+        return ($indexingModel['category'] ?? null) == 'incoming' && str_contains($label, 'president');
+    }
+
+    private static function isPresidentInternalIncomingIndexingModel(array $indexingModel): bool
+    {
+        $label = self::normalizeChronoLabel((string)($indexingModel['label'] ?? ''));
+
+        return ($indexingModel['category'] ?? null) == 'incoming'
+            && str_contains($label, 'interne')
+            && str_contains($label, 'anam');
+    }
+
+    private static function isPresidentExternalOutgoingIndexingModel(array $indexingModel): bool
+    {
+        $label = self::normalizeChronoLabel((string)($indexingModel['label'] ?? ''));
+
+        return ($indexingModel['category'] ?? null) == 'outgoing'
+            && str_contains($label, 'externe')
+            && (str_contains($label, 'president') || str_contains($label, 'anam'));
+    }
+
+    private static function isPresidentInternalOutgoingIndexingModel(array $indexingModel): bool
+    {
+        $label = self::normalizeChronoLabel((string)($indexingModel['label'] ?? ''));
+
+        return ($indexingModel['category'] ?? null) == 'outgoing'
+            && str_contains($label, 'interne')
+            && str_contains($label, 'anam');
+    }
+
+    private static function isDcmIndexingModel(array $indexingModel): bool
+    {
+        $label = self::normalizeChronoLabel((string)($indexingModel['label'] ?? ''));
+
+        return str_contains($label, 'dcm');
+    }
+
+    private static function normalizeChronoLabel(string $label): string
+    {
+        $label = mb_strtolower($label);
+        $normalized = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $label);
+
+        return $normalized === false ? $label : $normalized;
     }
 
     private static function getChronoIndexingModel(array $args): array
@@ -669,6 +749,63 @@ class StoreController
         $counter = self::getScopedChronoCounter("external_outgoing_{$structureCode}");
 
         return sprintf('PCD/%s/ANAM/%sD/%s', $structureCode, date('Y'), $counter);
+    }
+
+    private static function getPresidentIncomingChrono(): string
+    {
+        $counter = self::getScopedChronoCounter('president_incoming');
+
+        return sprintf('ANAM/PCD/%sA/%s', date('Y'), $counter);
+    }
+
+    private static function getPresidentInternalIncomingChrono(): string
+    {
+        $counter = self::getScopedChronoCounter('president_incoming_internal');
+
+        return sprintf('ANAM/PCD/%sA-INT/%s', date('Y'), $counter);
+    }
+
+    private static function getPresidentInternalOutgoingChrono(): string
+    {
+        $counter = self::getScopedChronoCounter('president_outgoing_internal');
+
+        return sprintf('ANAM/PCD/%sD-INT/%s', date('Y'), $counter);
+    }
+
+    private static function getPresidentExternalOutgoingChrono(array $args = []): string
+    {
+        $structureCode = self::getOutgoingStructureCode([
+            'senders'   => $args['senders'] ?? [],
+            'initiator' => $args['initiator'] ?? null
+        ]);
+        $counter = self::getScopedChronoCounter('president_outgoing_external');
+
+        return sprintf('ANAM/PCD/%s/%sD-EXT/%s', $structureCode, date('Y'), $counter);
+    }
+
+    private static function getDcmChrono(array $indexingModel): string
+    {
+        $category = $indexingModel['category'] ?? null;
+
+        if ($category == 'incoming') {
+            if (self::isInternalIncomingIndexingModel($indexingModel)) {
+                $suffix = 'A-INT';
+                $scope = 'dcm_incoming_internal';
+            } else {
+                $suffix = 'A';
+                $scope = 'dcm_incoming';
+            }
+        } elseif (self::isInternalOutgoingIndexingModel($indexingModel)) {
+            $suffix = 'D-INT';
+            $scope = 'dcm_outgoing_internal';
+        } else {
+            $suffix = 'D-EXT';
+            $scope = 'dcm_outgoing_external';
+        }
+
+        $counter = self::getScopedChronoCounter($scope);
+
+        return sprintf('ANAM/DCM/%s%s/%s', date('Y'), $suffix, $counter);
     }
 
     private static function getOutgoingStructureCode(array $args): string

@@ -591,7 +591,9 @@ class ResourceListController
             || str_contains($basketClause, "MINISTRE/MINES/%A-INT/%")
             || str_contains($basketClause, "MINISTRE/MINES/%D/%")
             || str_contains($basketClause, "MINISTRE/MINES/%D-EXT/%")
-            || str_contains($basketClause, "MINISTRE/MINES/%D-INT/%");
+            || str_contains($basketClause, "MINISTRE/MINES/%D-INT/%")
+            || str_contains($basketClause, "ANAM/PCD/%A/%")
+            || str_contains($basketClause, "ANAM/PCD/%D-EXT/%");
     }
 
     private static function getBasketVisibilityWhereClause(string $basketClause, int $userId, int $currentUserId): string
@@ -1424,7 +1426,10 @@ class ResourceListController
             $formattedResources[$key]['documentDate'] = $resource['doc_date'] ?? null;
             $formattedResources[$key]['arrivalDate'] = $effectiveArrivalDate;
             $formattedResources[$key]['is_read'] = array_key_exists('is_read', $resource) ? (int)$resource['is_read'] : 0;
-            $contactMode = !empty($args['basketId']) && $args['basketId'] === 'OutgoingExternalMinistre' ? 'recipient' : 'sender';
+            $recipientDisplayBaskets = ['OutgoingExternalMinistre', 'OutgoingExternalANAMPCD'];
+            $contactMode = !empty($args['basketId']) && in_array($args['basketId'], $recipientDisplayBaskets, true)
+                ? 'recipient'
+                : 'sender';
             $contacts = ContactController::getFormattedContacts(
                 ['resId' => $resource['res_id'], 'mode' => $contactMode, 'onlyContact' => true]
             );

@@ -1119,6 +1119,39 @@ export class IndexingFormComponent implements OnInit {
         return indexingModelLabel.includes('courrier arrivee ministre');
     }
 
+    getContactAutocompleteExclusion(field: any): string {
+        if (!this.isAnamPcdExternalOutgoingSenderField(field)) {
+            return '';
+        }
+
+        return '?noUsers=true&noContacts=true&noContactsGroups=true';
+    }
+
+    isAnamPcdExternalOutgoingSenderField(field: any): boolean {
+        if (field?.identifier !== 'senders') {
+            return false;
+        }
+
+        if (field?.onlyEntities === true || this.isAnamPcdExternalOutgoingIndexingModel(this.indexingModelClone)) {
+            return true;
+        }
+
+        return Number(this.indexingFormId) === 19;
+    }
+
+    private isAnamPcdExternalOutgoingIndexingModel(indexingModel: any): boolean {
+        if (this.functions.empty(indexingModel)) {
+            return false;
+        }
+
+        if (Number(indexingModel.id) === 19 || Number(indexingModel.master) === 19) {
+            return true;
+        }
+
+        const indexingModelLabel = this.normalizeIndexingModelLabel(indexingModel.label || '');
+        return indexingModel.category === 'outgoing' && indexingModelLabel.includes('courrier depart externe anam');
+    }
+
     createForm() {
         this.indexingFormGroup = new UntypedFormGroup(this.arrFormControl);
         this.loadingFormEndEvent.emit();
@@ -1236,6 +1269,10 @@ export class IndexingFormComponent implements OnInit {
 
                         if (field.identifier === 'diffusionList') {
                             this.customDiffusion = field.default_value;
+                        }
+
+                        if (field.identifier === 'senders' && this.isAnamPcdExternalOutgoingIndexingModel(data.indexingModel)) {
+                            field.onlyEntities = true;
                         }
 
                         if (fieldExist) {

@@ -787,8 +787,8 @@ export class BasketListComponent implements OnInit, OnDestroy {
     }
 
     getRowSender(row: any): string {
-        if (this.isMinisterOutgoingBasket()) {
-            return row?.recipientDisplay || this.computeRowRecipient(row);
+        if (this.displaysRecipientAsMainParty()) {
+            return row?.senderDisplay || row?.recipientDisplay || this.computeRowRecipient(row);
         }
         return row?.senderDisplay || this.computeRowSender(row);
     }
@@ -804,7 +804,7 @@ export class BasketListComponent implements OnInit, OnDestroy {
     }
 
     getMainPartyHeaderLabel(): string {
-        return this.isMinisterOutgoingBasket() ? 'Destinataire' : 'Expéditeur';
+        return this.displaysRecipientAsMainParty() ? 'Destinataire' : 'Expéditeur';
     }
 
     private computeRowRecipient(row: any): string {
@@ -818,6 +818,14 @@ export class BasketListComponent implements OnInit, OnDestroy {
 
     private isMinisterOutgoingBasket(): boolean {
         return this.currentBasketInfo?.basketId === 'OutgoingExternalMinistre' || this.currentBasketInfo?.basket_id === 'OutgoingExternalMinistre';
+    }
+
+    private isPresidentOutgoingBasket(): boolean {
+        return this.currentBasketInfo?.basketId === 'OutgoingExternalANAMPCD' || this.currentBasketInfo?.basket_id === 'OutgoingExternalANAMPCD';
+    }
+
+    private displaysRecipientAsMainParty(): boolean {
+        return this.isMinisterOutgoingBasket() || this.isPresidentOutgoingBasket();
     }
 
     private isMinisterIncomingBasket(): boolean {
