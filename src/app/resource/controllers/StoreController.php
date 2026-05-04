@@ -780,6 +780,10 @@ class StoreController
         ]);
         $counter = self::getScopedChronoCounter('president_outgoing_external');
 
+        if ($structureCode === 'PCD') {
+            return sprintf('ANAM/PCD/%sD-EXT/%s', date('Y'), $counter);
+        }
+
         return sprintf('ANAM/PCD/%s/%sD-EXT/%s', $structureCode, date('Y'), $counter);
     }
 

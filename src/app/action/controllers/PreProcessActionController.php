@@ -87,8 +87,10 @@ class PreProcessActionController
             }
         }
 
-        $action = ActionModel::getById(['id' => $args['actionId'], 'select' => ['parameters']]);
+        $action = ActionModel::getById(['id' => $args['actionId'], 'select' => ['parameters', 'label_action']]);
         $parameters = json_decode($action['parameters'], true);
+        $normalizedActionLabel = mb_strtolower(trim((string)($action['label_action'] ?? '')));
+        $isAssignToUserAction = (int)$args['actionId'] === 540 || $normalizedActionLabel === mb_strtolower('Attribuer a un utilisateur');
 
         $keywords = [
             'ALL_ENTITIES'        => '@all_entities',
@@ -104,6 +106,33 @@ class PreProcessActionController
         $users = [];
         $allEntities = [];
         $autoRedirectToUser = false;
+        $formatRedirectUsers = static function (array $users): array {
+            $deduplicatedUsers = [];
+            foreach ($users as $key => $user) {
+                $users[$key]['labelToDisplay'] = "{$user['firstname']} {$user['lastname']}";
+                $users[$key]['descriptionToDisplay'] = UserModel::getPrimaryEntityById(
+                    ['id' => $user['id'], 'select' => ['entities.entity_label']]
+                )['entity_label'];
+
+                $dedupeKey = mb_strtolower(trim(($user['mail'] ?? ''))) . '|' . mb_strtolower(trim($users[$key]['descriptionToDisplay'] ?? ''));
+                if (empty(trim($user['mail'] ?? ''))) {
+                    $dedupeKey = mb_strtolower(trim($user['firstname'] . ' ' . $user['lastname'])) . '|' . mb_strtolower(trim($users[$key]['descriptionToDisplay'] ?? ''));
+                }
+
+                if (empty($deduplicatedUsers[$dedupeKey])) {
+                    $deduplicatedUsers[$dedupeKey] = $users[$key];
+                    continue;
+                }
+
+                $currentIsTechnical = preg_match('/^anam\d+$/i', $deduplicatedUsers[$dedupeKey]['user_id'] ?? '') === 1;
+                $candidateIsTechnical = preg_match('/^anam\d+$/i', $user['user_id'] ?? '') === 1;
+                if ($currentIsTechnical && !$candidateIsTechnical) {
+                    $deduplicatedUsers[$dedupeKey] = $users[$key];
+                }
+            }
+
+            return array_values($deduplicatedUsers);
+        };
 
         if (!$useBasketScope) {
             $primaryEntity = UserModel::getPrimaryEntityById(
@@ -189,32 +218,35 @@ class PreProcessActionController
                             'data'    => [$allowedEntities, ['DEL', 'ABS', 'SPD']],
                             'orderBy' => ['lastname', 'firstname']
                         ]);
+                        $users = $formatRedirectUsers($users);
+                    }
 
-                        $deduplicatedUsers = [];
-                        foreach ($users as $key => $user) {
-                            $users[$key]['labelToDisplay'] = "{$user['firstname']} {$user['lastname']}";
-                            $users[$key]['descriptionToDisplay'] = UserModel::getPrimaryEntityById(
-                                ['id' => $user['id'], 'select' => ['entities.entity_label']]
-                            )['entity_label'];
+                    if (empty($users) && $isAssignToUserAction) {
+                        $userEntities = UserModel::getEntitiesById([
+                            'id'     => $args['userId'],
+                            'select' => ['users_entities.entity_id']
+                        ]);
+                        $fallbackEntities = array_unique(array_filter(array_column($userEntities, 'entity_id')));
 
-                            $dedupeKey = mb_strtolower(trim(($user['mail'] ?? ''))) . '|' . mb_strtolower(trim($users[$key]['descriptionToDisplay'] ?? ''));
-                            if (empty(trim($user['mail'] ?? ''))) {
-                                $dedupeKey = mb_strtolower(trim($user['firstname'] . ' ' . $user['lastname'])) . '|' . mb_strtolower(trim($users[$key]['descriptionToDisplay'] ?? ''));
-                            }
-
-                            if (empty($deduplicatedUsers[$dedupeKey])) {
-                                $deduplicatedUsers[$dedupeKey] = $users[$key];
-                                continue;
-                            }
-
-                            $currentIsTechnical = preg_match('/^anam\d+$/i', $deduplicatedUsers[$dedupeKey]['user_id'] ?? '') === 1;
-                            $candidateIsTechnical = preg_match('/^anam\d+$/i', $user['user_id'] ?? '') === 1;
-                            if ($currentIsTechnical && !$candidateIsTechnical) {
-                                $deduplicatedUsers[$dedupeKey] = $users[$key];
+                        if (empty($fallbackEntities)) {
+                            $primaryEntity = UserModel::getPrimaryEntityById([
+                                'id'     => $args['userId'],
+                                'select' => ['entities.entity_id']
+                            ]);
+                            if (!empty($primaryEntity['entity_id'])) {
+                                $fallbackEntities[] = $primaryEntity['entity_id'];
                             }
                         }
 
-                        $users = array_values($deduplicatedUsers);
+                        if (!empty($fallbackEntities)) {
+                            $users = UserEntityModel::getWithUsers([
+                                'select'  => ['DISTINCT users.id', 'users.user_id', 'users.mail', 'firstname', 'lastname'],
+                                'where'   => ['users_entities.entity_id in (?)', 'status not in (?)'],
+                                'data'    => [$fallbackEntities, ['DEL', 'ABS', 'SPD']],
+                                'orderBy' => ['lastname', 'firstname']
+                            ]);
+                            $users = $formatRedirectUsers($users);
+                        }
                     }
                 } elseif ($mode == 'ENTITY') {
                     $primaryEntity = UserModel::getPrimaryEntityById(

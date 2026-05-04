@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild, EventEmitter, Output } from '@angular/core';
+import { Component, OnInit, Input, ViewChild, EventEmitter, Output, OnChanges, SimpleChanges } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 import { NotificationService } from '@service/notification/notification.service';
@@ -28,7 +28,7 @@ import { ContactAutocompleteComponent } from '../../contact/autocomplete/contact
     providers: [SortPipe]
 })
 
-export class IndexingFormComponent implements OnInit {
+export class IndexingFormComponent implements OnInit, OnChanges {
     private static suggestLinksNdaysAgoCache: number | null = null;
     private static doctypesCache: any[] | null = null;
     private static indexingModelCache: Record<number, any> = {};
@@ -318,6 +318,12 @@ export class IndexingFormComponent implements OnInit {
 
     selfDest: boolean = false;
     customDiffusion: any = [];
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes.canEdit && !this.loading && !this.functions.empty(this.arrFormControl)) {
+            this.applyReadOnlyState();
+        }
+    }
 
     dialogRef!: MatDialogRef<any>;
 
@@ -1154,6 +1160,7 @@ export class IndexingFormComponent implements OnInit {
 
     createForm() {
         this.indexingFormGroup = new UntypedFormGroup(this.arrFormControl);
+        this.applyReadOnlyState();
         this.loadingFormEndEvent.emit();
     }
 
@@ -1411,7 +1418,7 @@ export class IndexingFormComponent implements OnInit {
     initValidator(field: any) {
         const valArr: ValidatorFn[] = [];
 
-        const disabledState = !field.enabled || this.isAlwaysDisabledField(field);
+        const disabledState = !field.enabled || this.isAlwaysDisabledField(field) || this.isReadOnlyDataField(field);
         if (!disabledState && field.identifier !== 'processLimitDate') {
             field.enabled = true;
         }
@@ -1502,6 +1509,40 @@ export class IndexingFormComponent implements OnInit {
             this.anamFieldIds.destFollow,
             this.anamFieldIds.destInfo
         ].some((identifier: string) => !!this.getFieldByIdentifier(identifier));
+    }
+
+    private isReadOnlyDataField(field: any): boolean {
+        return !this.adminMode && this.mode === 'process' && !this.canEdit && field.identifier !== 'mail­tracking';
+    }
+
+    private applyReadOnlyState(): void {
+        if (this.adminMode || this.mode !== 'process') {
+            return;
+        }
+
+        this.fieldCategories.forEach((category: string) => {
+            this['indexingModels_' + category].forEach((field: any) => {
+                const control = this.arrFormControl[field.identifier];
+                if (this.functions.empty(control)) {
+                    return;
+                }
+
+                if (this.isReadOnlyDataField(field)) {
+                    control.disable({ emitEvent: false });
+                    if (field.type === 'date') {
+                        this.arrFormControl[this.getTimeControlName(field.identifier)]?.disable({ emitEvent: false });
+                    }
+                    return;
+                }
+
+                if (field.enabled && !this.isAlwaysDisabledField(field) && field.identifier !== 'processLimitDate') {
+                    control.enable({ emitEvent: false });
+                    if (field.type === 'date') {
+                        this.arrFormControl[this.getTimeControlName(field.identifier)]?.enable({ emitEvent: false });
+                    }
+                }
+            });
+        });
     }
 
     hasAnamFieldControl(identifier: string): boolean {

@@ -43,6 +43,7 @@ import { SessionStorageService } from '@service/session-storage.service';
 })
 export class ProcessComponent implements OnInit, OnDestroy {
     private static readonly IGNORE_TRANSFERRED_RESOURCE_ERROR_KEY = 'ignoreTransferredResource403';
+    private static readonly LAST_BASKET_CONTEXT_KEY = 'maarchLastBasketContext';
 
     @ViewChild('snav2', { static: true }) sidenavRight: MatSidenav;
     @ViewChild('adminMenuTemplate', { static: true }) adminMenuTemplate: TemplateRef<any>;
@@ -273,6 +274,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
         this.currentUserId = params['userSerialId'];
         this.currentGroupId = params['groupSerialId'];
         this.currentBasketId = params['basketId'];
+        this.saveCurrentBasketContext();
 
         this.currentResourceInformations = {
             resId: params['resId'],
@@ -322,7 +324,10 @@ export class ProcessComponent implements OnInit, OnDestroy {
                     resolve(true);
                 }),
                 catchError((err: any) => {
+                    this.actionsList = [];
+                    this.actionsListLoaded = true;
                     this.notify.handleErrors(err);
+                    resolve(false);
                     return of(false);
                 })
             ).subscribe();
@@ -361,13 +366,55 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     private async initDetailActionsFromBasket(): Promise<void> {
-        const basketInfo: any = this.headerService.currentBasketInfo;
-        if (basketInfo?.ownerId && basketInfo?.groupId && basketInfo?.basketId) {
+        const basketInfo: any = this.getAvailableBasketContext();
+        if (this.isValidBasketContext(basketInfo)) {
             this.currentUserId = basketInfo.ownerId;
             this.currentGroupId = basketInfo.groupId;
             this.currentBasketId = basketInfo.basketId;
             this.allowActionsInDetail = true;
+            this.saveCurrentBasketContext();
             await this.getActions();
+        }
+    }
+
+    private getAvailableBasketContext(): any {
+        const basketInfo: any = this.headerService.currentBasketInfo;
+
+        if (this.isValidBasketContext(basketInfo)) {
+            return basketInfo;
+        }
+
+        return this.getLastBasketContext();
+    }
+
+    private isValidBasketContext(basketInfo: any): boolean {
+        return !!(basketInfo?.ownerId && basketInfo?.groupId && basketInfo?.basketId);
+    }
+
+    private saveCurrentBasketContext(): void {
+        const basketInfo: any = {
+            ownerId: this.currentUserId,
+            groupId: this.currentGroupId,
+            basketId: this.currentBasketId
+        };
+
+        if (!this.isValidBasketContext(basketInfo)) {
+            return;
+        }
+
+        try {
+            this.sessionStorage.save(ProcessComponent.LAST_BASKET_CONTEXT_KEY, JSON.stringify(basketInfo));
+        } catch (e) {
+            // Session storage can be unavailable in some browser modes.
+        }
+    }
+
+    private getLastBasketContext(): any {
+        try {
+            const storedBasketInfo: string = this.sessionStorage.get(ProcessComponent.LAST_BASKET_CONTEXT_KEY);
+            return storedBasketInfo ? JSON.parse(storedBasketInfo) : null;
+        } catch (e) {
+            return null;
         }
     }
 
@@ -1223,7 +1270,7 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     isToolEnabled(id: string) {
-        if (this.isReadOnlyTreated() && ['attachments', 'diffusionList', 'visaCircuit', 'opinionCircuit'].includes(id)) {
+        if (this.isReadOnlyTreated() && ['attachments', 'visaCircuit', 'opinionCircuit'].includes(id)) {
             return false;
         }
         if (id === 'history') {

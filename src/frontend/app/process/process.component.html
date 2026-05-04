@@ -127,7 +127,7 @@
                     (reloadBadgeLinkedResources)="refreshBadge($event,'linkedResources')">
                 </app-linked-resource-list>
                 <app-diffusions-list *ngIf="currentTool === 'diffusionList' && !loading" #appDiffusionsList
-                    [adminMode]="true" [target]="detailMode ? 'details': 'process'"
+                    [adminMode]="!isReadOnlyTreated()" [target]="detailMode ? 'details': 'process'"
                     [resId]="currentResourceInformations.resId" [expanded]="true">
                 </app-diffusions-list>
                 <app-sent-resource-list *ngIf="currentTool === 'emails' && !loading" #appSentResource
@@ -442,7 +442,7 @@
                     [resId]="currentResourceInformations.resId"
                     (reloadBadgeLinkedResources)="refreshBadge($event,'linkedResources')"></app-linked-resource-list>
                 <app-diffusions-list *ngIf="modal.id === 'diffusionList' && !loading" #appDiffusionsList
-                    [adminMode]="true" [target]="detailMode ? 'details': 'process'"
+                    [adminMode]="!isReadOnlyTreated()" [target]="detailMode ? 'details': 'process'"
                     [resId]="currentResourceInformations.resId" [expanded]="true">
                 </app-diffusions-list>
                 <app-sent-resource-list *ngIf="modal.id === 'emails' && !loading" #appSentResource
@@ -483,7 +483,7 @@
                         <mat-icon style="height:auto;font-size:20px;" class="fas fa-check"></mat-icon>
                     </button>
                     <button mat-fab [title]="'lang.saveModifications' | translate"
-                        *ngIf="appDiffusionsList !== undefined && appDiffusionsList.isModified() && modal.id === 'diffusionList'"
+                        *ngIf="appDiffusionsList !== undefined && appDiffusionsList.isModified() && modal.id === 'diffusionList' && !isReadOnlyTreated()"
                         (click)="saveListinstance()" color="accent">
                         <mat-icon style="height:auto;font-size:20px;" class="fas fa-check"></mat-icon>
                     </button>

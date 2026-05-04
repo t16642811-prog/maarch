@@ -26,6 +26,7 @@ import { merge, Observable, of, Subject, Subscription } from 'rxjs';
     styleUrls: ['basket-list.component.scss'],
 })
 export class BasketListComponent implements OnInit, OnDestroy {
+    private static readonly LAST_BASKET_CONTEXT_KEY = 'maarchLastBasketContext';
 
     @ViewChild('snav2', { static: true }) sidenavRight!: MatSidenav;
     @ViewChild('actionsListContext', { static: true }) actionsList!: ActionsListComponent;
@@ -162,6 +163,7 @@ export class BasketListComponent implements OnInit, OnDestroy {
             this.markAsReadActionId = 114;
             this.locallyReadResIds = this.loadLocalReadResIds();
             this.headerService.currentBasketInfo = this.currentBasketInfo;
+            this.saveCurrentBasketContext();
 
             this.filtersListService.filterMode = false;
             this.selectedRes = [];
@@ -188,6 +190,18 @@ export class BasketListComponent implements OnInit, OnDestroy {
         this.stopBasketPolling();
         this.subscription.unsubscribe();
         this.subscription2.unsubscribe();
+    }
+
+    private saveCurrentBasketContext(): void {
+        try {
+            window.sessionStorage.setItem(BasketListComponent.LAST_BASKET_CONTEXT_KEY, JSON.stringify({
+                ownerId: this.currentBasketInfo.ownerId,
+                groupId: this.currentBasketInfo.groupId,
+                basketId: this.currentBasketInfo.basketId
+            }));
+        } catch (e) {
+            // Session storage can be unavailable in some browser modes.
+        }
     }
 
     initResultList() {

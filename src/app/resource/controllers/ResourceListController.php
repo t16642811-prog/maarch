@@ -654,17 +654,28 @@ class ResourceListController
 
         $queryParams = $request->getQueryParams();
 
+        $rawActions = [];
         if (!empty($queryParams['resId'])) {
-            $usedIn = 'used_in_action_page';
-        } else {
-            $usedIn = 'used_in_basketlist';
-        }
+            $rawActions = ActionGroupBasketModel::get([
+                'select' => ['id_action', 'default_action_list', 'where_clause'],
+                'where'  => ['basket_id = ?', 'group_id = ?', 'used_in_action_page = ?'],
+                'data'   => [$basket['basket_id'], $group['group_id'], 'Y']
+            ]);
 
-        $rawActions = ActionGroupBasketModel::get([
-            'select' => ['id_action', 'default_action_list', 'where_clause'],
-            'where'  => ['basket_id = ?', 'group_id = ?', "{$usedIn} = ?"],
-            'data'   => [$basket['basket_id'], $group['group_id'], 'Y']
-        ]);
+            if (empty($rawActions)) {
+                $rawActions = ActionGroupBasketModel::get([
+                    'select' => ['id_action', 'default_action_list', 'where_clause'],
+                    'where'  => ['basket_id = ?', 'group_id = ?', 'used_in_basketlist = ?'],
+                    'data'   => [$basket['basket_id'], $group['group_id'], 'Y']
+                ]);
+            }
+        } else {
+            $rawActions = ActionGroupBasketModel::get([
+                'select' => ['id_action', 'default_action_list', 'where_clause'],
+                'where'  => ['basket_id = ?', 'group_id = ?', 'used_in_basketlist = ?'],
+                'data'   => [$basket['basket_id'], $group['group_id'], 'Y']
+            ]);
+        }
 
         $actions = [];
         $actionsClauses = [];
