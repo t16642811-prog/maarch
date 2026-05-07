@@ -76,6 +76,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
      * Can manage document ? (create, delete, update)
      */
     @Input() editMode: boolean = false;
+    @Input() processingContext: any = null;
 
     /**
      * Hide tool document viewer
@@ -1388,7 +1389,7 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
         this.dialogRef.afterClosed().pipe(
             filter((data: string) => data === 'ok'),
             tap(() => this.loading = true),
-            exhaustMap(() => this.http.delete(`../rest/resources/${this.resId}/content`)),
+            exhaustMap(() => this.http.delete(`../rest/resources/${this.resId}/content${this.getProcessingContextQuery()}`)),
             tap(() => {
                 this.resetFileData();
                 this.noConvertedFound = false;
@@ -1406,6 +1407,19 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
                 return of(false);
             })
         ).subscribe();
+    }
+
+    private getProcessingContextQuery(): string {
+        if (
+            this.processingContext === null ||
+            this.processingContext.userId === undefined ||
+            this.processingContext.groupId === undefined ||
+            this.processingContext.basketId === undefined
+        ) {
+            return '';
+        }
+
+        return `?userId=${this.processingContext.userId}&groupId=${this.processingContext.groupId}&basketId=${this.processingContext.basketId}`;
     }
 
     triggerReplaceMainDocument() {

@@ -375,6 +375,7 @@
                 </div>
                 <app-document-viewer #appDocumentViewer *ngIf="!loading" style="height:100%;width:100%;"
                     [editMode]="canEditData"
+                    [processingContext]="{ userId: currentUserId, groupId: currentGroupId, basketId: currentBasketId }"
                     [resId]="currentResourceInformations.resId"
                     [chrono]="currentResourceInformations.chrono"
                     [hideTools]="true"
@@ -385,13 +386,23 @@
                 <div class="split-pane">
                     <div class="split-title">
                         <span>Courrier recu</span>
-                        <button mat-icon-button class="split-eye" (click)="openSplitPreview('main')" title="Agrandir">
-                            <mat-icon class="far fa-eye"></mat-icon>
-                        </button>
+                        <div class="split-title-actions">
+                            <button mat-stroked-button color="warn" class="split-delete"
+                                *ngIf="appDocumentViewer?.canDeleteMainDocument()"
+                                (click)="appDocumentViewer.deleteMainDocument()"
+                                [title]="'lang.delete' | translate">
+                                <mat-icon class="fas fa-trash-alt"></mat-icon>
+                                {{'lang.delete' | translate}}
+                            </button>
+                            <button mat-icon-button class="split-eye" (click)="openSplitPreview('main')" title="Agrandir">
+                                <mat-icon class="far fa-eye"></mat-icon>
+                            </button>
+                        </div>
                     </div>
                     <div class="split-viewer">
                         <app-document-viewer #appDocumentViewer *ngIf="!loading" style="height:100%;width:100%;"
                             [editMode]="canEditData"
+                            [processingContext]="{ userId: currentUserId, groupId: currentGroupId, basketId: currentBasketId }"
                             [resId]="currentResourceInformations.resId"
                             [chrono]="currentResourceInformations.chrono"
                             [hideTools]="true"

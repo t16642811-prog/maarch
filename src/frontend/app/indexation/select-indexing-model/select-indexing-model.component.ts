@@ -142,28 +142,11 @@ export class SelectIndexingModelComponent implements OnInit {
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '');
 
-        if (this.isMinisterSecretariatIndexingContext()) {
-            return !['courrier arrivee ministre', 'courrier depart externe ministre'].includes(label);
-        }
-
         if (indexingModel.master !== null) {
             return false;
         }
 
         return label.includes('courrier') && label.includes('depart') && !label.includes('interne') && !label.includes('externe');
-    }
-
-    private isMinisterSecretariatIndexingContext(): boolean {
-        if (this.groupId === null || !Array.isArray(this.headerService.user?.groups)) {
-            return false;
-        }
-
-        const currentGroup = this.headerService.user.groups.find((group: any) => Number(group.id) === Number(this.groupId));
-        if (!currentGroup) {
-            return false;
-        }
-
-        return (currentGroup.group_id || '').toString().toLowerCase() === 'secministre';
     }
 
     resetIndexingModel() {

@@ -601,7 +601,10 @@ class ResController extends ResourceControlController
     {
         if (!Validator::intVal()->validate($args['resId'])) {
             return $response->withStatus(400)->withJson(['errors' => 'Route resId is not an integer']);
-        } elseif (!PrivilegeController::canUpdateResource(['userId' => $GLOBALS['id'], 'resId' => $args['resId']])) {
+        } elseif (
+            !PrivilegeController::canUpdateResource(['userId' => $GLOBALS['id'], 'resId' => $args['resId']]) &&
+            !$this->canUpdateMainDocumentFromProcessingContext($request, (int)$args['resId'])
+        ) {
             return $response->withStatus(403)->withJson(['errors' => 'Service forbidden']);
         }
 
@@ -659,6 +662,68 @@ class ResController extends ResourceControlController
         ]);
 
         return $response->withStatus(204);
+    }
+
+    /**
+     * Allows document updates when the resource is opened from a process basket
+     * whose list event explicitly allows data updates.
+     *
+     * @param Request $request
+     * @param int $resId
+     * @return bool
+     */
+    private function canUpdateMainDocumentFromProcessingContext(Request $request, int $resId): bool
+    {
+        $queryParams = $request->getQueryParams();
+        if (
+            !Validator::intVal()->validate($queryParams['userId'] ?? null) ||
+            !Validator::intVal()->validate($queryParams['groupId'] ?? null) ||
+            !Validator::intVal()->validate($queryParams['basketId'] ?? null)
+        ) {
+            return false;
+        }
+
+        $control = ResourceListController::listControl([
+            'groupId'       => $queryParams['groupId'],
+            'userId'        => $queryParams['userId'],
+            'basketId'      => $queryParams['basketId'],
+            'currentUserId' => $GLOBALS['id']
+        ]);
+        if (!empty($control['errors'])) {
+            return false;
+        }
+
+        $basket = BasketModel::getById(['id' => $queryParams['basketId'], 'select' => ['basket_id', 'basket_clause']]);
+        $group = GroupModel::getById(['id' => $queryParams['groupId'], 'select' => ['group_id']]);
+        if (empty($basket) || empty($group)) {
+            return false;
+        }
+
+        $groupBasket = GroupBasketModel::get([
+            'select' => ['list_event_data'],
+            'where'  => ['basket_id = ?', 'group_id = ?', 'list_event = ?'],
+            'data'   => [$basket['basket_id'], $group['group_id'], 'processDocument']
+        ]);
+        if (empty($groupBasket[0]['list_event_data'])) {
+            return false;
+        }
+
+        $listEventData = json_decode($groupBasket[0]['list_event_data'], true);
+        if (empty($listEventData['canUpdateData'])) {
+            return false;
+        }
+
+        $basketClause = PreparedClauseController::getPreparedClause([
+            'clause' => $basket['basket_clause'],
+            'userId' => $queryParams['userId']
+        ]);
+        $res = ResModel::getOnView([
+            'select' => [1],
+            'where'  => ['res_id = ?', "({$basketClause})"],
+            'data'   => [$resId]
+        ]);
+
+        return !empty($res);
     }
 
     /**

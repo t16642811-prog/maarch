@@ -108,15 +108,15 @@ export class HeaderService {
     }
 
     private isMinisterUser() {
-        const ministerLogins = ['SUPERADMIN', 'BOUACHOUR.HOURIA', 'SAMIA.TRABELSI'];
+        const ministerLogins = ['SUPERADMIN', 'BOUACHOUR.HOURIA', 'SAMIA.TRABELSI', 'FATMA.IGUERGUESDAOUNE'];
         const userLogin = (this.user?.userId || '').toString().toUpperCase();
 
         return ministerLogins.includes(userLogin);
     }
 
     useMinisterLogo() {
-        const ministerLogins = ['BOUACHOUR.HOURIA', 'SAMIA.TRABELSI'];
-        const ministerGroups = new Set(['BOG MINISTRE', 'SECMINISTRE', 'SECRÉTARIAT DU MINISTRE', 'SECRETARIAT DU MINISTRE']);
+        const ministerLogins = ['BOUACHOUR.HOURIA', 'SAMIA.TRABELSI', 'FATMA.IGUERGUESDAOUNE'];
+        const ministerGroups = new Set(['BOG MINISTRE', 'SECMINISTRE', 'SECSECM', 'SECRÉTARIAT DU MINISTRE', 'SECRETARIAT DU MINISTRE', 'SECRÉTARIAT SECM', 'SECRETARIAT SECM']);
         const userLogin = (this.user?.userId || '').toString().toUpperCase();
         const groups = Array.isArray(this.user?.groups) ? this.user.groups : [];
 

@@ -388,7 +388,11 @@ export class ProcessComponent implements OnInit, OnDestroy {
     }
 
     private isValidBasketContext(basketInfo: any): boolean {
-        return !!(basketInfo?.ownerId && basketInfo?.groupId && basketInfo?.basketId);
+        if (!basketInfo?.ownerId || !basketInfo?.groupId || !basketInfo?.basketId) {
+            return false;
+        }
+
+        return Number(basketInfo.ownerId) === Number(this.headerService.user?.id);
     }
 
     private saveCurrentBasketContext(): void {

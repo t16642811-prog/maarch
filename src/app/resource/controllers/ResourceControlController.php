@@ -270,7 +270,7 @@ class ResourceControlController
      * @param array $args
      * @return bool
      */
-    private static function isSigned(array $args): bool
+    protected static function isSigned(array $args): bool
     {
         $signedDocument = AdrModel::getDocuments([
             'select' => [1],

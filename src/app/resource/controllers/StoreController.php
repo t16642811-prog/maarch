@@ -582,6 +582,10 @@ class StoreController
             return self::getDcmChrono($indexingModel);
         }
 
+        if (self::isSecmIndexingModel($indexingModel)) {
+            return self::getSecmChrono($indexingModel);
+        }
+
         if (self::isExternalOutgoingIndexingModel($indexingModel)) {
             return self::getExternalOutgoingChrono([
                 'senders'   => $body['senders'] ?? [],
@@ -656,6 +660,13 @@ class StoreController
         $label = self::normalizeChronoLabel((string)($indexingModel['label'] ?? ''));
 
         return str_contains($label, 'dcm');
+    }
+
+    private static function isSecmIndexingModel(array $indexingModel): bool
+    {
+        $label = self::normalizeChronoLabel((string)($indexingModel['label'] ?? ''));
+
+        return str_contains($label, 'secm');
     }
 
     private static function normalizeChronoLabel(string $label): string
@@ -810,6 +821,31 @@ class StoreController
         $counter = self::getScopedChronoCounter($scope);
 
         return sprintf('ANAM/DCM/%s%s/%s', date('Y'), $suffix, $counter);
+    }
+
+    private static function getSecmChrono(array $indexingModel): string
+    {
+        $category = $indexingModel['category'] ?? null;
+
+        if ($category == 'incoming') {
+            if (self::isInternalIncomingIndexingModel($indexingModel)) {
+                $suffix = 'A-INT';
+                $scope = 'secm_incoming_internal';
+            } else {
+                $suffix = 'A-EXT';
+                $scope = 'secm_incoming_external';
+            }
+        } elseif (self::isInternalOutgoingIndexingModel($indexingModel)) {
+            $suffix = 'D-INT';
+            $scope = 'secm_outgoing_internal';
+        } else {
+            $suffix = 'D-EXT';
+            $scope = 'secm_outgoing_external';
+        }
+
+        $counter = self::getScopedChronoCounter($scope);
+
+        return sprintf('SECM/%s%s/%s', date('Y'), $suffix, $counter);
     }
 
     private static function getOutgoingStructureCode(array $args): string
