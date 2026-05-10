@@ -1,41 +1,176 @@
-<div class="login-container">
-    <div class="login-content" [class.showForm]="showForm" [style.background-image]="'url(../rest/images?image=loginPage)'">
-        <div class="login-form">
-            <mat-icon svgIcon="maarchLogoFull" class="maarchLogo"></mat-icon>
-            <div class="login-message" [innerHTML]="authService.loginMessage | safeHtml"></div>
+<div class="login-container" [class.showForm]="showForm" [style.background-image]="'url(../rest/images?image=loginPage)'">
+
+    <!-- ── Overlay directionnel ──────────────────────────── -->
+    <div class="lc__overlay"></div>
+
+    <!-- ── Particules dynamiques courrier + mines ─────────── -->
+    <div class="lc__particles" aria-hidden="true">
+        <span class="par p1">✉️</span>
+        <span class="par p2">⛏️</span>
+        <span class="par p3">📬</span>
+        <span class="par p4">📨</span>
+        <span class="par p5">💎</span>
+        <span class="par p6">📮</span>
+        <span class="par p7">✉️</span>
+        <span class="par p8">⛏️</span>
+        <span class="par p9">📝</span>
+    </div>
+
+    <!-- ── Contenu principal ──────────────────────────────── -->
+    <div class="lc__inner">
+
+        <!-- ═══ Branding gauche ═══════════════════════════ -->
+        <div class="lc__brand">
+
+            <!-- Logos officiels -->
+            <div class="lc__logos">
+                <div class="logo-wrap logo-min-wrap" title="Ministère des Mines et de l'Industrie Minière">
+                    <img src="assets/ministere_mines.svg" class="logo-min" alt="Ministère des Mines" />
+                </div>
+                <div class="logo-wrap logo-anam-wrap" title="Agence Nationale des Mines">
+                    <img src="assets/anam-logo.svg" class="logo-anam" alt="ANAM" />
+                </div>
+            </div>
+
+            <div class="lc__gold-bar"></div>
+
+            <h2 class="lc__heading">
+                Plateforme de Gestion<br>du Courrier Officiel
+            </h2>
+            <p class="lc__subheading">
+                Gérez vos correspondances administratives,<br>
+                tracez vos documents et coordonnez<br>
+                le courrier minier officiel.
+            </p>
+
+            <ul class="lc__features">
+                <li><span class="fi">⛏</span>Gestion des titres &amp; autorisations minières</li>
+                <li><span class="fi">✉</span>Courrier officiel entrant &amp; sortant</li>
+                <li><span class="fi">📋</span>Traçabilité documentaire complète</li>
+                <li><span class="fi">🔒</span>Accès sécurisé et confidentiel</li>
+            </ul>
+
+            <p class="lc__mention">Réservé au personnel autorisé — ANAM</p>
+        </div>
+
+        <!-- ═══ Centre — Logo BARID dynamique ═══════════ -->
+        <div class="lc__center" aria-hidden="true">
+            <div class="barid-logo">
+
+                <!-- Enveloppe CSS animée -->
+                <div class="env-scene">
+                    <div class="env-body">
+                        <!-- Lettre interne qui sort -->
+                        <div class="env-letter">
+                            <div class="env-letter-line"></div>
+                            <div class="env-letter-line"></div>
+                            <div class="env-letter-line env-letter-line--s"></div>
+                        </div>
+                        <!-- Rabat supérieur animé -->
+                        <div class="env-flap"></div>
+                    </div>
+                </div>
+
+                <!-- Nom BARID lettre par lettre -->
+                <div class="barid-name">
+                    <span style="--i:0">B</span>
+                    <span style="--i:1">A</span>
+                    <span style="--i:2">R</span>
+                    <span style="--i:3">I</span>
+                    <span style="--i:4">D</span>
+                </div>
+                <p class="barid-sub">Courrier Officiel</p>
+            </div>
+        </div>
+
+        <!-- ═══ Carte formulaire ══════════════════════════ -->
+        <div class="lc__card">
+
+            <!-- En-tête carte -->
+            <div class="lc__card-header">
+                <div class="ch-icons">
+                    <span class="ch-icon ch-pick">⛏️</span>
+                    <span class="ch-sep">+</span>
+                    <span class="ch-icon ch-mail">📮</span>
+                </div>
+                <span class="ch-badge">ACCÈS SÉCURISÉ</span>
+            </div>
+
+            <h1 class="login-title">Connexion</h1>
             <p class="app-name">{{authService.applicationName}}</p>
+            <div class="login-message" [innerHTML]="authService.loginMessage | safeHtml"></div>
+
             <form (ngSubmit)="onSubmit()" [formGroup]="loginForm">
                 <div class="form-fields-wrap">
-                    <mat-form-field *ngIf="['cas', 'keycloak', 'sso', 'azure_saml'].indexOf(authService.authMode) === -1" class="input-row login" appearance="outline">
-                        <input autofocus id="login" name="login" matInput [placeholder]="'lang.id' | translate" formControlName="login"
-                            type="text">
-                    </mat-form-field>
-                    <mat-form-field *ngIf="['cas', 'keycloak', 'sso', 'azure_saml'].indexOf(authService.authMode) === -1" class="input-row" appearance="outline">
-                        <input id="password" name="password" matInput [placeholder]="'lang.password' | translate"
-                            [type]="hidePassword ? 'password' : 'text'"
-                            formControlName="password" autocomplete="off">
-                        <button type="button" color="primary" matSuffix mat-icon-button class="password-toggle-btn"
-                        (click)="$event.stopPropagation(); hidePassword = !hidePassword;" [title]="(hidePassword ? 'lang.showPassword' : 'lang.hidePassword') | translate">
-                            <mat-icon color="primary" class="fa fa-2x"
-                                [ngClass]="[hidePassword ? 'fa-eye-slash' : 'fa-eye']">
-                            </mat-icon>
-                        </button>
-                        <mat-hint align="end" *ngIf="authService.authMode === 'standard'"><a
-                                 style="cursor: pointer;" (click)="goTo('/forgot-password')" class="infoLogin">{{'lang.forgotPassword' | translate}} ?</a></mat-hint>
-                        <mat-hint align="end" *ngIf="authService.authMode === 'ldap'"><span
-                                class="infoLogin">{{'lang.' + authService.authMode + 'Enabled' | translate}}</span></mat-hint>
-                    </mat-form-field>
+
+                    <ng-container *ngIf="['cas', 'keycloak', 'sso', 'azure_saml'].indexOf(authService.authMode) === -1">
+                        <label class="field-label" for="login">Identifiant</label>
+                        <mat-form-field class="input-row login" appearance="outline">
+                            <input autofocus id="login" name="login" matInput
+                                [placeholder]="'lang.id' | translate"
+                                formControlName="login" type="text"
+                                spellcheck="false" autocorrect="off" autocapitalize="off">
+                        </mat-form-field>
+                    </ng-container>
+
+                    <ng-container *ngIf="['cas', 'keycloak', 'sso', 'azure_saml'].indexOf(authService.authMode) === -1">
+                        <label class="field-label" for="password">Mot de passe</label>
+                        <mat-form-field class="input-row" appearance="outline">
+                            <input id="password" name="password" matInput
+                                [placeholder]="'lang.password' | translate"
+                                [type]="hidePassword ? 'password' : 'text'"
+                                formControlName="password" autocomplete="off"
+                                spellcheck="false" autocorrect="off" autocapitalize="off">
+                            <button type="button" matSuffix mat-icon-button
+                                class="password-toggle-btn"
+                                (click)="$event.stopPropagation(); hidePassword = !hidePassword;"
+                                [title]="(hidePassword ? 'lang.showPassword' : 'lang.hidePassword') | translate">
+                                <mat-icon color="primary" class="fa fa-2x"
+                                    [ngClass]="[hidePassword ? 'fa-eye-slash' : 'fa-eye']">
+                                </mat-icon>
+                            </button>
+                            <mat-hint align="end" *ngIf="authService.authMode === 'standard'">
+                                <a style="cursor:pointer;" (click)="goTo('/forgot-password')" class="infoLogin">
+                                    {{'lang.forgotPassword' | translate}} ?
+                                </a>
+                            </mat-hint>
+                            <mat-hint align="end" *ngIf="authService.authMode === 'ldap'">
+                                <span class="infoLogin">
+                                    {{'lang.' + authService.authMode + 'Enabled' | translate}}
+                                </span>
+                            </mat-hint>
+                        </mat-form-field>
+                    </ng-container>
+
                 </div>
-                <div *ngIf="['cas', 'keycloak', 'sso', 'azure_saml'].indexOf(authService.authMode) > -1" class="alert-message alert-message-info" role="alert" style="max-width: 100%;">
+
+                <div *ngIf="['cas', 'keycloak', 'sso', 'azure_saml'].indexOf(authService.authMode) > -1"
+                    class="alert-message alert-message-info" role="alert" style="max-width:100%;">
                     {{'lang.' + authService.authMode + 'Enabled' | translate}}
                 </div>
-                <button id="submit" type="submit" mat-stroked-button [disabled]="loginForm.invalid || loading" class="submit-btn">{{'lang.LOGIN' | translate}}</button>
+
+                <button id="submit" type="submit" mat-flat-button
+                    [disabled]="loginForm.invalid || loading"
+                    class="submit-btn">
+                    Se connecter
+                </button>
             </form>
+
+            <!-- Pied de carte -->
+            <div class="lc__card-foot">
+                <img src="assets/anam-logo.svg" class="cf-logo" alt="ANAM" />
+                <span>ANAM &nbsp;·&nbsp; Ministère des Mines</span>
+            </div>
         </div>
-        <footer class="login-footer">
-            <p class="version-label" [title]="'lang.applicationVersion' | translate : {version: environment?.BASE_VERSION, author: environment?.AUTHOR}"
-                [innerHTML]="'lang.applicationVersion' | translate : {version: environment?.BASE_VERSION, author: environment?.AUTHOR}">
-            </p>
-        </footer>
+
     </div>
+
+    <!-- Footer version -->
+    <footer class="login-footer">
+        <p class="version-label"
+            [title]="'lang.applicationVersion' | translate : {version: environment?.BASE_VERSION, author: environment?.AUTHOR}"
+            [innerHTML]="'lang.applicationVersion' | translate : {version: environment?.BASE_VERSION, author: environment?.AUTHOR}">
+        </p>
+    </footer>
+
 </div>

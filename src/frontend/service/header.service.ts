@@ -16,6 +16,14 @@ export class HeaderService {
         success: '#006841',
         danger: '#8e3e52'
     };
+    private readonly anamThemeColors = {
+        burgundy: '#691743',
+        gold: '#c9a227',
+        green: '#00ab76'
+    } as const;
+
+    private readonly ANAM_THEME_KEY = 'anamColorTheme';
+    anamTheme: keyof typeof this.anamThemeColors = 'burgundy';
 
     sideBarForm: boolean = false;
     sideBarAdmin: boolean = false;
@@ -90,7 +98,17 @@ export class HeaderService {
             return;
         }
 
-        const primary = this.isMinisterUser() ? this.defaultTheme.primary : '#691743';
+        const saved = localStorage.getItem(this.ANAM_THEME_KEY);
+        if (saved === 'gold' || saved === 'burgundy' || saved === 'green') {
+            this.anamTheme = saved;
+        }
+
+        let primary: string;
+        if (this.isMinisterUser()) {
+            primary = this.defaultTheme.primary;
+        } else {
+            primary = this.anamThemeColors[this.anamTheme];
+        }
 
         this.setThemeColors(root, {
             primary,
@@ -98,6 +116,24 @@ export class HeaderService {
             success: this.defaultTheme.success,
             danger: this.defaultTheme.danger
         });
+    }
+
+    toggleAnamTheme() {
+        const themes = Object.keys(this.anamThemeColors) as Array<keyof typeof this.anamThemeColors>;
+        const currentIndex = themes.indexOf(this.anamTheme);
+        this.anamTheme = themes[(currentIndex + 1) % themes.length];
+        localStorage.setItem(this.ANAM_THEME_KEY, this.anamTheme);
+        this.applyUserTheme();
+    }
+
+    setAnamTheme(theme: keyof typeof this.anamThemeColors) {
+        this.anamTheme = theme;
+        localStorage.setItem(this.ANAM_THEME_KEY, this.anamTheme);
+        this.applyUserTheme();
+    }
+
+    isAnamUser(): boolean {
+        return !this.isMinisterUser();
     }
 
     private setThemeColors(root: HTMLElement, colors: { primary: string, secondary: string, success: string, danger: string }) {

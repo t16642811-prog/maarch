@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(PGPASSWORD='Kingstar06' psql -h 127.0.0.1 -p 5433 -U postgres -d maarch -c \"SELECT id, label FROM indexing_models WHERE label ILIKE '%DFC%';\")",
+      "Bash(PGPASSWORD='Kingstar06' psql -h 127.0.0.1 -p 5433 -U postgres -d maarch -c \"SELECT id, entity_id, entity_label FROM entities WHERE entity_id = 'DCAJ';\")",
+      "Bash(PGPASSWORD='Kingstar06' psql -h 127.0.0.1 -p 5433 -U postgres -d maarch -c \"SELECT id, entity_id, entity_label FROM entities WHERE entity_label ILIKE '%MOYENS%GENERAUX%' OR entity_id = 'DMG';\")",
+      "Bash(PGPASSWORD='Kingstar06' psql -h 127.0.0.1 -p 5433 -U postgres -d maarch -c \"SELECT id, entity_id, entity_label FROM entities WHERE entity_id = 'DPM';\")",
+      "Bash(PGPASSWORD='Kingstar06' psql -h 127.0.0.1 -p 5433 -U postgres -d maarch -c \"SELECT id, entity_id, entity_label FROM entities WHERE entity_label ILIKE '%PROMOTION%' OR entity_label ILIKE '%DEVELOPPEMENT%MINIER%';\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\dell\\\\Desktop\\\\MaarchCourrier-main\\\\maarchcourrier\" -Force)",
+      "Bash(Select-Object Name)",
+      "Read(//c/Users/dell/Desktop/**)",
+      "Bash(powershell -command \"Get-Content 'C:\\\\Users\\\\dell\\\\Desktop\\\\test.svg' -TotalCount 5\")",
+      "Bash(powershell -command \"Get-Content 'C:\\\\Users\\\\dell\\\\Desktop\\\\Ministère des Mines et de lIndustrie Minière.svg' -TotalCount 5\")",
+      "Bash(Copy-Item \"C:\\\\Users\\\\dell\\\\Desktop\\\\test.svg\" \"C:\\\\Users\\\\dell\\\\Desktop\\\\MaarchCourrier-main\\\\maarchcourrier\\\\src\\\\frontend\\\\assets\\\\anam-logo.svg\" -Force)",
+      "Bash(Copy-Item \"C:\\\\Users\\\\dell\\\\Desktop\\\\Ministère des Mines et de lIndustrie Minière.svg\" \"C:\\\\Users\\\\dell\\\\Desktop\\\\MaarchCourrier-main\\\\maarchcourrier\\\\src\\\\frontend\\\\assets\\\\ministere-logo.svg\" -Force)",
+      "Bash(Write-Host \"Done\")",
+      "Bash(powershell -command ' *)",
+      "PowerShell($f = Get-Item \"C:\\\\Users\\\\dell\\\\Desktop\\\\MaarchCourrier-main\\\\maarchcourrier\\\\src\\\\frontend\\\\assets\\\\bodylogin.jpg\"; Write-Host \"bodylogin.jpg — $\\([math]::Round\\($f.Length/1KB, 1\\)\\) KB\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\dell\\Desktop"
+    ]
+  }
+}

@@ -217,3 +217,95 @@
 .isSelected {
     color: var(--maarch-color-secondary-dark);
 }
+
+/* ── Bouton palette thème ── */
+.theme-toggle-btn {
+    color: white;
+    opacity: 0.85;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    &:hover { opacity: 1; transform: rotate(-12deg) scale(1.1); }
+}
+
+/* ── Menu sélection thème ── */
+::ng-deep .theme-picker-menu {
+    .mat-menu-content {
+        padding: 0 !important;
+    }
+}
+
+.theme-picker-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #888;
+    padding: 12px 16px 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.theme-swatches {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px 12px;
+}
+
+.theme-swatch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    border: 1.5px solid rgba(0,0,0,0.10);
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    width: 100%;
+
+    &:hover {
+        background: rgba(0,0,0,0.03);
+        border-color: rgba(0,0,0,0.22);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    }
+
+    &.active {
+        border-color: var(--maarch-color-primary);
+        box-shadow: 0 0 0 3px var(--maarch-color-primary-opacity-10);
+    }
+}
+
+.swatch-color {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.22);
+    border: 2px solid rgba(255,255,255,0.80);
+}
+
+.swatch-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2a2a2a;
+}
+
+.theme-current {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(0,0,0,0.07);
+
+    .swatch-label {
+        font-size: 11px;
+        color: #888;
+        font-weight: 500;
+    }
+
+    .active-dot {
+        width: 14px;
+        height: 14px;
+        border: 1.5px solid rgba(255,255,255,0.85);
+    }
+}

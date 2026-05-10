@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem c:\\\\Users\\\\dell\\\\Desktop\\\\MaarchCourrier-main\\\\maarchcourrier -Depth 0)",
+      "Bash(Select-Object Name, Mode)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\dell\\\\Desktop\\\\MaarchCourrier-main\\\\maarchcourrier\" | Where-Object { $_.Name -ne 'vendor' } | Format-Table Name, Mode -AutoSize)"
+    ]
+  }
+}

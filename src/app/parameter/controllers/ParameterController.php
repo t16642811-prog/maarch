@@ -27,6 +27,37 @@ use SrcCore\models\DatabaseModel;
 
 class ParameterController
 {
+    private function getImageTargetPaths(string $imageType, string $customId = ''): array
+    {
+        $filename = $imageType == 'logo' ? 'logo.svg' : 'bodylogin.jpg';
+
+        if (!empty($customId)) {
+            return ["custom/{$customId}/img/{$filename}"];
+        }
+
+        return [
+            "src/frontend/assets/{$filename}",
+            "dist/assets/{$filename}"
+        ];
+    }
+
+    private function ensureTargetDirectories(array $paths): void
+    {
+        foreach ($paths as $path) {
+            $directory = dirname($path);
+            if (!is_dir($directory)) {
+                mkdir($directory, 0755, true);
+            }
+        }
+    }
+
+    private function copyToTargets(string $source, array $targets): void
+    {
+        foreach ($targets as $target) {
+            copy($source, $target);
+        }
+    }
+
     public function get(Request $request, Response $response)
     {
         $where = [];
@@ -154,14 +185,9 @@ class ParameterController
 
         $customId = CoreConfigModel::getCustomId();
         if (in_array($args['id'], ['logo', 'bodyImage'])) {
-            if (empty($customId)) {
-                return $response->withStatus(400)->withJson(['errors' => 'A custom is needed for this operation']);
-            }
-
             $tmpPath = CoreConfigModel::getTmpPath();
-            if (!is_dir("custom/{$customId}/img")) {
-                mkdir("custom/{$customId}/img", 0755, true);
-            }
+            $targetPaths = $this->getImageTargetPaths($args['id'], $customId);
+            $this->ensureTargetDirectories($targetPaths);
             if ($args['id'] == 'logo') {
                 if (strpos($body['image'], 'data:image/svg+xml;base64,') === false) {
                     return $response->withStatus(400)->withJson(['errors' => 'Body image is not a base64 image']);
@@ -175,13 +201,13 @@ class ParameterController
                 if ($size > 5000000) {
                     return $response->withStatus(400)->withJson(['errors' => 'Logo size is not allowed']);
                 }
-                copy($tmpFileName, "custom/{$customId}/img/logo.svg");
+                $this->copyToTargets($tmpFileName, $targetPaths);
             } elseif ($args['id'] == 'bodyImage') {
                 if (strpos($body['image'], 'data:image/jpeg;base64,') === false) {
                     if (!is_file("dist/{$body['image']}")) {
                         return $response->withStatus(400)->withJson(['errors' => 'Body image does not exist']);
                     }
-                    copy("dist/{$body['image']}", "custom/{$customId}/img/bodylogin.jpg");
+                    $this->copyToTargets("dist/{$body['image']}", $targetPaths);
                 } else {
                     $tmpFileName = $tmpPath . 'parameter_body_' . rand() . '_file.jpg';
                     $body['image'] = str_replace('data:image/jpeg;base64,', '', $body['image']);
@@ -195,11 +221,11 @@ class ParameterController
                     } elseif ($size > 10000000) {
                         return $response->withStatus(400)->withJson(['errors' => 'Body size is not allowed']);
                     }
-                    copy($tmpFileName, "custom/{$customId}/img/bodylogin.jpg");
+                    $this->copyToTargets($tmpFileName, $targetPaths);
                 }
             }
             if (!empty($tmpFileName) && is_file($tmpFileName)) {
-                unset($tmpFileName);
+                unlink($tmpFileName);
             }
         } elseif (in_array($args['id'], ['applicationName', 'maarchUrl'])) {
             $config = CoreConfigModel::getJsonLoaded(['path' => 'config/config.json']);

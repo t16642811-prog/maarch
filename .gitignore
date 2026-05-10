@@ -1,6 +1,6 @@
 /.angular/cache
 installed.lck
-config/config.json
+config/
 apps/maarch_entreprise/xml/log4php.xml
 *.log
 test/unitTests/build/

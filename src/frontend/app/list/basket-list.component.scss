@@ -798,76 +798,57 @@
 
 @media (max-width: 1500px) {
     .table-head-main {
-        grid-template-columns: minmax(180px, auto) minmax(280px, 1fr) auto;
-    }
-
-    .table-head-main ::ng-deep .filtersContent {
-        grid-template-columns: minmax(0, 1fr) minmax(170px, 210px) 40px;
-    }
-
-    .table-head-main ::ng-deep .basket-search {
-        max-width: 680px;
-    }
-
-    .table-head-main .table-head-tool {
-        gap: 8px;
-    }
-}
-
-@media (max-width: 1580px) {
-    .table-head-main {
-        grid-template-columns: minmax(220px, auto) minmax(460px, 1fr);
-        grid-template-areas:
-            "result tool"
-            "filters filters";
-        align-items: start;
+        grid-template-columns: auto minmax(180px, 1fr) auto;
+        gap: 10px;
+        padding: 8px 12px;
+        min-height: 52px;
     }
 
     .table-head-main .table-head-result {
-        grid-area: result;
         min-width: 0;
-    }
-
-    .table-head-main .table-head-filters {
-        grid-area: filters;
-        width: 100%;
+        white-space: nowrap;
     }
 
     .table-head-main .table-head-tool {
-        grid-area: tool;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        white-space: normal;
+        gap: 6px;
+        flex-wrap: nowrap;
+    }
+
+    .table-head-main ::ng-deep .filtersContent {
+        grid-template-columns: minmax(0, 1fr) minmax(150px, 190px) 36px;
+        gap: 8px;
+    }
+
+    .table-head-main ::ng-deep .basket-search {
+        max-width: none;
     }
 }
 
 @media (max-width: 1280px) {
     .table-head-main {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "result"
-            "filters"
-            "tool";
+        grid-template-columns: auto minmax(160px, 1fr) auto;
+        gap: 8px;
+        padding: 7px 10px;
     }
 
-    .table-head-main .table-head-result,
-    .table-head-main .table-head-filters,
-    .table-head-main .table-head-tool {
-        width: 100%;
+    .table-head-main .table-head-result {
+        font-size: 16px;
+        min-width: 0;
+        white-space: nowrap;
     }
 
     .table-head-main .table-head-tool {
-        justify-content: flex-start;
-        gap: 8px 10px;
+        gap: 5px;
+        flex-wrap: nowrap;
     }
 
     .table-head-main .table-head-tool > span {
-        flex: 0 1 auto;
-        max-width: 100%;
+        flex: 0 0 auto;
     }
 
     .table-head-main ::ng-deep .filtersContent {
-        grid-template-columns: minmax(320px, 1fr) minmax(180px, 220px) 40px;
+        grid-template-columns: minmax(0, 1fr) minmax(130px, 170px) 34px;
+        gap: 6px;
     }
 }
 
@@ -914,4 +895,95 @@
         white-space: normal;
         line-height: 1.2;
     }
+}
+
+/* ─── Responsive: colonnes de la liste (gestion du zoom) ──────── */
+
+/* Zoom ~110-125% : réduction expéditeur et date */
+@media (max-width: 1100px) {
+    :host {
+        --col-sender: 240px;
+        --col-date: 115px;
+    }
+}
+
+/* Zoom ~125-150% : suppression colonne date, réduction chrono/expéditeur */
+@media (max-width: 860px) {
+    :host {
+        --col-chrono: 155px;
+        --col-sender: 175px;
+    }
+
+    .courrier-list-header__date,
+    .mail-col-date {
+        display: none !important;
+    }
+
+    .main-info {
+        grid-template-columns:
+            var(--col-check)
+            var(--col-follow)
+            var(--col-status)
+            var(--col-chrono)
+            var(--col-sender)
+            minmax(120px, 1fr)
+            var(--col-action);
+    }
+
+    .mail-col-subject { grid-column: 6; }
+    .main-info-action { grid-column: 7; }
+
+    .anam-treated-badge {
+        right: calc(var(--col-action) + var(--row-gap) + 4px);
+        max-width: 110px;
+        font-size: 11px;
+        padding: 2px 7px;
+    }
+}
+
+/* Zoom ~150%+ : vue carte 2 lignes par courrier */
+@media (max-width: 680px) {
+    .main-info {
+        grid-template-columns:
+            var(--col-check)
+            var(--col-follow)
+            var(--col-status)
+            minmax(0, 1fr)
+            var(--col-action);
+        grid-template-rows: auto auto;
+        row-gap: 2px;
+        min-height: 64px;
+        padding: 6px 10px;
+    }
+
+    .mail-col-check   { grid-column: 1; grid-row: 1 / 3; align-self: center; }
+    .followIcon       { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+    .main-info-status { grid-column: 3; grid-row: 1 / 3; align-self: center; }
+    .main-info-action { grid-column: 5; grid-row: 1 / 3; align-self: center; }
+
+    .mail-col-chrono {
+        grid-column: 4;
+        grid-row: 1;
+        text-align: left;
+        width: auto;
+        min-width: 0;
+        font-size: 11px;
+        font-weight: 700;
+        color: #3f7d9a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mail-col-sender { display: none !important; }
+    .mail-col-date   { display: none !important; }
+
+    .mail-col-subject {
+        grid-column: 4;
+        grid-row: 2;
+        font-size: 12px;
+    }
+
+    .anam-treated-badge  { display: none !important; }
+    .courrier-list-header { display: none; }
 }

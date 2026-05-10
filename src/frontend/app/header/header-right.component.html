@@ -24,6 +24,46 @@
         </mat-form-field>
     </form>
 
+    <!-- ── Bouton changement de thème (ANAM uniquement) ── -->
+    <button mat-icon-button *ngIf="headerService.isAnamUser()"
+        [matMenuTriggerFor]="themeMenu"
+        class="theme-toggle-btn"
+        title="Changer la couleur du thème">
+        <mat-icon class="fas fa-palette" style="font-size:19px;"></mat-icon>
+    </button>
+    <mat-menu #themeMenu="matMenu" class="theme-picker-menu">
+        <div class="theme-picker-title">Couleur du thème</div>
+        <div class="theme-swatches" (click)="$event.stopPropagation()">
+            <button class="theme-swatch"
+                (click)="headerService.setAnamTheme('burgundy'); $event.stopPropagation();"
+                *ngIf="headerService.anamTheme !== 'burgundy'"
+                title="Thème Bordeaux">
+                <span class="swatch-color" style="background:#691743;"></span>
+                <span class="swatch-label">Bordeaux</span>
+            </button>
+            <button class="theme-swatch"
+                (click)="headerService.setAnamTheme('gold'); $event.stopPropagation();"
+                *ngIf="headerService.anamTheme !== 'gold'"
+                title="Thème Or">
+                <span class="swatch-color" style="background:#c9a227;"></span>
+                <span class="swatch-label">Or Doré</span>
+            </button>
+            <button class="theme-swatch"
+                (click)="headerService.setAnamTheme('green'); $event.stopPropagation();"
+                *ngIf="headerService.anamTheme !== 'green'"
+                title="Thème Vert">
+                <span class="swatch-color" style="background:#00ab76;"></span>
+                <span class="swatch-label">Vert</span>
+            </button>
+            <div class="theme-current">
+                <span class="swatch-color active-dot"
+                    [style.background]="headerService.anamTheme === 'gold' ? '#c9a227' : headerService.anamTheme === 'green' ? '#00ab76' : '#691743'">
+                </span>
+                <span class="swatch-label">Actuel : {{ headerService.anamTheme === 'gold' ? 'Or Doré' : headerService.anamTheme === 'green' ? 'Vert' : 'Bordeaux' }}</span>
+            </div>
+        </div>
+    </mat-menu>
+
     <button mat-icon-button [matMenuTriggerFor]="notificationsMenu" class="notification-bell"
         (menuOpened)="onNotificationsMenuOpened()"
         [matBadge]="unreadNotificationCount > 99 ? '99+' : unreadNotificationCount"
